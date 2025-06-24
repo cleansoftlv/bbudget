@@ -1,2 +1,2 @@
 # bbudget
-BBudget is open source client for Luncn Money budgeting platform
+BBudget is open source client for Lunch Money budgeting platform
