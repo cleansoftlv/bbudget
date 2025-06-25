@@ -1,0 +1,30 @@
+{
+	"Services": {
+		"IsProudction": false,
+		"TrialLicenseLengthDays": 60,
+		"IsAzureSql": false,
+		"SqlCompatabilityLevel": 160,
+		"DbConnectionString": "<yourlocaldbconnectionstring>",
+		"Jwt": {
+			"Issuer": "<yourissuer>",
+			"Audience": "prod",
+			"Secret": "<yoursecret>",
+			"ExpirationMinutes": 525960
+		},
+		"TokenEncryptSecert": "<yoursecret2>",
+		"Revolut": {
+			"ApiVersion": "2024-09-01",
+			"RedirectUrlPrefix": "<yourredirecturl>",
+			"StatementSufix": "bbudget",
+			"SettlementCurrency": "EUR",
+			"SecretKey": "<yourrevolutsecret>",
+			"PublicKey": "<yourrevolutpublickey>",
+			"WebhookSecret": "<yourwebhooksecret>",
+			"WebhookQueueStorageConnectionString": "<yourwebhookstorageconnectionstring>",
+			"WebhookQueueName": "<yourwebhookqueuename>",
+			"WebhookSecretTest": "<yourwebhooksecrettest>",
+			"WebhookQueueNameTest": "<yourwebhookqueuenametest>",
+			"BaseUrl": "https://sandbox-merchant.revolut.com/api/"
+		}
+	}
+}
