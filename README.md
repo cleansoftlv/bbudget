@@ -11,7 +11,7 @@ BBudget is dual-licensed:
 
 This means:
 - If you use BBudget under AGPLv3, you must open source your entire application
-- If you want to use BBudget in a proprietary/closed-source application, you need a commercial license
+- If you want to use BBudget in a proprietary/closed-source application in a way not permitted by AGPLv3, you need a commercial license
 
 ## Project Overview
 
