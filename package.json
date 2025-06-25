@@ -1,0 +1,11 @@
+{
+  "name": "lmclient",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "swa start http://localhost:5185 --api-location http://localhost:7005"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

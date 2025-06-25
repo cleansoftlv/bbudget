@@ -1,0 +1,9 @@
+﻿CREATE TABLE [dbo].[AppUser]
+(
+	[id] INT NOT NULL PRIMARY KEY IDENTITY(1,1), 
+    [name] NVARCHAR(100) NULL, 
+    [created] DATETIME NOT NULL DEFAULT GETUTCDATE(), 
+    [deleted] DATETIME NULL, 
+    [last_activity_date] DATETIME NOT NULL DEFAULT GETUTCDATE() 
+)
+GO

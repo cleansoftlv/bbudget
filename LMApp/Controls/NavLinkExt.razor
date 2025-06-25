@@ -1,0 +1,66 @@
+﻿@using LMApp.Models.UI
+@inject NavigationManager navManager;
+<a href="@Href" class="@($"{(isActive? ActiveClass: null)} {@class}")" @attributes="@CapturedAttributes">
+    @ChildContent
+</a>
+
+@code {
+    [Parameter]
+    public string Href { get; set; } = "";
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public NavLinkExtMatch Match { get; set; } = NavLinkExtMatch.Prefix;
+
+    [Parameter]
+    public string ActiveClass { get; set; } = "active";
+
+    [Parameter]
+    public string @class { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object> CapturedAttributes { get; set; }
+
+    private bool isActive;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        navManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        var isActiveOld = isActive;
+        RefreshIsActive();
+
+        if (isActive != isActiveOld)
+        {
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        RefreshIsActive();
+    }
+
+    private void RefreshIsActive()
+    {
+        switch (Match)
+        {
+            case NavLinkExtMatch.Prefix:
+                isActive = navManager.UriStartsWith(Href ?? "");
+                break;
+            case NavLinkExtMatch.All:
+                isActive = navManager.RelativeUriEqualsFull(Href ?? "");
+                break;
+            case NavLinkExtMatch.PathAll:
+                isActive = navManager.RelativeUriPathEquals(Href ?? "");
+                break;
+        }
+    }
+}

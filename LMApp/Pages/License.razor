@@ -1,0 +1,188 @@
+﻿@using LMApp.Models.Account;
+@using System.Diagnostics.CodeAnalysis
+@using System.Net
+@using LMApp.Models.Licenses
+@using LMApp.Models.UI
+@using Shared.License
+@using Shared.Login
+@page "/license"
+@inherits BasePage
+@inject FormatService formatService
+@inject LicenseService licenseService
+<PageTitle>License</PageTitle>
+<LoadingPanel IsLoading="IsLoading || paidLicenses == null" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    <h1>License</h1>
+    <div class="container-fluid">
+        <h4 class="mt-4">Your active BBudget licenses</h4>
+        <div class="row">
+            @if (paidLicenses.Any(x => x.Status == PaidLicenseStatus.Active))
+            {
+                @foreach (var lic in paidLicenses.Where(x => x.Status == PaidLicenseStatus.Active))
+                {
+                    <div class="col-12">
+                        <div class="card mb-2 @GetLicenseClassCss(lic.Status, lic.ToUtc)">
+                            <div class="card-body">
+                                <h5 class="card-title mb-2">Valid until @formatService.FormatDate(formatService.ConvertFromUtcToLocal(lic.ToUtc))</h5>
+                                @if (lic.Status == PaidLicenseStatus.Active)
+                                {
+                                    <p class="card-text mb-2">
+                                        An active license allows you and other BBudget users to use the app without restrictions with all Lunch Money accounts you have added to your profile.
+                                    </p>
+                                    <p class="card-text mb-2">
+                                        When you renew your license, the next license will start only after the previous one expires, so you can renew in advance.
+                                    </p>
+                                    <div class="mb-2">
+                                        <a href="license/purchase" class="btn btn-primary">Renew</a>
+                                    </div>
+                                }
+                                <p class="card-text mb-2">
+                                    <hr />
+                                    <dl class="dl-horizontal">
+                                        <dt>Purchased on</dt>
+                                        <dd>@formatService.FormatDate(formatService.ConvertFromUtcToLocal(lic.CreatedUtc))</dd>
+                                        <dt>License ID</dt>
+                                        <dd>@lic.Id</dd>
+                                    </dl>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>You don't have an active BBudget license.</p>
+                <div>
+                    <a href="license/purchase" class="btn btn-primary">Purchase a license</a>
+                </div>
+            }
+        </div>
+        @if (paidLicenses.Any(x => x.Status != PaidLicenseStatus.Active))
+        {
+            <h4 class="mt-4">Your past BBudget licenses</h4>
+            <div class="row">
+                @foreach (var license in paidLicenses.Where(x => x.Status != PaidLicenseStatus.Active))
+                {
+                    <div class="col-12 col-lg-6">
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <dl>
+                                    <dt>Expiration date</dt>
+                                    <dd>@formatService.FormatDate(formatService.ConvertFromUtcToLocal(license.ToUtc))</dd>
+                                    <dt>Status</dt>
+                                    <dd>@LicenseStatusName(license.Status)</dd>
+                                    <dt>License ID</dt>
+                                    <dd>@license.Id</dd>
+                                    <dt>Purchased on</dt>
+                                    <dd>@formatService.FormatDate(formatService.ConvertFromUtcToLocal(license.CreatedUtc))</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        <h4 class="mt-4">Your BBudget orders</h4>
+        @if (orders.Any())
+        {
+            <div class="row">
+                @foreach (var order in orders)
+                {
+                    <div class="col-12 col-lg-6">
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <dl>
+                                    <dt>Order ID</dt>
+                                    <dd>@order.Id</dd>
+                                    <dt>Created on</dt>
+                                    <dd>@formatService.FormatDate(formatService.ConvertFromUtcToLocal(order.CreatedUtc))</dd>
+                                    <dt>Status</dt>
+                                    <dd>@OrderStatusName(order.Status)</dd>
+                                    <dt>Amount</dt>
+                                    <dd>@formatService.FormatTranAmount(order.Amount, order.Currency)</dd>
+                                </dl>
+                                <a href="license/purchase/return/@order.Id" class="btn btn-secondary">Details</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-body-secondary">You don't have any BBudget orders yet.</p>
+        }
+    </div>
+</LoadingPanel>
+
+@code {
+
+    public override bool SettingsRequired => false;
+    public override bool AccountRequired => false;
+
+
+    private List<PaidLicenseInfo> paidLicenses;
+    private List<OrderInfo> orders;
+
+    private string GetLicenseClassCss(PaidLicenseStatus paidLicenseStatus, DateTime expirationDate)
+    {
+        return paidLicenseStatus switch
+        {
+            PaidLicenseStatus.Active when (expirationDate - DateTime.UtcNow).TotalDays > 15 => "text-bg-success",
+            PaidLicenseStatus.Active => "text-bg-warning",
+            PaidLicenseStatus.Expired => "",
+            PaidLicenseStatus.Cancelled => "",
+            _ => ""
+        };
+    }
+
+    private string LicenseStatusName(PaidLicenseStatus paidLicenseStatus)
+    {
+        return paidLicenseStatus switch
+        {
+            PaidLicenseStatus.Active => "Active",
+            PaidLicenseStatus.Expired => "Expired",
+            PaidLicenseStatus.Cancelled => "Cancelled",
+            _ => "Unknown"
+        };
+    }
+
+    private string OrderStatusName(OrderStatus orderStatus)
+    {
+        return orderStatus switch
+        {
+            OrderStatus.New => "New",
+            OrderStatus.Created => "New",
+            OrderStatus.InProgress => "Processing",
+            OrderStatus.Completed => "Completed successfully",
+            OrderStatus.Failed => "Failed",
+            OrderStatus.Refunded => "Refunded",
+            OrderStatus.Cancelled => "Cancelled",
+            _ => "Unknown"
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (LoadCancelled)
+        {
+            return;
+        }
+
+        try
+        {
+            var info = await licenseService.GetLicensingInfo();
+            paidLicenses = info.Licenses.OrderByDescending(x => x.Status == PaidLicenseStatus.Active)
+                 .ThenByDescending(x => x.CreatedUtc).ToList();
+            orders = info.Orders.OrderByDescending(x => x.CreatedUtc).ToList();
+        }
+        catch (Exception ex)
+        {
+            ex.LogIfRequired(log);
+            LoadError = ex.GetDescriptionForUser();
+            return;
+        }
+
+    }
+}

@@ -1,0 +1,477 @@
+﻿@using LMApp.Models.Account
+@using LMApp.Models.Categories
+@using LMApp.Models.Context
+@using LMApp.Models.Transactions
+@using LMApp.Models.UI
+@inject SettingsService settingsService
+@inject FormatService formatService
+@inject UserContextService userService
+<div @ref="containerRef" tabindex="0">
+    @if (InternalTransaction != null)
+    {
+        @if (InternalTransaction.TypeCanBeChanged)
+        {
+            <div class="mt-2 mb-4">
+                <RadioList ShowLabel="true"
+                           DisplayText="Transaction type"
+                           Id="TranType"
+                           Value="InternalTransaction.TranType"
+                           IsButton="true"
+                           TValue="TransactionType"
+                           Items="TransactionTypes"
+                           OnValueChanged="TranTypeChanged" />
+            </div>
+        }
+        @if (InternalTransaction.TranType == TransactionType.Simple)
+        {
+            <SimpleTransactionForm Transaction="(SimpleTransactionForEdit)InternalTransaction"
+                                   IsSaving="IsSaving"
+                                   @ref="simpleTransactionFormRef"
+                                   SaveTransaction="OnSaveTransaction"
+                                   SaveAndNextTransaction="OnSaveTransactionAndNext"
+                                   CopyTransaction="OnCopy"
+                                   Cancel="OnCancel"
+                                   Accounts="Accounts"
+                                   Delete="ConfirmDelete"
+                                   AccountLookup="AccountLookup"
+                                   Categories="Categories"
+                                   CreateTransfer="OnCreateTransfer"
+                                   ShowAndNextOnSave="ShowAndNextOnSave"
+                                   Currencies="Currencies" />
+        }
+        else if (InternalTransaction.TranType == TransactionType.Transfer)
+        {
+            <AccountTransferForm Transaction="(AccountTransferTransactionForEdit)InternalTransaction"
+                                 IsSaving="IsSaving"
+                                 @ref="accountTransferFormRef"
+                                 SaveTransaction="OnSaveTransaction"
+                                 SaveAndNextTransaction="OnSaveTransactionAndNext"
+                                 CopyTransaction="OnCopy"
+                                 Cancel="OnCancel"
+                                 Ungroup="OnUngroup"
+                                 Accounts="Accounts"
+                                 Delete="ConfirmDelete"
+                                 AccountLookup="AccountLookup"
+                                 ShowAndNextOnSave="ShowAndNextOnSave"
+                                 Currencies="Currencies" />
+        }
+        else if (InternalTransaction.TranType == TransactionType.Split)
+        {
+            <SplitTransactionForm Transaction="(SplitTransactionForEdit)InternalTransaction"
+                                  IsSaving="IsSaving"
+                                  @ref="splitTransactionFormRef"
+                                  SaveTransaction="OnSaveTransaction"
+                                  SaveAndNextTransaction="OnSaveTransactionAndNext"
+                                  CopyTransaction="OnCopy"
+                                  Cancel="OnCancel"
+                                  Accounts="Accounts"
+                                  Delete="ConfirmDelete"
+                                  AccountLookup="AccountLookup"
+                                  Categories="Categories"
+                                  ShowAndNextOnSave="ShowAndNextOnSave"
+                                  Currencies="Currencies" />
+        }
+        else
+        {
+            <Alert Color="Color.Warning">@InternalTransaction.TranType transaction type is not yet supported</Alert>
+            <Button ButtonType="ButtonType.Button" Color="Color.Secondary" Text="Close" OnClick="OnCancel" />
+        }
+        @if (SaveError != null)
+        {
+            <Alert Color="Color.Warning" class="m-4">
+                <p>Changes not saved</p>
+                <p>@SaveError</p>
+            </Alert>
+        }
+    }
+</div>
+
+@code {
+    private ElementReference containerRef;
+    private SimpleTransactionForm simpleTransactionFormRef;
+    private AccountTransferForm accountTransferFormRef;
+    private SplitTransactionForm splitTransactionFormRef;
+
+    public BaseTransactionForEdit InternalTransaction { get; set; }
+
+    [Parameter]
+    public BaseTransactionForEdit Transaction { get; set; }
+
+    [Parameter]
+    public bool IsSaving { get; set; }
+
+    [Parameter]
+    public string SaveError { get; set; }
+
+    [Parameter]
+    public bool ShowAndNextOnSave { get; set; }
+
+    [CascadingParameter] public IModalContainer ModalContainer { get; set; }
+
+    [Parameter]
+    public EventCallback<ForEditPair> SaveTransaction { get; set; }
+
+    [Parameter]
+    public EventCallback<ForEditPair> SaveTransactionAndNext { get; set; }
+
+    [Parameter]
+    public EventCallback<AccountTransferTransactionForEdit> Ungroup { get; set; }
+
+
+    [Parameter]
+    public EventCallback Cancel { get; set; }
+
+    [Parameter]
+    public EventCallback<BaseTransactionForEdit> Delete { get; set; }
+
+    [Parameter]
+    public EventCallback<BaseTransactionForEdit> Copy { get; set; }
+
+    [Parameter]
+    public EventCallback<ForEditPair> CreateTransfer { get; set; }
+
+    private IEnumerable<SelectedItem> Categories;
+
+    private IEnumerable<SelectedItem> Accounts;
+
+    private IEnumerable<SelectedItem> Currencies;
+    private IEnumerable<SelectedItem> TransactionTypes;
+
+    public UnifiedAccountInfo[] AccountLookup;
+
+    private Dictionary<TransactionType, BaseTransactionForEdit> OtherNewTransactions = new Dictionary<TransactionType, BaseTransactionForEdit>();
+
+    private async Task OnCopy(BaseTransactionForEdit _)
+    {
+        if (InternalTransaction.HasChanges)
+        {
+            await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+            {
+                Title = "Unsaved changes",
+                Message = new MarkupString("You have changed transaction. Unsaved changes will be lost if you proceed."),
+                AdditionalButtonText = "Discard and copy",
+                AdditionalButtonColor = Color.Primary,
+                AdditionalButtonCallback = async () =>
+                {
+                    await ModalContainer.Modal.Hide();
+                    await Copy.InvokeAsync(Transaction);
+                }
+            });
+        }
+        else
+        {
+            //We should pass original transaction without changed type
+            await Copy.InvokeAsync(Transaction);
+        }
+    }
+
+    private async Task OnUngroup()
+    {
+        await Ungroup.InvokeAsync(Transaction as AccountTransferTransactionForEdit);
+    }
+
+    private async Task OnCreateTransfer(SimpleTransactionForEdit _)
+    {
+        if (InternalTransaction.HasEditChanges)
+        {
+            await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+            {
+                Title = "Unsaved changes",
+                Message = new MarkupString("You have changed this transaction. Unsaved changes will be lost if you proceed."),
+                AdditionalButtonText = "Discard and create transfer",
+                AdditionalButtonColor = Color.Primary,
+                AdditionalButtonCallback = async () =>
+                {
+                    await ModalContainer.Modal.Hide();
+                    await OnProceedCreateTransfer();
+                }
+            });
+            return;
+        }
+        else
+        {
+            await OnProceedCreateTransfer();
+        }
+    }
+
+    private async Task OnProceedCreateTransfer()
+    {
+        if (userService.TransactionForCreateTransfer == null)
+        {
+            var settings = await settingsService.GetLocalSettings();
+            if (!settings.SkipCreateTransferHelp)
+            {
+                await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+                {
+                    Title = "Create transfer",
+                    Message = new MarkupString("This transaction is stored. Please select a transaction that will become the second part of the transfer. Only simple expense/income transactions are supported."),
+                    AdditionalButton2Text = "Proceed",
+                    AdditionalButton2Color = Color.Primary,
+                    AdditionalButton2Callback = async () =>
+                    {
+                        await ModalContainer.Modal.Hide();
+                        await CompleteCreateTransferFirstTransactionSelection();
+                    },
+                    AdditionalButtonText = "Proceed, hide this message",
+                    AdditionalButtonColor = Color.Primary,
+                    AdditionalButtonIsOutline = true,
+                    AdditionalButtonCallback = async () =>
+                    {
+                        await ModalContainer.Modal.Hide();
+                        settings = await settingsService.GetLocalSettings();
+                        settings.SkipCreateTransferHelp = true;
+                        await settingsService.SaveLocalSettings(settings);
+                        await CompleteCreateTransferFirstTransactionSelection();
+                    }
+                });
+            }
+            else
+            {
+                await CompleteCreateTransferFirstTransactionSelection();
+            }
+        }
+        else if (Transaction.Id == userService.TransactionForCreateTransfer.Id)
+        {
+            await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+            {
+                Title = "Create transfer",
+                Message = new MarkupString("You have already selected this transaction as the first part of the transfer. Please select another transaction."),
+                AdditionalButtonText = "Abort",
+                AdditionalButtonColor = Color.Warning,
+                AdditionalButtonCallback = async () =>
+                {
+                    await ModalContainer.Modal.Hide();
+                    userService.TransactionForCreateTransfer = null;
+                    StateHasChanged();
+                }
+            });
+        }
+        else
+        {
+            var tran1 = userService.TransactionForCreateTransfer;
+            var tran2 = Transaction as SimpleTransactionForEdit;
+            var from = tran1.AmountWithSign >= 0 ? tran1 : tran2;
+            var to = tran1.AmountWithSign >= 0 ? tran2 : tran1;
+
+            var fromAccount = settingsService.FindAssetOrPlaidAccount(from.AccountUid);
+            var toAccount = settingsService.FindAssetOrPlaidAccount(to.AccountUid);
+
+            await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+            {
+                Title = "Create transfer",
+                Message = new MarkupString($"Please confirm the transfer details:<br/>From {fromAccount.Name} – {formatService.FormatTranAmount(from.Amount.Value, from.Currency)}<br/>To {toAccount.Name} – {formatService.FormatTranAmount(to.Amount.Value, to.Currency)}<br/>Do you want to convert the selected transactions to a transfer?"),
+                AdditionalButtonText = "Abort",
+                AdditionalButtonColor = Color.Warning,
+                AdditionalButtonCallback = async () =>
+                {
+                    await ModalContainer.Modal.Hide();
+                    userService.TransactionForCreateTransfer = null;
+                    StateHasChanged();
+                },
+                AdditionalButton2Text = "Create Transfer",
+                AdditionalButton2Color = Color.Primary,
+                AdditionalButton2Callback = async () =>
+                {
+                    await ModalContainer.Modal.Hide();
+                    await CreateTransfer.InvokeAsync(new ForEditPair
+                    {
+                        Original = from,
+                        Updated = to
+                    });
+                }
+            });
+        }
+    }
+
+    private async Task CompleteCreateTransferFirstTransactionSelection()
+    {
+        userService.TransactionForCreateTransfer = Transaction as SimpleTransactionForEdit;
+        await Cancel.InvokeAsync();
+    }
+
+
+
+    private async Task TranTypeChanged(TransactionType newType)
+    {
+        if (newType == InternalTransaction.TranType)
+        {
+            return;
+        }
+
+        var newTransaction = OtherNewTransactions.GetValueOrDefault(newType);
+
+        if (newTransaction == null)
+        {
+            newTransaction = newType switch
+            {
+                TransactionType.Simple => new SimpleTransactionForEdit(),
+                TransactionType.Transfer => new AccountTransferTransactionForEdit(),
+                TransactionType.Split => SplitTransactionForEdit.CreateNewForEdit(),
+                _ => throw new NotImplementedException()
+            };
+            OtherNewTransactions[newType] = newTransaction;
+        }
+        if (InternalTransaction.TranType == TransactionType.Transfer)
+        {
+            var firstWithPayee = OtherNewTransactions
+                .Values.FirstOrDefault(x => x != newTransaction && x.TranType != TransactionType.Transfer);
+
+            if (firstWithPayee != null)
+            {
+                newTransaction.UpdateWith(firstWithPayee, settingsService);
+            }
+        }
+
+        newTransaction.UpdateWith(InternalTransaction, settingsService);
+        InternalTransaction = newTransaction;
+        StateHasChanged();
+        await Task.Yield();
+    }
+
+
+    private async Task OnSaveTransaction()
+    {
+        await SaveTransaction.InvokeAsync(new ForEditPair
+        {
+            Original = Transaction,
+            Updated = InternalTransaction
+        });
+    }
+
+
+    private async Task OnSaveTransactionAndNext()
+    {
+        await SaveTransactionAndNext.InvokeAsync(new ForEditPair
+        {
+            Original = Transaction,
+            Updated = InternalTransaction
+        });
+    }
+
+    private async Task OnCancel()
+    {
+        await Cancel.InvokeAsync();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+        {
+            Title = "Delete transaction",
+            Message = new MarkupString("Are you sure you want to delete this transaction?"),
+            AdditionalButtonText = "Delete",
+            AdditionalButtonColor = Color.Danger,
+            AdditionalButtonCallback = async () =>
+            {
+                await ModalContainer.Modal.Hide();
+                await OnDelete();
+            }
+        });
+    }
+
+
+
+    private async Task OnDelete()
+    {
+        //We should pass original transaction without changed type
+        await Delete.InvokeAsync(Transaction);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Transaction == null)
+        {
+            InternalTransaction = null;
+            OtherNewTransactions.Clear();
+        }
+        else if (InternalTransaction == null || InternalTransaction.Id != Transaction.Id)
+        {
+            InternalTransaction = Transaction switch
+            {
+                SimpleTransactionForEdit => new SimpleTransactionForEdit(),
+                AccountTransferTransactionForEdit => new AccountTransferTransactionForEdit(),
+                SplitTransactionForEdit => new SplitTransactionForEdit(),
+                _ => new OtherTransactionForEdit()
+            };
+
+            InternalTransaction.UpdateWith(Transaction, settingsService);
+
+            OtherNewTransactions.Clear();
+            OtherNewTransactions[InternalTransaction.TranType] = InternalTransaction;
+        }
+
+        base.OnParametersSet();
+    }
+
+    override protected async Task OnInitializedAsync()
+    {
+        Categories = settingsService.GetCachedCategories().Select(x => new SelectedItem
+        {
+            Value = x.id.ToString(),
+            Text = x.name
+        }).ToList();
+
+
+        Currencies = settingsService.SelectedAccountCurrencies
+            .Select(x => new SelectedItem
+            {
+                Text = formatService.CurrencyToSymbol(x),
+                Value = x
+            });
+
+        AccountLookup = settingsService.GetCachedAccountsForLookup().ToArray();
+
+        Accounts = AccountLookup
+           .Select(x => new SelectedItem
+           {
+               Value = x.AccountUid,
+               Text = x.Name
+           }).ToList();
+
+        TransactionTypes = new[] {
+            TransactionType.Simple,
+            TransactionType.Transfer,
+            TransactionType.Split}
+        .Select(x => new SelectedItem
+        {
+            Text = x.ToString(),
+            Value = x.ToString()
+        });
+
+        await Task.Yield();
+    }
+
+    public Task FocusAsync()
+    {
+        return TryFocus();
+    }
+
+    private async Task TryFocus()
+    {
+        if (containerRef.Context != null && containerRef.Id != null)
+        {
+            try
+            {
+                await containerRef.FocusAsync();
+            }
+            catch
+            {
+                //ignore error
+            }
+        }
+
+        if (simpleTransactionFormRef != null)
+        {
+            await simpleTransactionFormRef.FocusAsync();
+        }
+        else if (accountTransferFormRef != null)
+        {
+            await accountTransferFormRef.FocusAsync();
+        }
+        else if (splitTransactionFormRef != null)
+        {
+            await splitTransactionFormRef.FocusAsync();
+        }
+    }
+
+}

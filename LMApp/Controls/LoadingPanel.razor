@@ -1,0 +1,37 @@
+﻿@if (ErrorMessage != null)
+{
+    <Alert Color="Color.Warning" class="@(ErrorClass ?? "m-4")">
+        <p>@ErrorMessage</p>
+        @if (OnRetry.HasDelegate)
+        {
+            <Button Color="Color.Warning" OnClick="OnRetry">Retry</Button>
+        }
+    </Alert>
+}
+else if (IsLoading)
+{
+    <p class="text-center m-4">
+        <Spinner />
+    </p>
+}
+else if (ChildContent != null)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter]
+    public bool IsLoading { get; set; }
+
+    [Parameter]
+    public string ErrorMessage { get; set; }
+
+    [Parameter]
+    public string ErrorClass { get; set; }
+
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+}

@@ -1,0 +1,352 @@
+﻿@using LMApp.Controls.Bootstrap
+@using LMApp.Models
+@using LMApp.Models.Account
+@using LMApp.Models.Categories
+@using LMApp.Models.Context
+@using LMApp.Models.Transactions
+@using LMApp.Models.UI
+@using Microsoft.AspNetCore.Components.Forms
+@inject SettingsService settingsService
+@inject FormatService formatService
+@inherits BaseNestedTransactionForm
+
+
+<EditForm FormName="AccountTransferEdit"
+          EditContext="Context"
+          OnSubmit="e=>OnSubmit(e)">
+    <DataAnnotationsValidator />
+    <div class="fix-enter" @ref="RootDiv">
+        <div class="mb-4">
+            <div class="d-flex align-items-end gap-2">
+                <div class="flex-grow-1">
+                    <SearchEntitySelectString Id="AccountFrom"
+                                              DisplayText="From"
+                                              Items="Accounts"
+                                              @ref="AccountFromSelect"
+                                              OnValueChanged="AccountChanged"
+                                              IsDisabled="Transaction.IsPlaidReadonlyFrom"
+                                              @bind-Value="Transaction.AccountUidFrom" />
+                </div>
+                <button type="button"
+                        class="btn btn-outline-secondary form-control w-auto"
+                        title="Swap accounts"
+                        disabled="@(Transaction.IsPlaidReadonly)"
+                        @onclick="SwapAccounts">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+        </div>
+        <div class="mb-4">
+            <SearchEntitySelectString Id="AccountTo"
+                                      DisplayText="To"
+                                      @ref="AccountToSelect"
+                                      Items="Accounts"
+                                      IsDisabled="Transaction.IsPlaidReadonlyTo"
+                                      OnValueChanged="AccountChanged"
+                                      @bind-Value="Transaction.AccountUidTo" />
+        </div>
+        <div class="mb-4">
+            <label class="form-label" for="AmountFrom">
+                @if (Transaction.ShowAmountTo)
+                {
+                    @:Sent amount
+                }
+                else
+                {
+                    @:Amount
+                }
+            </label>
+            <BootstrapInputGroup>
+                <BootstrapInputNumber Id="AmountFrom"
+                                      UseInputEvent="true"
+                                      IsDisabled="(Transaction.ShowAmountTo && Transaction.IsPlaidReadonlyFrom) || (!Transaction.ShowAmountTo && Transaction.IsPlaidReadonly)"
+                                      @bind-Value="Transaction.AmountFrom"
+                                      FormatString="0.##"
+                                      Step="0.01" />
+                <Dropdown @bind-Value="@Transaction.CurrencyFrom"
+                          IsDisabled="(Transaction.ShowAmountTo && Transaction.IsPlaidReadonlyFrom) || (!Transaction.ShowAmountTo && Transaction.IsPlaidReadonly)"
+                          Color="settingsService.GetCurrencyColor(Transaction.CurrencyFrom)"
+                          Items="@Currencies" />
+            </BootstrapInputGroup>
+        </div>
+        @if (Transaction.ShowAmountTo)
+        {
+            <div class="mb-4">
+                <label class="form-label" for="AmountTo">Received amount</label>
+                <BootstrapInputGroup>
+                    <BootstrapInputNumber Id="AmountTo"
+                                          UseInputEvent="true"
+                                          IsDisabled="Transaction.IsPlaidReadonlyTo"
+                                          @bind-Value="Transaction.AmountTo"
+                                          FormatString="0.##"
+                                          Step="0.01" />
+                    <Dropdown @bind-Value="Transaction.CurrencyTo"
+                              IsDisabled="Transaction.IsPlaidReadonlyTo"
+                              Color="settingsService.GetCurrencyColor(Transaction.CurrencyTo)"
+                              Items="@Currencies" />
+                </BootstrapInputGroup>
+            </div>
+        }
+        <div class="mb-4">
+            <DateTimePickerExt ShowLabel="true"
+                               DisplayText="Date"
+                               Id="Date"
+                               DateFormat="@ClientConstants.DateFormat"
+                               @bind-Value="Transaction.Date"
+                               ShowIcon="false" />
+        </div>
+        <div class="mb-4">
+            <BootstrapInput ShowLabel="true"
+                            UseInputEvent="true"
+                            DisplayText="Notes"
+                            Id="Notes"
+                            @bind-Value="Transaction.Notes" />
+        </div>
+        <ValidationSummary />
+        @if (!Transaction.IsCleared)
+        {
+            <UnreviewedTranStatus />
+        }
+        <div class="my-4">
+            @if (IsSaving)
+            {
+                <Spinner />
+            }
+            else
+            {
+                <div class="d-flex justify-content-between">
+                    <div class="text-start">
+                        <Button Size="Size.Large" ButtonType="ButtonType.Button" Color="Color.Secondary" IsOutline="true" Text="Cancel" OnClick="OnCancel" />
+                        @if (Transaction.Id != 0 && !Transaction.IsPlaid)
+                        {
+                            <Button class="ms-4" Size="Size.Large" ButtonType="ButtonType.Button" Color="Color.Danger" IsOutline="true" Text="Delete" OnClick="OnDelete" />
+                        }
+                        <div class="dropdown d-inline ms-4">
+                            <button class="btn btn-outline-secondary btn-lg" type="button" id="moreActions" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="moreActions">
+                                @if (Transaction.Id == 0)
+                                {
+                                    <li>
+                                        <Button class="dropdown-item" OnClick="SaveAndNext" Color="Color.None">Create and next</Button>
+                                    </li>
+                                }
+                                else
+                                {
+                                    @if (ShowAndNextOnSave)
+                                    {
+                                        <li>
+                                            <Button class="dropdown-item" OnClick="SaveAndNext" Color="Color.None">Save and next</Button>
+                                        </li>
+                                    }
+                                    <li>
+                                        <Button class="dropdown-item" OnClick="OnCopy" Color="Color.None">Copy</Button>
+                                    </li>
+                                    <li>
+                                        <Button class="dropdown-item" OnClick="OnUngroup" Color="Color.None">Ungroup</Button>
+                                    </li>
+                                }
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <Button class="dropdown-item" OnClick="ShowHotkeysHelp" Color="Color.None">
+                                        <i class="fa-solid fa-keyboard me-2"></i>Keyboard Shortcuts
+                                    </Button>
+                                </li>
+                            </ul>
+                        </div>
+
+                    </div>
+                    <div class="text-end">
+                        <Button Size="Size.Large"
+                                IsDisabled="SaveDisabled"
+                                Color="SaveButtonColor"
+                                ButtonType="ButtonType.Submit"
+                                Text="@SaveButtonText" />
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</EditForm>
+
+<HotkeysHelpModal @ref="hotkeysHelpModal" />
+
+@code {
+
+    [Parameter]
+    public AccountTransferTransactionForEdit Transaction { get; set; }
+
+    protected override BaseTransactionForEdit BaseTran => Transaction;
+
+
+    [Parameter]
+    public EventCallback<BaseTransactionForEdit> SaveTransaction { get; set; }
+
+    [Parameter]
+    public EventCallback<BaseTransactionForEdit> SaveAndNextTransaction { get; set; }
+
+    [Parameter]
+    public EventCallback<AccountTransferTransactionForEdit> Ungroup { get; set; }
+
+    private HotkeysHelpModal hotkeysHelpModal;
+    private EditContext Context;
+
+    private SearchEntitySelectString AccountFromSelect { get; set; }
+    private SearchEntitySelectString AccountToSelect { get; set; }
+
+    private async Task SaveAndNext()
+    {
+        Transaction.TrimAll();
+        if (!Transaction.ShowAmountTo)
+        {
+            Transaction.AmountTo = Transaction.AmountFrom;
+            Transaction.CurrencyTo = Transaction.CurrencyFrom;
+        }
+        if (Context.Validate())
+        {
+            await SaveAndNextTransaction.InvokeAsync(Transaction);
+        }
+    }
+
+    private async Task OnUngroup()
+    {
+        await Ungroup.InvokeAsync(Transaction);
+    }
+
+
+
+    [Parameter]
+    public IEnumerable<SelectedItem> Accounts { get; set; }
+
+    [Parameter]
+    public IEnumerable<SelectedItem> Currencies { get; set; }
+
+    [Parameter]
+    public UnifiedAccountInfo[] AccountLookup { get; set; }
+
+    private UnifiedAccountInfo AccountFrom { get; set; }
+    private UnifiedAccountInfo AccountTo { get; set; }
+
+    private Task AccountChanged(string uid)
+    {
+        SetAccoutDtos();
+        if (AccountFrom != null)
+        {
+            Transaction.CurrencyFrom = AccountFrom.Currency;
+        }
+        if (AccountTo != null)
+        {
+            Transaction.CurrencyTo = AccountTo.Currency;
+        }
+
+        // Clear AmountTo when currencies are the same to avoid validation issues
+        if (!Transaction.ShowAmountTo)
+        {
+            Transaction.AmountTo = Transaction.AmountFrom;
+        }
+
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task SwapAccounts()
+    {
+        await AccountFromSelect.TriggerOnSearch("");
+        await AccountToSelect.TriggerOnSearch("");
+
+        // Swap the account IDs
+        var tempAccountId = Transaction.AccountUidFrom;
+        Transaction.AccountUidFrom = Transaction.AccountUidTo;
+        Transaction.AccountUidTo = tempAccountId;
+
+        // Swap the amounts if different currencies are involved
+        if (Transaction.ShowAmountTo)
+        {
+            var tempAmount = Transaction.AmountFrom;
+            Transaction.AmountFrom = Transaction.AmountTo;
+            Transaction.AmountTo = tempAmount;
+
+            var tempCurrency = Transaction.CurrencyFrom;
+            Transaction.CurrencyFrom = Transaction.CurrencyTo;
+            Transaction.CurrencyTo = tempCurrency;
+        }
+
+        // Update the account DTOs and trigger the same logic as manual change
+        await AccountChanged(null);
+    }
+
+    private void SetAccoutDtos()
+    {
+        AccountFrom = AccountLookup.FirstOrDefault(x => x.AccountUid == Transaction.AccountUidFrom);
+        AccountTo = AccountLookup.FirstOrDefault(x => x.AccountUid == Transaction.AccountUidTo);
+    }
+
+    private void OnSubmit(EditContext context)
+    {
+        Transaction.TrimAll();
+        if (!Transaction.ShowAmountTo)
+        {
+            Transaction.AmountTo = Transaction.AmountFrom;
+            Transaction.CurrencyTo = Transaction.CurrencyFrom;
+        }
+        if (context.Validate())
+        {
+            SaveTransaction.InvokeAsync(Transaction);
+        }
+    }
+
+    override protected void OnInitialized()
+    {
+        SetAccoutDtos();
+    }
+
+    override protected void OnParametersSet()
+    {
+        // Set up the base class callbacks
+        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+        // Note: AccountTransfer doesn't have CreateTransfer functionality
+
+        if (Transaction != null)
+        {
+            Context = new EditContext(Transaction);
+        }
+        else
+        {
+            Context = null;
+        }
+    }
+
+    private async Task ShowHotkeysHelp()
+    {
+        await hotkeysHelpModal.Show();
+    }
+
+    protected override async Task OnSave()
+    {
+        Transaction.TrimAll();
+        if (!Transaction.ShowAmountTo)
+        {
+            Transaction.AmountTo = Transaction.AmountFrom;
+            Transaction.CurrencyTo = Transaction.CurrencyFrom;
+        }
+        if (Context.Validate())
+        {
+            await SaveTransaction.InvokeAsync(Transaction);
+        }
+    }
+
+    public Task FocusAsync()
+    {
+        return TryFocus();
+    }
+
+    private async Task TryFocus()
+    {
+        if (AccountFromSelect != null)
+        {
+            await AccountFromSelect.FocusAsync();
+        }
+    }
+
+}

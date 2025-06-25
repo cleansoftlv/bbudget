@@ -1,0 +1,351 @@
+﻿@inject FormatService formatService
+@inject Utils utils
+@using LMApp.Models.Transactions
+@using LMApp.Models.UI
+@using System.Text
+@code {
+    DateTime? lastDate;
+    private ElementReference containerRef;
+    private int selectedIndex = -1;
+}
+<div @ref="containerRef" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="preventKeyDownDefault" tabindex="0">
+    <div class="container-fluid p-0">
+        @if (!Transactions.Any())
+        {
+            <div class="text-center m-4">
+                <p class="empty-item">@(ShowTransactionsNotSupported ? "Transactions are not synced for selected account'" : "No transactions found")</p>
+            </div>
+        }
+        @foreach (var item in Transactions.Select((tran, index) => (tran: tran, index: index)))
+        {
+            var monthChange = lastDate.HasValue && lastDate.Value.Month != item.tran.Date.Month;
+            <a href="javascript:" role="button" class="@GetRowClass(item.tran, monthChange, item.index)" @onclick="_ => SelectTransaction(item.tran)" data-index="@item.index">
+                <div class="col-9">
+                    @if (item.tran.TranType == TransactionType.Transfer)
+                    {
+                        @if ((item.tran.Context ?? ListContext) == TransactionListContext.Category)
+                        {
+                            @item.tran.AccountName
+                
+                            @: > @item.tran.DestinationAccountName
+                        }
+                        else if ((item.tran.Context ?? ListContext) == TransactionListContext.Account)
+                        {
+                            if (item.tran.Amount >= 0)
+                            {
+                                @:To @item.tran.DestinationAccountName
+                            }
+                            else
+                            {
+                                @:From @item.tran.AccountName
+                            }
+                        }
+                        else
+                        {
+                            @item.tran.AccountName
+                
+                            @: > @item.tran.DestinationAccountName
+                        }
+                    }
+                    else
+                    {
+                        @item.tran.Payee
+                    }
+                </div>
+                <div class="col-3 text-end">@formatService.FormatTranAmount(item.tran.Amount, item.tran.Currency)</div>
+                <div class="col-9 account-val text-secondary">
+                    @if (!item.tran.IsCleared)
+                    {
+                        <i class="fa-solid fa-magnifying-glass me-1" title="Unreviewed"></i>
+                    }
+                    @if ((item.tran.Context ?? ListContext) == TransactionListContext.Category)
+                    {
+                        if (item.tran.TranType == TransactionType.Simple)
+                        {
+                            @item.tran.AccountName
+                        }
+                        else if (item.tran.TranType == TransactionType.Split)
+                        {
+                            @:Split | @item.tran.AccountName
+                        }
+                        else if (item.tran.TranType == TransactionType.Transfer)
+                        {
+                            @:Transfer
+                        }
+                        else if (item.tran.TranType == TransactionType.TransferPart)
+                        {
+                            if (item.tran.Amount >= 0)
+                            {
+                                @:Transfer from @item.tran.AccountName
+                            }
+                            else
+                            {
+                                @:Transfer to @item.tran.AccountName
+                            }
+                        }
+                        else
+                        {
+                            @item.tran.AccountName
+                        }
+                    }
+                    else if ((item.tran.Context ?? ListContext) == TransactionListContext.Account)
+                    {
+                        if (item.tran.TranType == TransactionType.Simple)
+                        {
+                            @item.tran.CategoryName
+                        }
+                        else if (item.tran.TranType == TransactionType.Split)
+                        {
+                            @:Split
+                        }
+                        else if (item.tran.TranType == TransactionType.Transfer)
+                        {
+                            @:Transfer
+                        }
+                        else if (item.tran.TranType == TransactionType.TransferPart)
+                        {
+                            @:Transfer
+                        }
+                        else
+                        {
+                            @item.tran.AccountName
+                        }
+                    }
+                    else
+                    {
+                        if (item.tran.TranType == TransactionType.Simple)
+                        {
+                            @item.tran.CategoryName
+                
+                            @: | @item.tran.AccountName
+                        }
+                        else if (item.tran.TranType == TransactionType.Split)
+                        {
+                            @:Split | @item.tran.AccountName
+                        }
+                        else if (item.tran.TranType == TransactionType.Transfer)
+                        {
+                            @:Transfer
+                        }
+                        else if (item.tran.TranType == TransactionType.TransferPart)
+                        {
+                            if (item.tran.Amount >= 0)
+                            {
+                                @:Transfer from @item.tran.AccountName
+                            }
+                            else
+                            {
+                                @:Transfer to @item.tran.AccountName
+                            }
+                        }
+                        else
+                        {
+                            @item.tran.AccountName
+                        }
+                    }
+                </div>
+                <div class="col-3 date-val text-secondary text-end">
+                    @formatService.FormatDate(item.tran.Date)
+                </div>
+                <div class="@(ListContext == TransactionListContext.Account ? "col-9" : "col-12")">
+                    <small class="text-secondary tran-notes">@FormatService.LimitLength(item.tran.Notes, 128)</small>
+                </div>
+                @if (ListContext == TransactionListContext.Account)
+                {
+                    <div class="col-3 text-end balance-val" title="Balance after transaction">
+                        <small>
+                            @if (item.tran.RunningBalance != null)
+                            {
+                                @formatService.FormatBalance(item.tran.RunningBalance.Value, item.tran.Currency)
+                            }
+                            else
+                            {
+                                @:?
+                            }
+                        </small>
+                    </div>
+                }
+            </a>
+            lastDate = item.tran.Date;
+        }
+    </div>
+    @if (HasMore || LoadingMore || LoadMoreLoadError != null)
+    {
+        <LoadingPanel IsLoading="LoadingMore" ErrorMessage="@LoadMoreLoadError" OnRetry="LoadMore">
+            <div class="text-center m-4">
+                <a href="javascript:" @onclick="LoadMore">Load more</a>
+            </div>
+        </LoadingPanel>
+
+    }
+</div>
+
+@code {
+
+
+    [Parameter]
+    public List<TransactionDisplay> Transactions { get; set; }
+
+    [Parameter]
+    public long? ActiveTransactionId { get; set; }
+
+    [Parameter]
+    public bool HasMore { get; set; }
+
+    [Parameter]
+    public string LoadMoreLoadError { get; set; }
+
+    [Parameter]
+    public TransactionListContext ListContext { get; set; }
+
+    [Parameter]
+    public bool LoadingMore { get; set; }
+
+    [Parameter]
+    public bool ShowTransactionsNotSupported { get; set; }
+
+    //event to request loging more transactions
+    [Parameter]
+    public EventCallback OnLoadMore { get; set; }
+
+    [Parameter]
+    public EventCallback OnNavidateLeft { get; set; }
+
+    [Parameter]
+    public EventCallback OnNavidateRight { get; set; }
+
+    //event to request loging more transactions
+    [Parameter]
+    public EventCallback<TransactionDisplay> TransactionSelected { get; set; }
+
+    private string GetRowClass(TransactionDisplay transaction, bool isMonthOpen, int index)
+    {
+        var sb = new StringBuilder("row g-0 tran-row");
+        if (ActiveTransactionId == transaction.Id)
+        {
+            sb.Append(" active");
+        }
+        if (selectedIndex == index)
+        {
+            sb.Append(" keyboard-selected");
+        }
+        if (isMonthOpen)
+        {
+            sb.Append(" next-month-open");
+        }
+        return sb.ToString();
+    }
+
+    private async Task LoadMore()
+    {
+        await OnLoadMore.InvokeAsync();
+    }
+
+    private async Task SelectTransaction(TransactionDisplay tran)
+    {
+        await TransactionSelected.InvokeAsync(tran);
+    }
+
+    private bool preventKeyDownDefault;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        preventKeyDownDefault = false;
+        if (Transactions == null || !Transactions.Any())
+            return;
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                if (selectedIndex < Transactions.Count - 1)
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex++;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                break;
+            case "ArrowLeft":
+                preventKeyDownDefault = true;
+                await OnNavidateLeft.InvokeAsync();
+                break;
+            case "ArrowRight":
+                if (OnNavidateRight.HasDelegate)
+                {
+                    preventKeyDownDefault = true;
+                    await OnNavidateRight.InvokeAsync();
+                }
+                break;
+            case "ArrowUp":
+                if (selectedIndex > 0)
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex--;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                else if (selectedIndex == -1 && Transactions.Any())
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex = 0;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                break;
+            case "Enter":
+                if (selectedIndex >= 0 && selectedIndex < Transactions.Count)
+                {
+                    preventKeyDownDefault = true;
+                    await SelectTransaction(Transactions[selectedIndex]);
+                }
+                break;
+        }
+    }
+
+    private async Task ScrollToSelectedItem()
+    {
+        await Task.Yield(); // Ensure UI updates before scrolling
+        await utils.ScrollToSelectedItem(containerRef, "keyboard-selected");
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Find the index of the active transaction
+        if (ActiveTransactionId.HasValue && Transactions != null)
+        {
+            var activeIndex = Transactions.FindIndex(t => t.Id == ActiveTransactionId);
+            if (activeIndex >= 0)
+            {
+                selectedIndex = activeIndex;
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await TryFocus();
+        }
+    }
+
+    public Task FocusAsync()
+    {
+        return TryFocus();
+    }
+
+    private async Task TryFocus()
+    {
+        if (containerRef.Context != null && containerRef.Id != null)
+        {
+            try
+            {
+                await containerRef.FocusAsync();
+            }
+            catch
+            {
+                //ignore error
+            }
+        }
+    }
+}

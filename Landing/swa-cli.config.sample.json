@@ -1,0 +1,12 @@
+{
+  "$schema": "https://aka.ms/azure/static-web-apps-cli/schema",
+  "configurations": {
+    "landing": {
+      "appLocation": "wwwroot",
+      "outputLocation": ".",
+      "appName": "<yourappname>",
+      "resourceGroup": "<yourresourcegroupname>",
+      "env": "production"
+    }
+  }
+}

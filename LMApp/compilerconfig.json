@@ -1,0 +1,26 @@
+﻿[
+  {
+    "outputFile": "Controls/TransactionList.razor.css",
+    "inputFile": "Controls/TransactionList.razor.scss"
+  },
+  {
+    "outputFile": "wwwroot/css/app.css",
+    "inputFile": "wwwroot/css/app.scss"
+  },
+  {
+    "outputFile": "Controls/CategoriesList.razor.css",
+    "inputFile": "Controls/CategoriesList.razor.scss"
+  },
+  {
+    "outputFile": "Controls/AccountsList.razor.css",
+    "inputFile": "Controls/AccountsList.razor.scss"
+  },
+  {
+    "outputFile": "Layout/NavMenu.razor.css",
+    "inputFile": "Layout/NavMenu.razor.scss"
+  },
+  {
+    "outputFile": "Pages/Purchase.razor.css",
+    "inputFile": "Pages/Purchase.razor.scss"
+  }
+]

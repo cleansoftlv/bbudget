@@ -1,0 +1,374 @@
+﻿@using LMApp.Models.Account;
+@using System.Diagnostics.CodeAnalysis
+@using System.Net
+@using LMApp.Models.Licenses
+@using LMApp.Models.UI
+@using Shared.License
+@using Shared.Login
+@page "/license/purchase"
+@page "/license/purchase/return/{orderId:int?}"
+@inherits BasePage
+@inject FormatService formatService
+@inject LicenseService licenseService
+<PageTitle>Purchase License</PageTitle>
+<LoadingPanel IsLoading="IsLoading || Products == null" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    <h1>License Purchase</h1>
+    @if (orderId != null)
+    {
+        <LoadingPanel IsLoading="paymentStatus == null" ErrorMessage="@StatusError" OnRetry="ReloadStatus">
+            @switch (paymentStatus.OrderStatus)
+            {
+                case OrderStatus.InProgress:
+                    <Alert Color="Color.Info">
+                        <p>Order is in progress. Please wait.</p>
+                        <div>
+                            <Spinner />
+                        </div>
+                    </Alert>
+                    break;
+                case OrderStatus.Failed:
+                    <Alert Color="Color.Warning">
+                        <p>
+                            Order failed. Please contact customer support.
+                        </p>
+                    </Alert>
+                    <div>
+                        <a href="license/purchase" class="btn btn-primary">Retry Payment</a>
+                    </div>
+                    break;
+                case OrderStatus.Completed:
+                    <Alert Color="Color.Success">
+                        <p>
+                            Order was paid successfully. License was issued successfully.
+                        </p>
+                    </Alert>
+                    <div>
+                        <a href="/license" class="btn btn-primary">Continue</a>
+                    </div>
+                    break;
+                case OrderStatus.Cancelled:
+                    <Alert Color="Color.Secondary">
+                        <p>
+                            Order was canceled.
+                        </p>
+                    </Alert>
+                    <div>
+                        <a href="license/purchase" class="btn btn-primary">Retry Payment</a>
+                    </div>
+                    break;
+                case OrderStatus.Refunded:
+                    <Alert Color="Color.Secondary">
+                        <p>
+                            Order was refunded.
+                        </p>
+                    </Alert>
+                    <div>
+                        <a href="license/purchase" class="btn btn-primary">Retry Payment</a>
+                    </div>
+                    break;
+                case OrderStatus.Created:
+                    <Alert Color="Color.Warning">
+                        <p>
+                            Order was not paid. Please retry the payment.
+                        </p>
+                    </Alert>
+                    <div>
+                        @if (paymentStatus.CanRetry)
+                        {
+                            <a href="@paymentStatus.CheckoutUrl" class="btn btn-primary">Retry Payment</a>
+                        }
+                        else
+                        {
+                            <a href="license/purchase" class="btn btn-primary">Retry Payment</a>
+                        }
+                    </div>
+                    @if (paymentStatus.LastPaymentStatus != null)
+                    {
+                        <h5 class="mt-4">Payment Details</h5>
+                        <dl>
+                            <dt>Payment Status</dt>
+                            <dd>@ConvertPaymentStatus(paymentStatus.LastPaymentStatus.Value)</dd>
+                            @if (paymentStatus.LastPaymentDeclineReason != null)
+                            {
+                                <dt>Reason</dt>
+                                <dd>@ConvertDeclineReason(paymentStatus.LastPaymentDeclineReason)</dd>
+                            }
+                            @if (!String.IsNullOrEmpty(paymentStatus.LastPaymentBankMessage))
+                            {
+                                <dt>Message for the Bank</dt>
+                                <dd>@paymentStatus.LastPaymentBankMessage</dd>
+                            }
+                        </dl>
+                    }
+                    break;
+            }
+        </LoadingPanel>
+    }
+    else if (!Products.Any())
+    {
+        <Alert Color="Color.Warning">
+            <p>
+                There are no products available for purchase. Please contact customer support.
+            </p>
+        </Alert>
+    }
+    else
+    {
+        <div class="container-fluid g-0">
+            @foreach (var product in Products)
+            {
+                //Show products as cards and prices with buttons inside card
+                <div class="row">
+                    <div class="col-12 col-md-6">
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">@product.Name</h5>
+                                <p class="card-subtitle mb-4">Provides access to all BBudget features for @formatService.FormatProductInterval(product.Days)</p>
+                                <LoadingPanel IsLoading="product.Id == SelectedProductId && CreatingPayment"
+                                              ErrorMessage="@CreatingPaymentError"
+                                              OnRetry="RetryStartPayment">
+                                    @if (product.Id == SelectedProductId && CreatedOrderId != null)
+                                    {
+                                        <div>
+                                            <a href="license/purchase/return/@CreatedOrderId" class="btn btn-success me-2 mb-4">Check order status</a>
+                                            <Button class="me-2 mb-4" Color="Color.Secondary" IsOutline="true" OnClick="()=>CreatedOrderId = null">
+                                                New order
+                                            </Button>
+                                        </div>
+
+                                    }
+                                    else if (!product.Prices.Any())
+                                    {
+                                        <Alert Color="Color.Warning">
+                                            <p>
+                                                There are no prices available for this product. Please contact customer support.
+                                            </p>
+                                        </Alert>
+                                    }
+                                    else if (product.Prices.Count > 1)
+                                    {
+                                        <p class="card-text mb-2">Please select currency and price</p>
+                                        <div class="price-buttons">
+                                            @foreach (var price in product.Prices)
+                                            {
+                                                <Button class="me-2 mb-4" Color="Color.Primary" Size="Size.Large" OnClick="()=>SelectPrice(product, price)">
+                                                    @formatService.FormatPrice(price.Price, price.Currency)
+                                                </Button>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        var price = product.Prices[0];
+
+                                        <p class="card-text mb-4 price-label">@formatService.FormatPrice(price.Price, price.Currency)</p>
+                                        <Button class="me-2 mb-4" Color="Color.Primary" Size="Size.Large" OnClick="()=>SelectPrice(product, price)">
+                                            Choose
+                                        </Button>
+                                    }
+                                </LoadingPanel>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    <h5 class="mt-4">
+        About the License
+    </h5>
+    <p>License covers unlimited number of LM accounts (added to your profile) and unlimited number of BBudget users in these accounts.</p>
+    <p>When you renew your license before the previous license has expired, a new license will be issued from the date of the current license expiration.</p>
+</LoadingPanel>
+
+@code {
+
+    public override bool SettingsRequired => false;
+    public override bool AccountRequired => false;
+
+    public List<ProductInfo> Products { get; set; }
+    public bool CreatingPayment { get; set; }
+    public string CreatingPaymentError { get; set; }
+    public int? SelectedProductId { get; set; }
+    public int? SelectedPriceId { get; set; }
+    private int? CreatedOrderId { get; set; }
+
+    [Parameter]
+    public int? orderId { get; set; }
+
+    private PaymentStatusInfo paymentStatus;
+    private string StatusError { get; set; }
+
+    private string ConvertPaymentStatus(PaymentStatus status)
+    {
+        return status switch
+        {
+            PaymentStatus.Cancelled => "Payment cancelled",
+            PaymentStatus.Failed => "Payment failed",
+            PaymentStatus.Completed => "Payment sucessfull",
+            PaymentStatus.Declined or PaymentStatus.SoftDeclined => "Payment declined",
+            PaymentStatus.Unknown => "Unknown status",
+            _ => "In progress"
+        };
+    }
+
+    private string ConvertDeclineReason(string declineReason)
+    {
+        return declineReason switch
+        {
+            DeclineReasons.ExpiredCard => "The card has expired.",
+            DeclineReasons.ThreeDsChallengeAbandoned
+                or DeclineReasons.ThreeDsChallengeFailedManually
+                or DeclineReasons.CustomerChallengeAbandoned
+                or DeclineReasons.CustomerChallengeFailed
+                => "Secure challenge failed.",
+            DeclineReasons.CardholderNameMissing
+                or DeclineReasons.CustomerNameMismatch
+                or DeclineReasons.InvalidAddress
+                or DeclineReasons.InvalidCvv
+                or DeclineReasons.InvalidExpiry
+                or DeclineReasons.InvalidPin
+                => "Card details are incorrect (name, number, CVV or expiration).",
+            DeclineReasons.DoNotHonour
+                or DeclineReasons.HighRisk
+                or DeclineReasons.PickUpCard
+                or DeclineReasons.RestrictedCard
+                or DeclineReasons.SuspectedFraud
+                => "Transaction was declined by the bank.",
+            DeclineReasons.InsufficientFunds
+                => "Insufficient funds in the account.",
+            DeclineReasons.InvalidAmount => "The amount specified is invalid.",
+            DeclineReasons.InvalidCard => "The card provided is invalid.",
+            DeclineReasons.InvalidCountry => "The country is invalid for this transaction.",
+            DeclineReasons.InvalidEmail => "The email address provided is invalid.",
+            DeclineReasons.InvalidMerchant => "The merchant is invalid.",
+            DeclineReasons.InvalidPhone => "The phone number provided is invalid.",
+            DeclineReasons.IssuerNotAvailable => "The card issuer is not available.",
+            DeclineReasons.RejectedByCustomer => "The transaction was rejected by the customer.",
+            DeclineReasons.TechnicalError => "A technical error occurred.",
+            DeclineReasons.TransactionNotAllowedForCardholder => "The transaction is not allowed for the cardholder.",
+            DeclineReasons.UnknownCard => "The card is unknown.",
+            DeclineReasons.WithdrawalLimitExceeded => "The withdrawal limit has been exceeded.",
+            _ => "Unknown decline reason."
+        };
+    }
+
+
+
+    private Task SelectPrice(ProductInfo product, ProductPriceInfo price)
+    {
+        SelectedProductId = product.Id;
+        SelectedPriceId = price.Id;
+        return DoStartPayment();
+    }
+
+    private Task RetryStartPayment()
+    {
+        return DoStartPayment();
+    }
+
+    private async Task DoStartPayment()
+    {
+        if (SelectedPriceId == null)
+        {
+            CreatingPayment = false;
+            CreatingPaymentError = null;
+            return;
+        }
+
+        CreatingPayment = true;
+        CreatingPaymentError = null;
+        CreateOrderResponse resp;
+        try
+        {
+            resp = await licenseService.StartPayment(SelectedPriceId.Value);
+        }
+        catch (HttpRequestException ex)
+        {
+            ex.LogIfRequired(log);
+            CreatingPaymentError = ex.GetDescriptionForUser();
+            return;
+        }
+        CreatedOrderId = resp.Id;
+        navigationManager.NavigateTo(resp.CheckoutUrl);
+        await Task.Delay(3000);
+        CreatingPayment = false;
+        CreatingPaymentError = null;
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (LoadCancelled)
+        {
+            return;
+        }
+
+        IsLoading = true;
+        try
+        {
+            Products = await licenseService.GetProducts();
+        }
+        catch (HttpRequestException ex)
+        {
+            ex.LogIfRequired(log);
+            LoadError = ex.GetDescriptionForUser();
+            return;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async void ProcessStatus()
+    {
+        if (paymentStatus == null)
+        {
+            StatusError = "Order was not found";
+        }
+        else if (paymentStatus.OrderStatus == OrderStatus.InProgress)
+        {
+            await Task.Delay(5000);
+            await InvokeAsync(ReloadStatus);
+        }
+    }
+
+    private async Task ReloadStatus()
+    {
+        StatusError = null;
+        if (orderId == null)
+        {
+            return;
+        }
+        try
+        {
+            paymentStatus = await licenseService.GetOrder(orderId.Value);
+            if (paymentStatus.NewSignature != null)
+            {
+                await userService.ResetAuthInfoIfRequired(paymentStatus.NewSignature);
+            }
+            ProcessStatus();
+        }
+        catch (HttpRequestException ex)
+        {
+            ex.LogIfRequired(log);
+            StatusError = ex.GetDescriptionForUser();
+        }
+    }
+
+    override protected async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        if (LoadCancelled || Products == null)
+        {
+            return;
+        }
+
+        if (orderId != null && orderId != paymentStatus?.OrderId)
+        {
+            await ReloadStatus();
+        }
+    }
+}

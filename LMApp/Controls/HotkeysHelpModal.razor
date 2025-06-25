@@ -1,0 +1,102 @@
+@using BootstrapBlazor.Components
+@using LMApp.Models.UI
+
+<Modal @ref="_modal" IsKeyboard="true" IsFade="false">
+    <ModalDialog Title="Transaction Form Hotkeys"
+                 ShowCloseButton="true"
+                 Size="Size.Medium">
+        <BodyTemplate>
+            <div class="hotkeys-help">
+                <h6 class="mb-3">Available Keyboard Shortcuts:</h6>
+                
+                <div class="hotkey-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="hotkey-description">Save/Create transaction</span>
+                        <kbd class="hotkey-combo">Ctrl + Shift + S</kbd>
+                    </div>
+                </div>
+
+                <div class="hotkey-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="hotkey-description">Save and Next / Create and Next</span>
+                        <kbd class="hotkey-combo">Ctrl + Shift + P</kbd>
+                    </div>
+                </div>
+
+                <div class="hotkey-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="hotkey-description">Delete transaction</span>
+                        <kbd class="hotkey-combo">Ctrl + Shift + D</kbd>
+                    </div>
+                </div>
+
+                <div class="hotkey-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="hotkey-description">Copy transaction</span>
+                        <kbd class="hotkey-combo">Ctrl + Shift + C</kbd>
+                    </div>
+                </div>
+
+                <div class="hotkey-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="hotkey-description">Create transfer</span>
+                        <kbd class="hotkey-combo">Ctrl + Shift + G</kbd>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-4">
+                    <small>
+                        <strong>Note:</strong> These keyboard shortcuts use Ctrl+Shift combinations which work 
+                        consistently across Windows, Mac, and Linux. They are active globally when a transaction 
+                        form is open and won't interfere with browser defaults or input field operations.
+                    </small>
+                </div>
+            </div>
+        </BodyTemplate>
+        <FooterTemplate>
+            <Button Color="Color.Secondary" @onclick="Hide">Close</Button>
+        </FooterTemplate>
+    </ModalDialog>
+</Modal>
+
+<style>
+    .hotkeys-help .hotkey-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .hotkeys-help .hotkey-item:last-child {
+        border-bottom: none;
+    }
+    
+    .hotkey-combo {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-family: Monaco, Consolas, "Liberation Mono", Courier, monospace;
+        font-size: 0.85em;
+        color: #495057;
+    }
+    
+    .hotkey-description {
+        font-weight: 500;
+    }
+</style>
+
+@code {
+    private Modal _modal;
+
+    public async Task Show()
+    {
+        StateHasChanged();
+        await Task.Yield();
+        await _modal.Show();
+    }
+
+    public async Task Hide()
+    {
+        await _modal.Close();
+        StateHasChanged();
+    }
+}

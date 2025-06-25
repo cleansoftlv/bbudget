@@ -1,0 +1,764 @@
+﻿@page "/"
+@using LMApp.Models
+@using LMApp.Models.Account
+@using LMApp.Models.Categories
+@using LMApp.Models.Transactions
+@using LMApp.Models.UI
+@using LMApp.Controls
+@inject IHttpClientFactory HttpClientFactory
+@inject FormatService formatService
+@inject BudgetService budgetService
+
+@layout FullLayout
+@inherits BaseTransactionFilterPage
+
+
+<PageTitle>Budget</PageTitle>
+<LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    <div class="container-fluid p-0 px-lg-1 px-xl-2">
+        <div class="row g-0 gx-lg-1 gx-xl-2">
+            <div class="@PrimaryPanelClass()">
+                <div class="ui-panel" id="first-ui-panel">
+                    <div class="p-header xs">
+                        <MobileTabNav />
+                        <div class="header-text">
+                            <div>
+                                <Button Icon="fa-solid fa-caret-left" Color="Color.None" class="icon-btn" OnClick="()=>NavigateToMonth(-1)" />
+                                @BudgetName
+                                <Button Icon="fa-solid fa-caret-right" Color="Color.None" class="@(!NextMonthVisible? "invisible": "icon-btn")" OnClick="()=>NavigateToMonth(+1)" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-body p-0">
+                        <LoadingPanel IsLoading="@(categories == null)"
+                                      ErrorMessage="@BudgetLoadError"
+                                      OnRetry="RetryLoadBudget">
+                            <CategoriesList @ref="categoriesListRef" Categories="categories"
+                                            ActiveCategoryId="@CurrentCategory?.CategoryId"
+                                            OnNavidateRight="CatListNavigateRight"
+                                            CategorySelected="e => NavigateToCategory(e)" />
+                        </LoadingPanel>
+                    </div>
+                </div>
+            </div>
+            <div class="@TransactionListClass()">
+                <div class="ui-panel" id="second-ui-panel">
+                    <div class="p-header with-button">
+                        <Button Icon="fa-solid fa-xmark" Color="Color.Secondary" IsOutline="true" class="icon-btn" OnClick="CloseTranList" />
+                        <div class="header-text">
+                            @CurrentCategory?.Name
+                        </div>
+                    </div>
+                    <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
+                        <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
+                            @if (LoadingTransactions)
+                            {
+                                <p class="text-center m-2"><Spinner Size="Size.Small" /></p>
+                            }
+                            else if (NextMonthVisible)
+                            {
+                                <div class="text-center p-2">
+                                    <a href="javascript:" @onclick="() => NavigateToMonth(1, nav: NavDirection.None)"><i class="fa-solid fa-arrow-up"></i> @MonthStart.AddMonths(1).ToString("MMMM yyyy")</a>
+                                </div>
+                            }
+                            @if (BudgetLoadError != null)
+                            {
+                                <LoadingPanel ErrorMessage="@BudgetLoadError" OnRetry="RetryLoadBudget" />
+                            }
+                            <TransactionList @ref="transactionListRef" Transactions="@Transactions"
+                                             HasMore="HasMoreTrans"
+                                             LoadMoreLoadError="@LoadMoreTransactionsError"
+                                             ListContext="transactionListContext"
+                                             OnNavidateLeft="FocusCatList"
+                                             LoadingMore="LoadingMoreTrans"
+                                             ActiveTransactionId="SelectedTransaction?.Id"
+                                             TransactionSelected="NavigateToTransaction"
+                                             OnLoadMore="LoadMoreTransactions" />
+
+                        </InfiniteScroll>
+                    </LoadingPanel>
+                </div>
+            </div>
+            <div class="@TransactionFormClass()">
+                <div class="ui-panel" id="third-ui-panel">
+                    <div class="p-header with-button">
+                        <Button Icon="fa-solid fa-xmark" Color="Color.Secondary" IsOutline="true" class="icon-btn" OnClick="CloseTranForm" />
+                        <div class="header-text">
+                            Transaction
+                        </div>
+                    </div>
+                    <div class="p-body">
+                        <LoadingPanel IsLoading="@(TransactionInEdit == null)"
+                                      ErrorMessage="@LoadSingleTransactionError"
+                                      OnRetry="RetryShowTransaction">
+                            <TransactionForm Transaction="@TransactionInEdit"
+                                             SaveTransaction="t => SaveTransaction(t)"
+                                             SaveTransactionAndNext="SaveTransactionAndNext"
+                                             SaveError="@SaveTransactionError"
+                                             Ungroup="UngroupWithConfirm"
+                                             CreateTransfer="CreateTransfer"
+                                             Copy="CopyTransaction"
+                                             Delete="DeleteTransaction"
+                                             IsSaving="IsSaving"
+                                             Cancel="CloseTranForm" />
+                        </LoadingPanel>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!ShowTranForm)
+    {
+        <div class="new-btn-container">
+            <Button Icon="fa-solid fa-plus" Color="Color.Primary" class="rounded-circle" OnClick="NavigateToNewTransaction" />
+        </div>
+    }
+</LoadingPanel>
+
+@code {
+    [SupplyParameterFromQuery(Name = "cid")]
+    public long? UrlCategoryId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mid")]
+    public string UrlMonthId { get; set; }
+
+    [Inject]
+    public ILogger<Home> _log { get; set; }
+
+    private BudgetCategoryDisplay[] categories;
+    private BudgetCategoryDisplay CurrentCategory;
+    private string BudgetName;
+    private string BudgetLoadError;
+    private CategoriesList categoriesListRef;
+    private TransactionList transactionListRef;
+
+    private DateTime MonthStart;
+    private bool NextMonthVisible = false;
+
+    private async Task NavigateToCategory(BudgetCategoryDisplay category)
+    {
+        if (UrlCategoryId == category.CategoryId)
+            return;
+
+        var task1 = ShowCategory(category, force: true);
+
+        var task2 = ResponsiveNavigate(
+            navigationManager.GetUriWithQueryParameter("cid", category.CategoryId),
+            NavDirection.Forward);
+
+        await Task.WhenAll(task1, task2.AsTask());
+    }
+
+    private async Task FocusCatList()
+    {
+        if (categoriesListRef != null)
+        {
+            await categoriesListRef.FocusAsync();
+        }
+    }
+
+
+    private async Task RetryLoadTransactions()
+    {
+        LoadTransactionsError = null;
+        if (CurrentCategory != null)
+        {
+            await ShowCategory(CurrentCategory, force: true);
+        }
+        else
+        {
+            await CloseTranList();
+        }
+    }
+
+    private async Task CatListNavigateRight()
+    {
+        if (transactionListRef != null)
+        {
+            await transactionListRef.FocusAsync();
+        }
+    }
+
+    private async Task ShowCategory(BudgetCategoryDisplay category, bool force = false)
+    {
+        if (category.CategoryId == CurrentCategory?.CategoryId && !force)
+            return;
+
+        CurrentCategory = category;
+        await StartTransition(BreakPoint.Large);
+
+        LoadingMoreTrans = false;
+        HasMoreTrans = false;
+        Transactions = null;
+        LoadTransactionsError = null;
+
+        transactionListContext = category == null
+            || category.CategoryType == BudgetCategoryType.Total
+                ? TransactionListContext.None
+                : TransactionListContext.Category;
+
+        ShowTranList = true;
+        RefreshActivePage();
+        await EndTransition();
+
+        GetTransactionsResult res;
+        var loadingId = category.CategoryId;
+        try
+        {
+            res = await budgetService.LoadCategoryTransactions(loadingId,
+                endDate: NextMonthVisible ? MonthStart.AddMonths(1).AddDays(-1) : null);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (!ShowTranList || loadingId != CurrentCategory?.CategoryId)
+            {
+                return;
+            }
+
+            ex.LogIfRequired(log);
+            LoadTransactionsError = ex.GetDescriptionForUser();
+            return;
+        }
+
+        if (!ShowTranList || loadingId != CurrentCategory?.CategoryId)
+        {
+            return;
+        }
+
+        UnfilteredTransactionCount = res.Transactions.Count;
+        Transactions = FilterTransactions(res.Transactions).ToList();
+        HasMoreTrans = res.HasMore;
+    }
+
+
+    protected override async Task LoadMoreTransactions()
+    {
+        HasMoreTrans = false;
+        LoadingMoreTrans = true;
+        LoadMoreTransactionsError = null;
+        StateHasChanged();
+
+
+        GetTransactionsResult res;
+        var loadingId = CurrentCategory.CategoryId;
+        try
+        {
+            res = await budgetService.LoadCategoryTransactions(
+                loadingId,
+                offset: Math.Max(0, UnfilteredTransactionCount - ClientConstants.OverlapOffsetForTransactions),
+                endDate: NextMonthVisible ? MonthStart.AddMonths(1).AddDays(-1) : null);
+
+            if (loadingId != CurrentCategory?.CategoryId || !ShowTranList)
+            {
+                return;
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            if (loadingId != CurrentCategory?.CategoryId || !ShowTranList)
+            {
+                return;
+            }
+            ex.LogIfRequired(log);
+            LoadMoreTransactionsError = ex.GetDescriptionForUser();
+            LoadingMoreTrans = false;
+            return;
+        }
+
+        var existingIds = new HashSet<long>(Transactions.Select(x => x.Id));
+        var filtered = res.Transactions.Where(x => !existingIds.Contains(x.Id));
+        UnfilteredTransactionCount += filtered.Count();
+        filtered = FilterTransactions(filtered);
+        Transactions.AddRange(filtered);
+        HasMoreTrans = res.HasMore;
+
+        if (settingsService.Settings.SortTransactionOnLoadMore)
+        {
+            Transactions.Sort(TransactionsService.SortTransacactions);
+        }
+
+        LoadingMoreTrans = false;
+        StateHasChanged();
+    }
+
+    protected override async Task AddNewSplitTransaction(SplitTransactionForEdit split)
+    {
+        if (transactionListContext == TransactionListContext.Category)
+        {
+            var parts = split.Children.Where(x => x.CategoryId == CurrentCategory.CategoryId);
+            if (!parts.Any())
+                return;
+
+            foreach (var item in parts)
+            {
+                var tran = await transactionsService.GetTransactionAsync(item.Id);
+                if (tran == null)
+                    continue;
+
+                item.SavedTransaction = tran.Transaction;
+                AddNewTransaction(tran, split);
+            }
+        }
+        else
+        {
+            var tran = await transactionsService.GetTransactionAsync(split.Id);
+            if (tran == null)
+                return;
+
+            split.SavedTransaction = tran.Transaction;
+            AddNewTransaction(tran, split);
+        }
+    }
+
+    private IEnumerable<TransactionDisplay> FilterTransactions(IEnumerable<TransactionDisplay> tran)
+    {
+        var res = tran.Where(x => !x.IsInsideGroup);
+
+        if (transactionListContext == TransactionListContext.Category)
+        {
+            res = res.Where(x => x.TranType != TransactionType.Split);
+        }
+        else
+        {
+            res = res.Where(x => x.TranType != TransactionType.SplitPart);
+        }
+
+        return res;
+    }
+
+    private async Task CloseTranList()
+    {
+        if (!ShowTranList)
+            return;
+
+        await StartTransition(BreakPoint.Large);
+        DoCloseTranList();
+        await EndTransition();
+
+        await ResponsiveNavigate(
+            navigationManager.GetUriWithQueryParameter("cid", (long?)null),
+            NavDirection.Back);
+        
+        // Focus the categories list after closing transaction list
+        if (categoriesListRef != null)
+        {
+            await Task.Yield(); // Let Blazor render the changes
+            await categoriesListRef.FocusAsync();
+        }
+    }
+
+
+    private void DoCloseTranList()
+    {
+        if (!ShowTranList)
+            return;
+
+        HasMoreTrans = false;
+        LoadingMoreTrans = false;
+        Transactions = null;
+        //CurrentCategory = null;
+        transactionListContext = TransactionListContext.None;
+        ShowTranList = false;
+        RefreshActivePage();
+    }
+
+
+
+    protected override void RefreshActivePage()
+    {
+        if (ShowTranForm)
+        {
+            userService.SetActivePageState("Transaction", true);
+        }
+        else if (ShowTranList)
+        {
+            userService.SetActivePageState(CurrentCategory?.Name, true);
+        }
+        else
+        {
+            userService.ClearActivePageState();
+        }
+    }
+
+    private async Task ActiveBageBack()
+    {
+        if (ShowTranForm)
+        {
+            await CloseTranForm();
+        }
+        else if (ShowTranList)
+        {
+            await CloseTranList();
+        }
+    }
+
+    private async Task GoToMonth(DateTime month, bool allowCache = false)
+    {
+        if (month == MonthStart)
+            return;
+
+        MonthStart = month;
+        await SwitchMonth(0, allowCache);
+    }
+
+    private Task GoToMonth(string monthId, bool allowCache = false)
+    {
+        return GoToMonth(DateTime.ParseExact(monthId, "yyyyMM", null), allowCache);
+    }
+
+    private async Task SwitchMonth(int count, bool allowCache)
+    {
+        MonthStart = MonthStart.AddMonths(count);
+        BudgetName = MonthStart.ToString("MMMM yyyy");
+        NextMonthVisible = MonthStart.AddMonths(1) <= DateTime.Now;
+        await LoadBudget(allowCache);
+    }
+
+    private async Task RetryLoadBudget()
+    {
+        BudgetLoadError = null;
+        categories = null;
+
+        await LoadBudget(false);
+    }
+
+    private async Task NavigateToMonth(int count, NavDirection nav = NavDirection.Side)
+    {
+        var thisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        var goingToMonth = MonthStart.AddMonths(count);
+        var task1 = SwitchMonth(count, allowCache: false);
+        var task2 = ResponsiveNavigate(
+            navigationManager.GetUriWithQueryParameter("mid", goingToMonth == thisMonth ? null : goingToMonth.ToString("yyyyMM")),
+            nav);
+
+        await Task.WhenAll(task1, task2.AsTask());
+    }
+
+    private async Task RefreshBudgetInTheBackground()
+    {
+        var loadingMonth = MonthStart;
+
+        (BudgetCategoryDisplay[] categories, bool cacheHit) res;
+        try
+        {
+            res = await budgetService.LoadBudget(loadingMonth);
+        }
+        catch (HttpRequestException)
+        {
+            return;
+        }
+
+        var listToUpdate = categories;
+        if (loadingMonth != MonthStart || listToUpdate == null)
+            return;
+
+        var newCategories = new List<BudgetCategoryDisplay>();
+        foreach (var item in res.categories)
+        {
+            var cat = listToUpdate.FirstOrDefault(x => x.CategoryId == item.CategoryId);
+            cat?.UpdateWith(item);
+            if (cat == null)
+            {
+                newCategories.Add(item);
+            }
+        }
+        if (newCategories.Any())
+        {
+            categories = listToUpdate.Concat(newCategories)
+                .OrderBy(x => x.CategoryType)
+                .ThenBy(x => x.Name)
+                .ToArray();
+        }
+    }
+
+
+    private async Task LoadBudget(bool allowCache)
+    {
+        LoadingTransactions = true;
+        var loadingMonth = MonthStart;
+        categories = null;
+        BudgetLoadError = null;
+
+        (BudgetCategoryDisplay[] categories, bool cacheHit) res;
+        try
+        {
+            res = await budgetService.LoadBudget(loadingMonth, allowCache);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (loadingMonth != MonthStart)
+                return;
+
+            ex.LogIfRequired(log);
+            BudgetLoadError = ex.GetDescriptionForUser();
+            LoadingTransactions = false;
+            return;
+        }
+
+        if (loadingMonth != MonthStart)
+            return;
+
+        categories = res.categories;
+
+
+        if (ShowTranList && CurrentCategory != null)
+        {
+            var updated = categories.FirstOrDefault(x => x.CategoryId == CurrentCategory.CategoryId);
+            if (updated != null)
+            {
+                await ShowCategory(updated, force: true);
+            }
+            else
+            {
+                await CloseTranList();
+            }
+        }
+        LoadingTransactions = false;
+        if (res.cacheHit)
+        {
+            await RefreshBudgetInTheBackground();
+        }
+    }
+
+    protected override void PrepareNewTransaction(SimpleTransactionForEdit tran)
+    {
+        if (transactionListContext == TransactionListContext.Category)
+        {
+            tran.CategoryId = CurrentCategory.CategoryId;
+            if (CurrentCategory.CategoryType == BudgetCategoryType.Income)
+            {
+                tran.IsCredit = true;
+            }
+        }
+    }
+
+    protected override async Task CloseTranForm()
+    {
+        await base.CloseTranForm();
+        
+        // Focus the transaction list after closing transaction form
+        if (transactionListRef != null && ShowTranList)
+        {
+            await Task.Yield(); // Let Blazor render the changes
+            await transactionListRef.FocusAsync();
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (LoadCancelled)
+            return;
+
+        userService.SetActivePageBackHandler(EventCallback.Factory.Create(this, ActiveBageBack));
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (LoadCancelled || userService.CurrentAccount == null)
+            return;
+
+        if (!String.IsNullOrEmpty(UrlMonthId))
+        {
+            await GoToMonth(UrlMonthId, allowCache: true);
+        }
+        else
+        {
+            var currentMonthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            await GoToMonth(currentMonthStart, allowCache: true);
+        }
+
+        if (UrlCategoryId.HasValue)
+        {
+            if (categories != null)
+            {
+                var category = categories.FirstOrDefault(x => x.CategoryId == UrlCategoryId);
+                if (category != null)
+                {
+                    await ShowCategory(category);
+                }
+            }
+        }
+        else if (ShowTranList)
+        {
+            DoCloseTranList();
+        }
+
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task<bool> TransactionDeleted(BaseTransactionForEdit updated)
+    {
+        if (updated.TranType == TransactionType.Simple)
+        {
+            var simple = (SimpleTransactionForEdit)updated;
+            if (!SimpleTransactionDeleted(simple))
+            {
+                await RefreshBudgetInTheBackground();
+                return false;
+            }
+        }
+        else if (updated.TranType == TransactionType.Split)
+        {
+            var split = (SplitTransactionForEdit)updated;
+            foreach (var item in split.Children)
+            {
+                if (!SimpleTransactionDeleted(item))
+                {
+                    await RefreshBudgetInTheBackground();
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private bool SimpleTransactionDeleted(SimpleTransactionForEdit simple)
+    {
+        if (simple.Transaction.amount == 0)
+            return true;
+
+        var originalDate = DateTime.ParseExact(simple.Transaction.date, "yyyy-MM-dd", null);
+        if (!DateIsInShowBudget(originalDate))
+            return true;
+
+        var category = categories.FirstOrDefault(x => x.CategoryId == simple.CategoryId);
+        if (category == null)
+            return true;
+
+        if (!TryAddAmount(category,
+            simple.Currency,
+            -simple.Transaction.amount,
+            -simple.Transaction.to_base))
+        {
+            return false;
+        }
+
+        if (category.CategoryType != BudgetCategoryType.Expense)
+        {
+            return true;
+        }
+
+        var totalCategory = categories.FirstOrDefault(x => x.CategoryType == BudgetCategoryType.Total);
+        if (totalCategory == null)
+            return true;
+
+        return TryAddAmount(totalCategory,
+            simple.Currency,
+            -simple.Transaction.amount,
+            -simple.Transaction.to_base);
+    }
+
+    private bool SimpleTransactionAdded(SimpleTransactionForEdit simple)
+    {
+        if (simple.AmountWithSign == 0)
+            return true;
+
+        if (!DateIsInShowBudget(simple.Date))
+            return true;
+
+        var category = categories.FirstOrDefault(x => x.CategoryId == simple.CategoryId);
+        if (category == null)
+            return true;
+
+
+        if (!TryAddAmount(category,
+            simple.Currency,
+            simple.AmountWithSign ?? 0,
+            simple.SavedTransaction?.to_base))
+        {
+            return false;
+        }
+
+        if (category.CategoryType != BudgetCategoryType.Expense)
+        {
+            return true;
+        }
+
+        var totalCategory = categories.FirstOrDefault(x => x.CategoryType == BudgetCategoryType.Total);
+        if (totalCategory == null)
+            return true;
+
+        return TryAddAmount(totalCategory,
+            simple.Currency,
+            simple.AmountWithSign ?? 0,
+            simple.SavedTransaction?.to_base);
+    }
+
+    protected bool TryAddAmount(
+        BudgetCategoryDisplay category,
+        string currency,
+        decimal amount,
+        decimal? primaryCurrencyAmount)
+    {
+        if (String.Equals(category.Currency, currency, StringComparison.InvariantCultureIgnoreCase))
+        {
+            category.AddAmount(amount);
+            return true;
+        }
+        else if (string.Equals(category.Currency
+                    , settingsService.PrimaryCurrency
+                    , StringComparison.InvariantCultureIgnoreCase)
+            && primaryCurrencyAmount != null)
+        {
+            category.AddAmount(primaryCurrencyAmount.Value);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+
+    private bool DateIsInShowBudget(DateTime date)
+    {
+        return date >= MonthStart && date < MonthStart.AddMonths(1);
+    }
+
+    protected override async Task<bool> TransactionAdded(BaseTransactionForEdit updated)
+    {
+        if (updated.TranType == TransactionType.Simple)
+        {
+            var simple = (SimpleTransactionForEdit)updated;
+            if (!SimpleTransactionAdded(simple))
+            {
+                await RefreshBudgetInTheBackground();
+                return false;
+            }
+        }
+        else if (updated.TranType == TransactionType.Split)
+        {
+            var split = (SplitTransactionForEdit)updated;
+            foreach (var item in split.Children)
+            {
+                if (!SimpleTransactionAdded(item))
+                {
+                    await RefreshBudgetInTheBackground();
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    protected override bool ShouldAddTransactionToList(TransactionDisplay tran, BaseTransactionForEdit forEdit)
+    {
+        if (transactionListContext == TransactionListContext.Category)
+        {
+            if (tran.CategoryId == CurrentCategory?.CategoryId)
+                return true;
+
+            if (tran.TranType == TransactionType.Split)
+            {
+                var split = (SplitTransactionForEdit)forEdit;
+                return split.Children.Any(x => x.CategoryId == CurrentCategory?.CategoryId);
+            }
+
+            return false;
+        }
+        return true;
+    }
+}

@@ -1,0 +1,55 @@
+﻿@page "/about"
+@inherits BasePage
+@layout MainLayout
+
+<PageTitle>About</PageTitle>
+<h1>About the BBudget for Lunch Money</h1>
+<div class="container-fluid g-0">
+    <div class="row">
+        <div class="col-12">
+            <dl>
+                <dt>Author:</dt>
+                <dd><a href="https://www.cleansoft.lv">CleanSoft, SIA</a></dd>
+                <dt>Version:</dt>
+                <dd>@AppVersion</dd>
+                <dt>Support (email):</dt>
+                <dd><a href="mailto:info@cleansoft.lv">info@cleansoft.lv</a></dd>
+                <dt>Disclaimer:</dt>
+                <dd>BBudget is developed by CleanSoft and is not affiliated with or endorsed by Lunch Money. We use the Lunch Money public API solely to help you manage your transactions. All trademarks and rights belong to their respective owners.</dd>
+                <dt>Privacy policy</dt>
+                <dd>
+                    <ol>
+                        <li>
+                            <strong>Data Collection & Usage</strong>
+                            <p>This app integrates with the Lunch Money API to manage budget data. Your developer token and account settings are stored on the BBudget server. The application processes your financial data locally and does not send it to BBudget servers. The BBudget server only stores development tokens for easy account switching between devices. The BBudget server will request your LM user information using your developer token if you selected to log in with your LM account.</p>
+                        </li>
+                        <li>
+                            <strong>Analytics</strong>
+                            <p>We use Microsoft Application Insights to track app performance and usage analytics. This helps us improve the app but does not store personally identifiable information.</p>
+                        </li>
+                        <li>
+                            <strong>Cookies & Storage</strong>
+                            <p>The app uses cookies to authenticate you and cookies issued by Microsoft Application Insights. Analytics data may involve browser-based tracking mechanisms.</p>
+                        </li>
+                        <li>
+                            <strong>Third-Party Services</strong>
+                            <p><a href="https://lunchmoney.app/privacy">Lunch Money API’s privacy policy</a>  applies to financial data management. Microsoft’s Application Insights privacy policy applies to analytics tracking.</p>
+                        </li>
+                        <li>
+                            <strong>Your Choices</strong>
+                            <p>Right now all cookies that BBudget uses are necessary. To remove your personal data from BBudget, please delete your profile on the <a href="/auth">Profile</a> page.</p>
+                        </li>
+                    </ol>
+                    <p>Policy last updated: 19.04.2025</p>
+                </dd>
+            </dl>
+        </div>
+    </div>
+</div>
+@code {
+    [CascadingParameter(Name = "AppVersion")] public string AppVersion { get; set; }
+
+    public override bool AccountRequired => false;
+    public override bool AuthRequired => false;
+    public override bool SettingsRequired => false;
+}

@@ -1,0 +1,403 @@
+﻿@using LMApp.Controls.Bootstrap
+@using LMApp.Models
+@using LMApp.Models.Account
+@using LMApp.Models.Categories
+@using LMApp.Models.Context
+@using LMApp.Models.Transactions
+@using LMApp.Models.UI
+@inject SettingsService settingsService
+@inject FormatService formatService
+@inherits BaseNestedTransactionForm
+<EditForm FormName="SplitTranEdit" EditContext="EditContext" OnInvalidSubmit="InvalidSubmit" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="fix-enter" @ref="RootDiv">
+        <div class="mb-4">
+            <BootstrapInput DisplayText="Payee"
+                            ShowLabel="true"
+                            UseInputEvent="true"
+                            @ref="firstInputRef"
+                            Id="Payee"
+                            @bind-Value="Transaction.Payee" />
+        </div>
+        <div class="mb-4">
+            <SearchEntitySelectString DisplayText="Account"
+                                      Id="Account"
+                                      Items="Accounts"
+                                      IsDisabled="Transaction.IsPlaidReadonly"
+                                      @bind-Value="Transaction.AccountUid"
+                                      OnValueChanged="x=>AccountChanged()" />
+        </div>
+        <div class="mb-4">
+            <label class="form-label" for="Amount">Amount</label>
+            <BootstrapInputGroup>
+                <BootstrapInputNumber Id="Amount"
+                                      UseInputEvent="true"
+                                      @bind-Value="Transaction.Amount"
+                                      IsDisabled="Transaction.IsPlaidReadonly"
+                                      FormatString="0.##"
+                                      Step="0.01" />
+                <Dropdown @bind-Value="@Transaction.Currency"
+                          Items="@Currencies"
+                          IsDisabled="Transaction.IsPlaidReadonly"
+                          Color="settingsService.GetCurrencyColor(Transaction.Currency)" />
+                <Dropdown @bind-Value="@Transaction.IsCredit"
+                          OnValueChanged="OnCreditDebitChanged"
+                          IsDisabled="Transaction.IsPlaidReadonly"
+                          Items="@CreditDebit"
+                          Color="@(Transaction.IsCredit? Color.Success: Color.Light)" />
+            </BootstrapInputGroup>
+        </div>
+        <div class="mb-4">
+            <DateTimePickerExt DisplayText="Date"
+                               DateFormat="@ClientConstants.DateFormat"
+                               ShowLabel="true"
+                               Id="Date"
+                               @bind-Value="Transaction.Date"
+                               ShowIcon="false" />
+        </div>
+        <div class="mb-2">
+            <BootstrapInput DisplayText="Notes"
+                            UseInputEvent="true"
+                            ShowLabel="true"
+                            Id="Notes"
+                            @bind-Value="Transaction.Notes" />
+        </div>
+        @{
+            var i = 0;
+        }
+        @foreach (var child in Transaction.Children)
+        {
+            var j = ++i;
+            <fieldset>
+                <hr />
+                <div class="mt-2 mb-4">
+                    <SearchEntitySelect DisplayText="Category"
+                                        Id="@($"Category{j}")"
+                                        ItemTemplate="FormatService.SelectItemTemplateWithEmpty"
+                                        Items="Categories"
+                                        @bind-Value="child.CategoryId" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" for="@($"Amount{j}")">Amount</label>
+                    <BootstrapInputGroup>
+                        @if (child == Transaction.Children.Last())
+                        {
+                            <BootstrapInputNumber IsDisabled="true"
+                                                  Id="@($"Amount{j}")"
+                                                  Value="Transaction.LastChildAmount"
+                                                  FormatString="0.##"
+                                                  Step="0.01" />
+                        }
+                        else
+                        {
+                            <BootstrapInputNumber Id="@($"Amount{j}")"
+                                                  UseInputEvent="true"
+                                                  @bind-Value="child.Amount"
+                                                  FormatString="0.##"
+                                                  Step="0.01" />
+                        }
+                        <Dropdown Id="@($"Currency{j}")"
+                                  IsDisabled="true"
+                                  Value="@Transaction.Currency"
+                                  Items="@Currencies"
+                                  Color="settingsService.GetCurrencyColor(Transaction.Currency)" />
+                        @if (child == Transaction.Children.Last())
+                        {
+                            <Dropdown Id="@($"IsCredit{j}")"
+                                      IsDisabled="true"
+                                      Value="@Transaction.IsLastChildCredit"
+                                      Items="@CreditDebit"
+                                      Color="@(Transaction.IsLastChildCredit? Color.Success: Color.Light)" />
+                        }
+                        else
+                        {
+                            <Dropdown Id="@($"IsCredit{j}")"
+                                      IsDisabled="true"
+                                      Value="@Transaction.IsCredit"
+                                      Items="@CreditDebit"
+                                      Color="@(Transaction.IsCredit? Color.Success: Color.Light)" />
+                        }
+                    </BootstrapInputGroup>
+                </div>
+            </fieldset>
+        }
+        <fieldset class="mt-2 mb-2">
+            <hr />
+            <p class="text-center">
+                <Button Size="Size.Large"
+                        ButtonType="ButtonType.Button"
+                        Color="Color.Secondary"
+                        Text="Add split"
+                        OnClick="AddSplit" />
+                @if (Transaction.Children.Count > 2)
+                {
+                    <Button Size="Size.Large"
+                            class="ms-2"
+                            ButtonType="ButtonType.Button"
+                            Color="Color.Warning"
+                            IsOutline="true"
+                            Text="Remove split"
+                            OnClick="RemoveSplit" />
+                }
+            </p>
+        </fieldset>
+        @if (!Transaction.IsCleared)
+        {
+            <UnreviewedTranStatus />
+        }
+        <ValidationSummary />
+        <div class="my-4">
+            @if (IsSaving)
+            {
+                <Spinner />
+            }
+            else
+            {
+                <div class="d-flex justify-content-between">
+                    <div class="text-start">
+                        <Button Size="Size.Large"
+                                ButtonType="ButtonType.Button"
+                                Color="Color.Secondary"
+                                IsOutline="true"
+                                Text="Cancel"
+                                OnClick="OnCancel" />
+
+                        @if (Transaction.Id != 0 && !Transaction.IsPlaid)
+                        {
+                            <Button class="ms-4"
+                                    Size="Size.Large"
+                                    ButtonType="ButtonType.Button"
+                                    Color="Color.Danger"
+                                    IsOutline="true"
+                                    Text="Delete"
+                                    OnClick="OnDelete" />
+                        }
+
+                        <div class="dropdown d-inline ms-4">
+                            <button class="btn btn-outline-secondary btn-lg" type="button" id="moreActions" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="moreActions">
+                                @if (Transaction.Id == 0)
+                                {
+                                    <li>
+                                        <Button class="dropdown-item" OnClick="SaveAndNext" Color="Color.None">Create and next</Button>
+                                    </li>
+                                }
+                                else
+                                {
+                                    @if (ShowAndNextOnSave)
+                                    {
+                                        <li>
+                                            <Button class="dropdown-item" OnClick="SaveAndNext" Color="Color.None">Save and next</Button>
+                                        </li>
+                                    }
+                                    <li>
+                                        <Button class="dropdown-item" OnClick="OnCopy" Color="Color.None">Copy</Button>
+                                    </li>
+                                }
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <Button class="dropdown-item" OnClick="ShowHotkeysHelp" Color="Color.None">
+                                        <i class="fa-solid fa-keyboard me-2"></i>Keyboard Shortcuts
+                                    </Button>
+                                </li>
+                            </ul>
+                        </div>
+
+
+                    </div>
+                    <div class="text-end">
+                        <Button Size="Size.Large"
+                                IsDisabled="SaveDisabled"
+                                Color="SaveButtonColor"
+                                ButtonType="ButtonType.Submit"
+                                Text="@SaveButtonText" />
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</EditForm>
+
+<HotkeysHelpModal @ref="hotkeysHelpModal" />
+
+@code {
+
+    private EditContext EditContext = new EditContext(new object());
+    private ValidationMessageStore messageStore;
+    private BootstrapInput<string> firstInputRef;
+
+
+    [Parameter]
+    public SplitTransactionForEdit Transaction { get; set; }
+
+    protected override BaseTransactionForEdit BaseTran => Transaction;
+
+    [Parameter]
+    public EventCallback<SplitTransactionForEdit> SaveTransaction { get; set; }
+
+    [Parameter]
+    public IEnumerable<SelectedItem> Categories { get; set; }
+
+    [Parameter]
+    public EventCallback<BaseTransactionForEdit> SaveAndNextTransaction { get; set; }
+
+    [Parameter]
+    public IEnumerable<SelectedItem> Accounts { get; set; }
+
+    [Parameter]
+    public IEnumerable<SelectedItem> Currencies { get; set; }
+
+    [Parameter]
+    public UnifiedAccountInfo[] AccountLookup { get; set; }
+
+    private HotkeysHelpModal hotkeysHelpModal;
+    private UnifiedAccountInfo Account { get; set; }
+
+    private IEnumerable<SelectedItem> CreditDebit;
+
+    private async Task SaveAndNext()
+    {
+        if (EditContext.Validate())
+        {
+            await SaveAndNextTransaction.InvokeAsync(Transaction);
+        }
+    }
+
+
+    private Task AccountChanged()
+    {
+        SetAccoutDtos();
+        if (Account != null)
+        {
+            Transaction.Currency = Account.Currency;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OnCreditDebitChanged(bool isCredit)
+    {
+        // Update all child transactions to match parent's credit/debit status
+        foreach (var child in Transaction.Children)
+        {
+            child.IsCredit = isCredit;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void AddSplit()
+    {
+        var unused = Transaction.OriginalChildTransactions?
+            .FirstOrDefault(x => !Transaction.Children.Any(t => t.Id == x.id));
+
+        Transaction.Children.Add(new SimpleTransactionForEdit
+        {
+            Id = unused?.id ?? 0,
+            Transaction = unused,
+            AccountUid = Transaction.AccountUid,
+            Currency = Transaction.Currency,
+            IsCredit = Transaction.IsCredit,
+            Date = Transaction.Date,
+            Amount = null,
+            CategoryId = null,
+            Payee = Transaction.Payee,
+            Notes = Transaction.Notes,
+            Tags = Transaction.Tags?.ToList() ?? new List<string>(),
+        });
+    }
+
+    private void RemoveSplit()
+    {
+        if (Transaction.Children.Count > 2)
+        {
+            Transaction.Children.RemoveAt(Transaction.Children.Count - 1);
+        }
+    }
+
+    private void SetAccoutDtos()
+    {
+        Account = AccountLookup.FirstOrDefault(x => x.AccountUid == Transaction.AccountUid);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        Transaction.TrimAll();
+        await SaveTransaction.InvokeAsync(Transaction);
+    }
+    private void InvalidSubmit()
+    {
+        int i = 1;
+        foreach (var child in Transaction.Children)
+        {
+            var fieldId = new FieldIdentifier(
+                child,
+                nameof(SimpleTransactionForEdit.CategoryId));
+            if (child.CategoryId == null)
+            {
+                messageStore.Add(fieldId,
+                    $"Split part {i} - Category is required");
+            }
+            else
+            {
+                messageStore.Clear(fieldId);
+            }
+            i++;
+        }
+    }
+
+    override protected void OnInitialized()
+    {
+        CreditDebit = [new SelectedItem
+            {
+                Text = "Expense",
+                 Value = "false"
+            }, new SelectedItem
+        {
+              Text = "Credit",
+              Value = "true"
+        }];
+
+        messageStore = new(EditContext);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Set up the base class callbacks
+        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+        // Note: SplitTransaction doesn't have CreateTransfer functionality
+
+        EditContext = new EditContext(Transaction);
+        messageStore = new(EditContext);
+        await base.OnParametersSetAsync();
+    }
+
+    private async Task ShowHotkeysHelp()
+    {
+        await hotkeysHelpModal.Show();
+    }
+
+    protected override async Task OnSave()
+    {
+        if (EditContext.Validate())
+        {
+            await SaveTransaction.InvokeAsync(Transaction);
+        }
+    }
+
+    public Task FocusAsync()
+    {
+        return TryFocus();
+    }
+
+    private async Task TryFocus()
+    {
+        if (firstInputRef != null)
+        {
+            await firstInputRef.FocusAsync();
+        }
+    }
+
+}

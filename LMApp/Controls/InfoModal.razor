@@ -1,0 +1,55 @@
+﻿@using LMApp.Models.UI
+@if (_vm != null)
+{
+    <Modal @ref="_modal" IsKeyboard="true" IsFade="false">
+        <ModalDialog Title="@_vm.Title"
+                     ShowCloseButton="!_vm.HideCloseButton"
+                     Size="Size.Medium">
+            <BodyTemplate>
+                <div>@_vm.Message</div>
+            </BodyTemplate>
+            <FooterTemplate>
+                @if (_vm.AdditionalButtonText != null)
+                {
+                    <Button Color="_vm.AdditionalButtonColor" IsOutline="_vm.AdditionalButtonIsOutline" @onclick="AdditionButtonClick">@_vm.AdditionalButtonText</Button>
+                }
+                @if (_vm.AdditionalButton2Text != null)
+                {
+                    <Button Color="_vm.AdditionalButton2Color" IsOutline="_vm.AdditionalButton2IsOutline" @onclick="AdditionButton2Click">@_vm.AdditionalButton2Text</Button>
+                }
+            </FooterTemplate>
+        </ModalDialog>
+    </Modal>
+}
+@code {
+    private Modal _modal;
+
+    private InfoModalVM _vm = null;
+
+    private async Task AdditionButtonClick()
+    {
+        if (_vm.AdditionalButtonCallback != null)
+            await _vm.AdditionalButtonCallback();
+    }
+
+    private async Task AdditionButton2Click()
+    {
+        if (_vm.AdditionalButton2Callback != null)
+            await _vm.AdditionalButton2Callback();
+    }
+
+    public async Task Show(InfoModalVM vm)
+    {
+        _vm = vm;
+        StateHasChanged();
+        await Task.Yield();
+        await _modal.Show();
+    }
+
+    public async Task Hide()
+    {
+        await _modal.Close();
+        _vm = new InfoModalVM();
+        StateHasChanged();
+    }
+}

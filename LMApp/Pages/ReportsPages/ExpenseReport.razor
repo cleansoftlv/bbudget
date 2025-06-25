@@ -1,0 +1,224 @@
+@page "/reports/expenses"
+@using LMApp.Models.Reports
+@using LMApp.Models.UI
+@layout MainLayout
+@inherits BasePage
+@inject ReportsService reportsService
+
+<PageTitle>Category Report</PageTitle>
+
+<h1 class="d-none d-big-block">Category Report</h1>
+<LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    <div class="container-fluid g-0">
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-4">
+                    <p class="text-muted">
+                        This report shows transaction balances by category over the specified number of months. 
+                        Each category is displayed as a row, with columns for each month and currency combination.
+                        All transactions (expenses, income, and transfers) are included in the analysis.
+                        The report is exported as a pivot table with categories as rows and month/currency combinations as columns.
+                    </p>
+                </div>
+
+                @if (!IsGenerating && ReportData == null)
+                {
+                    <div class="mb-4">
+                        <div class="row">
+                            <div class="col-md-6 col-lg-4">
+                                <div class="form-group">
+                                    <BootstrapInputNumber @bind-Value="NumberOfMonths"
+                                                DisplayText="Number of Months"
+                                                ShowLabel="true"
+                                                Id="monthsInput"
+                                                Min="1" 
+                                                Max="24"
+                                                PlaceHolder="Enter number of months" />
+                                    @if (!string.IsNullOrEmpty(ValidationError))
+                                    {
+                                        <div class="text-danger small mt-1">@ValidationError</div>
+                                    }
+                                    <div class="form-text">Enter a number between 1 and 24 months</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (IsGenerating)
+                {
+                    <div class="text-center mb-4">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="fw-bold mb-2">Generating Report...</div>
+                        <div class="text-muted">@ProgressMessage</div>
+                    </div>
+                }
+                else if (ReportData != null)
+                {
+                    <div class="alert alert-success mb-4">
+                        <i class="fa-solid fa-check-circle me-2"></i>
+                        Report generated successfully! The report includes transaction data from 
+                        @ReportData.FromMonth.ToString("MMMM yyyy") to @ReportData.ToMonth.ToString("MMMM yyyy") 
+                        (@NumberOfMonths month@(NumberOfMonths == 1 ? "" : "s")).
+                        The CSV will be formatted as a pivot table with categories as rows and month/currency combinations as columns.
+                    </div>
+                            
+                    <div class="text-center">
+                        <Button Color="Color.Primary" 
+                                Size="Size.Large"
+                                Icon="fa-solid fa-download"
+                                OnClick="DownloadReport"
+                                class="btn-lg mb-4">
+                            Download Category Report (CSV)
+                        </Button>
+                        <Button Color="Color.Secondary" 
+                                Size="Size.Large"
+                                Icon="fa-solid fa-arrow-left"
+                                OnClick="ResetReport"
+                                class="btn-lg ms-2 mb-4">
+                            Generate New Report
+                        </Button>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-sm-start">
+                        <Button Color="Color.Primary" 
+                                Size="Size.Large"
+                                Icon="fa-solid fa-chart-pie"
+                                OnClick="GenerateReport"
+                                IsDisabled="IsGenerating"
+                                class="btn-lg">
+                            Generate Report
+                        </Button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(GenerateError))
+                {
+                    <div class="alert alert-danger mt-4">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                        @GenerateError
+                    </div>
+                }
+
+                <div class="mt-4">
+                    <a href="javascript:" @onclick="BackToReports">
+                       <i class="fa-solid fa-arrow-left"></i> Back to reports 
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</LoadingPanel>
+
+
+@code {
+    private ExpenseReportData ReportData;
+    private bool IsGenerating = false;
+    private string ProgressMessage = "";
+    private string GenerateError = "";
+    private string ValidationError = "";
+    private int NumberOfMonths = 3;
+
+    public async Task BackToReports()
+    {
+        await ResponsiveNavigate("/reports", NavDirection.Back);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (LoadCancelled)
+            return;
+
+        userService.SetActivePageState("Category Report", true);
+        userService.SetActivePageBackHandler(EventCallback.Factory.Create(this, BackToReports));
+    }
+
+    private bool ValidateInput()
+    {
+        ValidationError = "";
+
+        if (NumberOfMonths < 1)
+        {
+            ValidationError = "Number of months must be at least 1";
+            return false;
+        }
+
+        if (NumberOfMonths > 24)
+        {
+            ValidationError = "Number of months cannot exceed 24";
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task GenerateReport()
+    {
+        if (!ValidateInput())
+        {
+            StateHasChanged();
+            return;
+        }
+
+        IsGenerating = true;
+        GenerateError = "";
+        ValidationError = "";
+        ProgressMessage = "Starting report generation...";
+        ReportData = null;
+        StateHasChanged();
+
+        try
+        {
+            ReportData = await reportsService.GenerateExpenseReportAsync(NumberOfMonths, UpdateProgress);
+            ProgressMessage = "Report completed!";
+        }
+        catch (Exception ex)
+        {
+            GenerateError = $"Failed to generate report: {ex.Message}";
+        }
+        finally
+        {
+            IsGenerating = false;
+            StateHasChanged();
+        }
+    }
+
+    private void UpdateProgress(string message)
+    {
+        ProgressMessage = message;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ResetReport()
+    {
+        ReportData = null;
+        GenerateError = "";
+        ValidationError = "";
+        ProgressMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task DownloadReport()
+    {
+        if (ReportData == null)
+            return;
+
+        try
+        {
+            var csvContent = reportsService.GenerateExpenseReportCsv(ReportData);
+            var fileName = $"category-report-{NumberOfMonths}months-{DateTime.Now:yyyy-MM-dd}.csv";
+
+            await utils.DownloadFile(fileName, csvContent, "text/csv");
+        }
+        catch (Exception ex)
+        {
+            GenerateError = $"Failed to download report: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+}

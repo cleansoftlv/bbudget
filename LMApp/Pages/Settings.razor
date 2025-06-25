@@ -1,0 +1,157 @@
+﻿@page "/settings"
+@using LMApp.Controls.Bootstrap
+@using LMApp.Models.Categories
+@using LMApp.Models.Context
+@using LMApp.Models.UI
+@inject SettingsService settingsService
+@inject ToastService toastService
+@inherits BasePage
+<PageTitle>Settings</PageTitle>
+@if (NoSettings)
+{
+    <Alert class="mb-4 mt2" Color="Color.Info">
+        <p>
+            To start using BBudget, you need to configure a few settings. You can always change them later.
+        </p>
+    </Alert>
+}
+<h1>Settings</h1>
+<LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    <h4>@settingsService.CurrentAccount.BudgetName</h4>
+    <Alert class="mb-4" Color="Color.Info">
+        <p class="mb-2">
+            Categories, accounts, and budgets can be configured in Lunch Money settings.
+        </p>
+        <a href="https://my.lunchmoney.app/settings" target="_blank" class="btn btn-primary">
+           Open Lunch Money Settings
+        </a>
+    </Alert>
+    <div class="container-fluid mt-4 g-0">
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-4">
+                    <label for="PrimaryCurrency">Primary Currency</label>
+                    <BootstrapInput Id="PrimaryCurrency" Value="@settingsService.PrimaryCurrency" IsDisabled="true" />
+                    <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">Primary currency can be configured in Lunch Money settings.</Alert>
+                </div>
+                <div class="mb-4">
+                    <label for="AdditionalCurrencies">Additional Currencies</label>
+                    <MultiSelect id="AdditionalCurrencies"
+                                 Items="AllCurrencies"
+                                 ShowSearch="true"
+                                 OnValueChanged="x=> Save()"
+                                 @bind-Value="SelectedCurrencies" />
+                    <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return additional currencies set in your account. Please select all additional currencies you are using in your account.</Alert>
+                </div>
+                <div class="mb-4">
+                    <SearchEntitySelect id="TransferCategory"
+                                        DisplayText="Account transfer category"
+                                        Items="Categories"
+                                        OnValueChanged="x=> Save()"
+                                        @bind-Value="TransferCategoryId" />
+                    <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">BBudget uses a single category from your LM account for transfers between accounts. Please select your account transfer category.</Alert>
+                </div>
+                <div class="mb-4">
+                    <SearchEntitySelect id="CrossCurrencyTransferCategory"
+                                        DisplayText="Cross-currency transfer category (optional)"
+                                        Items="Categories"
+                                        OnValueChanged="x=> Save()"
+                                        @bind-Value="CrossCurrencyTransferCategoryId" />
+                    <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">
+                        Optionally, specify a different category for transfers between accounts in different currencies.
+                        If not set, the default transfer category will be used. You can use a separate category to track expenses related to currency conversion.
+                    </Alert>
+                </div>
+                <div class="mb-4">
+                    <Toggle ShowLabel="true" DisplayText="Sort transactions list after loading next transaction page" OnText="Sort after load" OffText="Don't sort" Id="SortOnLoadMore" @bind-Value="SortTransactionsOnLoadMore" OnValueChanged="x=> Save()" />
+                    <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return transactions sorted by date. When scrolling to the end of the transaction list, more transactions will be loaded. By default, loaded transactions will be added to the end of the list. If you turn on this setting, transactions will be added and the entire list will be sorted.</Alert>
+                </div>
+            </div>
+        </div>
+    </div>
+</LoadingPanel>
+@code {
+
+    [SupplyParameterFromQuery(Name = "noSettings")]
+    public bool NoSettings { get; set; }
+
+    private bool IsSaving;
+    public string SaveError;
+    private IEnumerable<SelectedItem> AllCurrencies;
+    private IEnumerable<string> SelectedCurrencies;
+    private IEnumerable<SelectedItem> Categories;
+    public override bool SettingsRequired => false;
+    public bool SortTransactionsOnLoadMore { get; set; }
+
+    private long? TransferCategoryId;
+    private long? CrossCurrencyTransferCategoryId;
+
+    override protected async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (LoadCancelled
+            || userService.CurrentAccount == null
+            || userService.Categories == null)
+            return;
+
+        AllCurrencies = settingsService.AllSupportedCurrencies
+            .Select(x => new SelectedItem
+                {
+                    IsDisabled = x == settingsService.PrimaryCurrency,
+                    Value = x,
+                    Text = x
+                }).ToList();
+
+
+        Categories = settingsService.GetCachedCategories().Select(x => new SelectedItem
+            {
+                Active = true,
+                Value = x.id.ToString(),
+                Text = x.name
+            }).ToList();
+
+        SelectedCurrencies = settingsService.AdditionalCurrencies ?? Array.Empty<string>();
+        TransferCategoryId = settingsService.Settings.TransferCategoryId;
+        CrossCurrencyTransferCategoryId = settingsService.Settings.CrossCurrencyTransferCategoryId;
+        SortTransactionsOnLoadMore = settingsService.Settings.SortTransactionOnLoadMore;
+    }
+
+    private async Task Save()
+    {
+        IsSaving = true;
+        SaveError = null;
+        var settings = settingsService.Settings;
+        settings.AdditionalCurrencies = (SelectedCurrencies ?? Array.Empty<string>())
+            .Where(x => !string.IsNullOrEmpty(x) && !string.Equals(x, settingsService.PrimaryCurrency, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+        settings.TransferCategoryId = TransferCategoryId;
+        settings.CrossCurrencyTransferCategoryId = CrossCurrencyTransferCategoryId;
+        settings.SortTransactionOnLoadMore = SortTransactionsOnLoadMore;
+
+        try
+        {
+            await settingsService.SaveCurrentSettings();
+        }
+        catch (HttpRequestException ex)
+        {
+            ex.LogIfRequired(log);
+            SaveError = ex.GetDescriptionForUser();
+        }
+        IsSaving = false;
+
+        if (string.IsNullOrEmpty(SaveError))
+        {
+            await toastService.Show(new ToastOption
+            {
+                Content = "Settings saved successfully",
+                Delay = 2000,
+                PreventDuplicates = true,
+                Category = ToastCategory.Success,
+                ShowHeader = false,
+                IsAutoHide = true,
+                ShowClose = false
+            });
+        }
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,175 @@
+﻿@using LMApp.Models.UI
+@using System.Text
+@inject FormatService formatService
+@inject Utils utils
+<div @ref="containerRef" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="preventKeyDownDefault" tabindex="0">
+    @foreach (var item in Categories.Select((category,index)=>(category:category,index:index)))
+    {
+        var currentIndex = Array.IndexOf(Categories, item.category);
+        <div class="@GetRowClass(item.category, item.index)" data-index="@item.index">
+            <a href="javascript:" class="budget-category-row-inner" @onclick="e=>OnClick(item.category)" role="button">
+                <div class="container p-0">
+                    <div class="row g-0">
+                        <div class="col-8 col-sm-8 mb-2">
+                            <h5>
+                                @item.category.Name
+                            </h5>
+                        </div>
+                        <div class="col-4 col-sm-4 text-end">@formatService.FormatBalance(item.category.ProgressAmount, item.category.Currency)</div>
+                    </div>
+                    <div class="row g-0">
+                        <div class="col-8 col-sm-8">
+                            @if (item.category.BudgetedAmount != 0)
+                            {
+                                <div class="inline-progress-bar">
+                                    <BootstrapBlazor.Components.Progress Value="item.category.ProgressPercent < 0? item.category.OverspentPercent: item.category.ProgressPercent"
+                                                                         Color="item.category.ProgressPercent < 0? Color.Danger: Color.Success"
+                                                                         Height="10"
+                                                                         class="@(item.category.ProgressPercent < 0? "flip-bar": null)"
+                                                                         title="@($"{(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%")"
+                                                                         IsShowValue="false" />
+                                </div>
+                            }
+                            else
+                            {
+                                // @:Budget not set
+                            }
+                        </div>
+                        <div class="col-4 col-sm-4 text-end text-secondary align-text-top">@formatService.FormatBalance(item.category.BudgetedAmount, item.category.Currency)</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+@code {
+    private ElementReference containerRef;
+    private int selectedIndex = -1;
+
+    private string GetRowClass(BudgetCategoryDisplay category, int index)
+    {
+        var sb = new StringBuilder("budget-category-row ");
+        sb.Append(category.CategoryType.ToString().ToLower());
+        if (ActiveCategoryId == category.CategoryId)
+        {
+            sb.Append(" active");
+        }
+        if (selectedIndex == index)
+        {
+            sb.Append(" keyboard-selected");
+        }
+        return sb.ToString();
+    }
+
+    [Parameter]
+    public BudgetCategoryDisplay[] Categories { get; set; }
+
+    [Parameter]
+    public long? ActiveCategoryId { get; set; }
+
+    [Parameter]
+    public EventCallback<BudgetCategoryDisplay> CategorySelected { get; set; }
+
+    [Parameter]
+    public EventCallback OnNavidateRight { get; set; }
+
+    private async Task OnClick(BudgetCategoryDisplay category)
+    {
+        await CategorySelected.InvokeAsync(category);
+    }
+
+    private bool preventKeyDownDefault;
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        preventKeyDownDefault = false;
+        if (Categories == null || Categories.Length == 0)
+            return;
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                if (selectedIndex < Categories.Length - 1)
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex++;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                break;
+            case "ArrowUp":
+                if (selectedIndex > 0)
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex--;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                else if (selectedIndex == -1 && Categories.Length > 0)
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex = 0;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                break;
+            case "ArrowRight":
+                await OnNavidateRight.InvokeAsync();
+                break;
+            case "Enter":
+                if (selectedIndex >= 0 && selectedIndex < Categories.Length)
+                {
+                    preventKeyDownDefault = true;
+                    await OnClick(Categories[selectedIndex]);
+                }
+                break;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Find the index of the active category
+        if (ActiveCategoryId.HasValue && Categories != null)
+        {
+            var activeIndex = Array.FindIndex(Categories, c => c.CategoryId == ActiveCategoryId);
+            if (activeIndex >= 0)
+            {
+                selectedIndex = activeIndex;
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await TryFocus();
+        }
+    }
+
+    private async Task ScrollToSelectedItem()
+    {
+        await Task.Yield(); // Ensure UI updates before scrolling
+        await utils.ScrollToSelectedItem(containerRef, "keyboard-selected");
+    }
+
+
+    public Task FocusAsync()
+    {
+        return TryFocus();
+    }
+
+     private async Task TryFocus()
+    {
+        if (containerRef.Context != null && containerRef.Id != null)
+        {
+            try
+            {
+                await containerRef.FocusAsync();
+            }
+            catch 
+            {
+                //ignore error
+            }
+        }
+    }
+}

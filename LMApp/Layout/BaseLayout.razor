@@ -1,0 +1,108 @@
+﻿@using LMApp.Models.Account
+@using LMApp.Models.UI
+@using Toolbelt.Blazor.PWA.Updater.Service
+@inject UserContextService userService
+@inject NavigationManager navigationManager
+@inherits LayoutComponentBase
+@implements IModalContainer
+@inject IPWAUpdaterService PWAUpdaterService
+@implements IDisposable
+<ErrorBoundary @ref="errorBoundary">
+    <ChildContent>
+        <Responsive OnBreakPointChanged="OnBreakpointChanged" />
+        <CascadingValue Value="breakPoint">
+            <CascadingValue Value="this">
+                <div class="page">
+                    <div class="sidebar">
+                        <NavMenu />
+                    </div>
+                    @Body
+                </div>
+                <InfoModal @ref="Modal" />
+                @if (UpdatePending)
+                {
+                    <div class="update-btn-container">
+                        <Button Icon="@(UpdateInProgress? "fa-solid fa-hourglass-start" : "fa-solid fa-code-compare")" IsDisabled="UpdateInProgress" Color="Color.Warning" class="rounded-circle" OnClick="UpdateClick" title="Update avaliable" />
+                    </div>
+                }
+            </CascadingValue>
+        </CascadingValue>
+    </ChildContent>
+    <ErrorContent>
+        <main>
+            <article class="content px-4 pt-4 container-fluid">
+                <div class="row">
+                    <Alert class="col-12 offset-sm-3 col-sm-6 offset-md-4 col-md-4 offset-xl-5 col-xl-2" Color="Color.Danger">
+                        <p>Error occured on the page. Error is unexpected, reported and will be fixed.</p>
+                        <Button Color="Color.Primary" OnClick="()=>errorBoundary?.Recover()">Retry</Button>
+                    </Alert>
+                </div>
+            </article>
+        </main>
+    </ErrorContent>
+</ErrorBoundary>
+@code {
+
+    private ErrorBoundary errorBoundary;
+    public InfoModal Modal { get; set; }
+    private BreakPoint breakPoint = BreakPoint.None;
+    private bool UpdatePending { get; set; }
+    private bool UpdateInProgress { get; set; }
+
+    private Task OnBreakpointChanged(BreakPoint size)
+    {
+        breakPoint = size;
+        return Task.CompletedTask;
+    }
+
+    private async Task UpdateClick()
+    {
+        await Modal.Show(new InfoModalVM
+            {
+                Title = "Update",
+                HideCloseButton = true,
+                Message = new MarkupString("New version is available. Page will be reloaded to apply changes.<br/> Proceed with update?"),
+                AdditionalButtonColor = Color.Primary,
+                AdditionalButtonText = "Later",
+                AdditionalButtonCallback = async () =>
+                {
+                    UpdateInProgress = false;
+                    UpdatePending = false;
+                    await Modal.Hide();
+                    StateHasChanged();
+                },
+                AdditionalButton2Color = Color.Warning,
+                AdditionalButton2Text = "Update Now",
+                AdditionalButton2Callback = async () =>
+                {
+                    UpdateInProgress = true;
+                    await Modal.Hide();
+                    StateHasChanged();
+                    await PWAUpdaterService.SkipWaitingAsync();
+                }
+            });
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (firstRender)
+        {
+            PWAUpdaterService.NextVersionIsWaiting += PWAUpdaterService_NextVersionIsWaiting;
+        }
+    }
+
+    private void PWAUpdaterService_NextVersionIsWaiting(object sender, EventArgs e)
+    {
+        if (!UpdatePending)
+        {
+            UpdatePending = true;
+            StateHasChanged();
+        }
+    }
+
+    void IDisposable.Dispose()
+    {
+        PWAUpdaterService.NextVersionIsWaiting -= PWAUpdaterService_NextVersionIsWaiting;
+    }
+}

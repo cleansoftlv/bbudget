@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "lodash.js@4.17.21",
+      "destination": "wwwroot/lib/lodash",
+      "files": [
+        "lodash.min.js"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "LMFunctions": {
+      "commandName": "Project",
+      "commandLineArgs": "--cors * --port 7005",
+      "launchBrowser": false
+    }
+  }
+}

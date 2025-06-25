@@ -1,0 +1,704 @@
+﻿@page "/accounts"
+@using LMApp.Models
+@using LMApp.Models.Account
+@using LMApp.Models.Categories
+@using LMApp.Models.Transactions
+@using LMApp.Models.UI
+@using LMApp.Controls
+@inject IHttpClientFactory HttpClientFactory
+@inject FormatService formatService
+@inject BudgetService budgetService
+
+@layout FullLayout
+@inherits BaseTransactionFilterPage
+
+
+<PageTitle>Accounts</PageTitle>
+<LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    <div class="container-fluid p-0 px-lg-1 px-xl-2">
+        <div class="row g-0 gx-lg-1 gx-xl-2">
+            <div class="@PrimaryPanelClass()">
+                <div class="ui-panel" id="first-ui-panel">
+                    <div class="p-header xs">
+                        <MobileTabNav />
+                        <div class="header-text sm">
+                            Accounts
+                        </div>
+                    </div>
+                    <div class="p-body p-0">
+                        <LoadingPanel IsLoading="@(accounts == null)">
+                            <AccountsList @ref="accountsListRef" Accounts="accounts"
+                            OnNavidateRight="AccountListNavigateRight"
+                            ActiveAccountUid="@CurrentAccount?.Uid"
+                            AccountSelected="e => NavigateToAccount(e)" />
+                        </LoadingPanel>
+                    </div>
+                </div>
+            </div>
+            <div class="@TransactionListClass()">
+                <div class="ui-panel" id="second-ui-panel">
+                    <div class="p-header with-button">
+                        <Button Icon="fa-solid fa-xmark" Color="Color.Secondary" IsOutline="true" class="icon-btn" OnClick="CloseTranList" />
+                        <div class="header-text">
+                            @CurrentAccount?.Name
+                        </div>
+                    </div>
+                    <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
+                        <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
+                            <TransactionList @ref="transactionListRef" Transactions="@Transactions"
+                            HasMore="HasMoreTrans"
+                            ShowTransactionsNotSupported="CurrentAccount?.AccountType == AccountType.Crypto"
+                            LoadMoreLoadError="@LoadMoreTransactionsError"
+                            ListContext="transactionListContext"
+                            LoadingMore="LoadingMoreTrans"
+                            OnNavidateLeft="FocusAccountList"
+                            ActiveTransactionId="SelectedTransaction?.Id"
+                            TransactionSelected="NavigateToTransaction"
+                            OnLoadMore="LoadMoreTransactions" />
+                        </InfiniteScroll>
+                    </LoadingPanel>
+                </div>
+            </div>
+            <div class="@TransactionFormClass()">
+                <div class="ui-panel" id="third-ui-panel">
+                    <div class="p-header with-button">
+                        <Button Icon="fa-solid fa-xmark" Color="Color.Secondary" IsOutline="true" class="icon-btn" OnClick="CloseTranForm" />
+                        <div class="header-text">
+                            Transaction
+                        </div>
+                    </div>
+                    <div class="p-body">
+                        <LoadingPanel IsLoading="@(TransactionInEdit == null)"
+                        ErrorMessage="@LoadSingleTransactionError"
+                        OnRetry="RetryShowTransaction">
+                            <TransactionForm Transaction="@TransactionInEdit"
+                            SaveTransaction="t => SaveTransaction(t)"
+                            SaveError="@SaveTransactionError"
+                            SaveTransactionAndNext="SaveTransactionAndNext"
+                            CreateTransfer="CreateTransfer"
+                            Ungroup="UngroupWithConfirm"
+                            Copy="CopyTransaction"
+                            Delete="DeleteTransaction"
+                            IsSaving="IsSaving"
+                            Cancel="CloseTranForm" />
+                        </LoadingPanel>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!ShowTranForm)
+    {
+        <div class="new-btn-container">
+            <Button Icon="fa-solid fa-plus" Color="Color.Primary" class="rounded-circle" OnClick="NavigateToNewTransaction" />
+        </div>
+    }
+</LoadingPanel>
+    @code {
+    [SupplyParameterFromQuery(Name = "aid")]
+    public string UrlAccountUid { get; set; }
+
+    private AccountDisplay[] accounts;
+    private AccountDisplay CurrentAccount;
+    private AccountsList accountsListRef;
+    private TransactionList transactionListRef;
+
+    private async Task NavigateToAccount(AccountDisplay account)
+    {
+        if (UrlAccountUid == account.Uid)
+            return;
+
+        var task1 = ShowAccount(account, force: true);
+
+        var task2 = ResponsiveNavigate(
+            navigationManager.GetUriWithQueryParameter("aid", account.Uid),
+            NavDirection.Forward);
+
+        await Task.WhenAll(task1, task2.AsTask());
+    }
+
+    private async Task RetryLoadTransactions()
+    {
+        LoadTransactionsError = null;
+        if (CurrentAccount != null)
+        {
+            await ShowAccount(CurrentAccount, force: true);
+        }
+        else
+        {
+            await CloseTranList();
+        }
+    }
+
+    private async Task ShowAccount(AccountDisplay account, bool force = false)
+    {
+        if (account.Uid == CurrentAccount?.Uid && !force)
+            return;
+
+        LoadTransactionsError = null;
+        LoadingMoreTrans = false;
+        HasMoreTrans = false;
+        Transactions = null;
+
+        CurrentAccount = account;
+
+        await StartTransition(BreakPoint.Large);
+
+        transactionListContext = account == null
+            || account.AccountType == AccountType.Total
+                ? TransactionListContext.None
+                : TransactionListContext.Account;
+
+        ShowTranList = true;
+        RefreshActivePage();
+
+        await EndTransition();
+
+        var loadingAccountUid = CurrentAccount.Uid;
+
+        GetTransactionsResult res;
+        try
+        {
+            res = await budgetService.LoadAccountTransactions(CurrentAccount.IdForType, CurrentAccount.AccountType);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (loadingAccountUid != CurrentAccount?.Uid || !ShowTranList)
+                return;
+
+            ex.LogIfRequired(log);
+            LoadTransactionsError = ex.GetDescriptionForUser();
+            return;
+        }
+
+        if (loadingAccountUid != CurrentAccount?.Uid || !ShowTranList)
+            return;
+
+        UnfilteredTransactionCount = res.Transactions.Count;
+        Transactions = FilterTransactions(res.Transactions).ToList();
+
+        TryRefreshRunningBalances();
+
+        HasMoreTrans = res.HasMore;
+    }
+
+    protected override async Task LoadMoreTransactions()
+    {
+        HasMoreTrans = false;
+        LoadingMoreTrans = true;
+        LoadMoreTransactionsError = null;
+
+        StateHasChanged();
+
+        GetTransactionsResult res;
+        var loadingAccountUid = CurrentAccount.Uid;
+        try
+        {
+            res = await budgetService.LoadAccountTransactions(
+               CurrentAccount.IdForType,
+               CurrentAccount.AccountType,
+               offset: Math.Max(0, UnfilteredTransactionCount - ClientConstants.OverlapOffsetForTransactions));
+        }
+        catch (HttpRequestException ex)
+        {
+            if (loadingAccountUid != CurrentAccount?.Uid || !ShowTranList)
+                return;
+
+            ex.LogIfRequired(log);
+            LoadMoreTransactionsError = ex.GetDescriptionForUser();
+            LoadingMoreTrans = false;
+            return;
+        }
+        if (loadingAccountUid != CurrentAccount?.Uid || !ShowTranList)
+            return;
+        var existingIds = new HashSet<long>(Transactions.Select(x => x.Id));
+        var filtered = res.Transactions.Where(x => !existingIds.Contains(x.Id));
+        UnfilteredTransactionCount += filtered.Count();
+        filtered = FilterTransactions(filtered);
+        Transactions.AddRange(filtered);
+        HasMoreTrans = res.HasMore;
+        if (settingsService.Settings.SortTransactionOnLoadMore)
+        {
+            Transactions.Sort(TransactionsService.SortTransacactions);
+        }
+
+        TryRefreshRunningBalances();
+
+        LoadingMoreTrans = false;
+        StateHasChanged();
+    }
+
+    protected override async Task AddNewSplitTransaction(SplitTransactionForEdit split)
+    {
+        var tran = await transactionsService.GetTransactionAsync(split.Id);
+        if (tran == null)
+            return;
+
+        AddNewTransaction(tran, split);
+
+        split.SavedTransaction = tran.Transaction;
+    }
+
+    private IEnumerable<TransactionDisplay> FilterTransactions(IEnumerable<TransactionDisplay> tran)
+    {
+        var res = tran.Where(x => x.TranType != TransactionType.SplitPart);
+
+        if (transactionListContext != TransactionListContext.Account)
+        {
+            res = res.Where(x => !x.IsInsideGroup);
+        }
+        return res;
+    }
+
+    private async Task CloseTranList()
+    {
+        if (!ShowTranList)
+            return;
+
+        await StartTransition(BreakPoint.Large);
+        DoCloseTranList();
+        await EndTransition();
+
+        await ResponsiveNavigate(
+            navigationManager.GetUriWithQueryParameter("aid", (long?)null),
+            NavDirection.Back);
+
+        // Focus the accounts list after closing transaction list
+        if (accountsListRef != null)
+        {
+            await Task.Yield(); // Let Blazor render the changes
+            await accountsListRef.FocusAsync();
+        }
+    }
+
+    private async Task FocusAccountList()
+    {
+        if (accountsListRef != null)
+        {
+            await accountsListRef.FocusAsync();
+        }
+    }
+
+
+    private void DoCloseTranList()
+    {
+        if (!ShowTranList)
+            return;
+
+        HasMoreTrans = false;
+        LoadingMoreTrans = false;
+        Transactions = null;
+        transactionListContext = TransactionListContext.None;
+        ShowTranList = false;
+        RefreshActivePage();
+    }
+
+
+
+    protected override void RefreshActivePage()
+    {
+        if (ShowTranForm)
+        {
+            userService.SetActivePageState("Transaction", true);
+        }
+        else if (ShowTranList)
+        {
+            userService.SetActivePageState(CurrentAccount?.Name, true);
+        }
+        else
+        {
+            userService.ClearActivePageState();
+        }
+    }
+
+    private async Task ActiveBageBack()
+    {
+        if (ShowTranForm)
+        {
+            await CloseTranForm();
+        }
+        else if (ShowTranList)
+        {
+            await CloseTranList();
+        }
+    }
+
+    private Task accountLoading;
+
+    private async Task RefreshAccountsInTheBackground()
+    {
+        AccountDisplay[] res;
+        try
+        {
+            var loadingTask = budgetService.LoadAccounts();
+            accountLoading = loadingTask;
+            res = await loadingTask;
+            if (accountLoading != loadingTask || res == null)
+                return;
+        }
+        catch (HttpRequestException)
+        {
+            return;
+        }
+
+        var listToUpdate = accounts;
+        if (listToUpdate == null)
+            return;
+
+        var newAccounts = new List<AccountDisplay>();
+        foreach (var item in res)
+        {
+            var cat = listToUpdate.FirstOrDefault(x => x.Uid == item.Uid);
+            cat?.UpdateWith(item);
+            if (cat == null)
+            {
+                newAccounts.Add(item);
+            }
+        }
+        if (newAccounts.Any())
+        {
+            accounts = listToUpdate.Concat(newAccounts)
+                .OrderBy(x => x.AccountType)
+                .ThenBy(x => x.Name)
+                .ToArray();
+        }
+
+        TryRefreshRunningBalances();
+    }
+
+
+    private async Task LoadAccounts()
+    {
+        accounts = budgetService.GetCachedAccounts();
+        await RefreshAccountsInTheBackground();
+    }
+
+    protected override void PrepareNewTransaction(SimpleTransactionForEdit tran)
+    {
+        if (transactionListContext == TransactionListContext.Account 
+            && TransactionsService.AccountTypeCanBeUsedInTransaction(CurrentAccount?.AccountType))
+        {
+            tran.AccountUid = CurrentAccount.Uid;
+            tran.Currency = CurrentAccount.Currency;
+        }
+    }
+
+    protected override async Task CloseTranForm()
+    {
+        await base.CloseTranForm();
+
+        // Focus the transaction list after closing transaction form
+        if (transactionListRef != null && ShowTranList)
+        {
+            await Task.Yield(); // Let Blazor render the changes
+            await transactionListRef.FocusAsync();
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (LoadCancelled)
+            return;
+
+        userService.SetActivePageBackHandler(EventCallback.Factory.Create(this, ActiveBageBack));
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (LoadCancelled || userService.CurrentAccount == null)
+            return;
+
+        if (accounts == null)
+        {
+            await LoadAccounts();
+        }
+
+        if (UrlAccountUid != null)
+        {
+            if (accounts != null)
+            {
+                var account = accounts.FirstOrDefault(x => x.Uid == UrlAccountUid);
+                if (account != null)
+                {
+                    await ShowAccount(account);
+                }
+            }
+        }
+        else if (ShowTranList)
+        {
+            DoCloseTranList();
+        }
+
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task<bool> TransactionDeleted(BaseTransactionForEdit updated)
+    {
+        if (updated.TranType == TransactionType.Simple)
+        {
+            var simple = (SimpleTransactionForEdit)updated;
+            if (!SimpleTransactionDeleted(simple))
+            {
+                await RefreshAccountsInTheBackground();
+                return false;
+            }
+        }
+        else if (updated.TranType == TransactionType.Split)
+        {
+            var split = (SplitTransactionForEdit)updated;
+            var simple = new SimpleTransactionForEdit();
+            simple.UpdateWith(split, settingsService);
+            if (!SimpleTransactionDeleted(simple))
+            {
+                await RefreshAccountsInTheBackground();
+                return false;
+            }
+        }
+        else if (updated.TranType == TransactionType.Transfer)
+        {
+            var transfer = (AccountTransferTransactionForEdit)updated;
+
+            (var from, var to) = GetTransferDetails(transfer);
+
+            if (!SimpleTransactionDeleted(from)
+                || !SimpleTransactionDeleted(to))
+            {
+                await RefreshAccountsInTheBackground();
+                return false;
+            }
+        }
+        TryRefreshRunningBalances();
+        return true;
+    }
+
+    private (SimpleTransactionForEdit from, SimpleTransactionForEdit to) GetTransferDetails(AccountTransferTransactionForEdit transfer)
+    {
+        var from = new SimpleTransactionForEdit();
+        from.UpdateWith(transfer,settingsService);
+        from.Amount = transfer.AmountFrom;
+        from.AccountUid = transfer.AccountUidFrom;
+        from.Currency = transfer.CurrencyFrom;
+        from.IsCredit = false;
+        from.Transaction = transfer.From == null ? null : new TransactionDto()
+            {
+                asset_id = transfer.From.asset_id,
+                plaid_account_id = transfer.From.plaid_account_id,
+                amount = transfer.From.amount,
+                to_base = transfer.From.to_base,
+                currency = transfer.From.currency,
+            };
+
+        from.SavedTransaction = transfer.SavedFrom == null ? null : new TransactionDto()
+            {
+                asset_id = transfer.SavedFrom.asset_id,
+                plaid_account_id = transfer.SavedFrom.plaid_account_id,
+                amount = transfer.SavedFrom.amount,
+                to_base = transfer.SavedFrom.to_base,
+                currency = transfer.SavedFrom.currency,
+            };
+
+        var to = new SimpleTransactionForEdit();
+        to.UpdateWith(transfer,settingsService);
+        to.Amount = transfer.AmountTo;
+        to.AccountUid = transfer.AccountUidTo;
+        to.Currency = transfer.CurrencyTo;
+        to.IsCredit = true;
+        to.Transaction = transfer.To == null ? null : new TransactionDto()
+            {
+                asset_id = transfer.To.asset_id,
+                plaid_account_id = transfer.To.plaid_account_id,
+                amount = transfer.To.amount,
+                to_base = transfer.To.to_base,
+                currency = transfer.To.currency,
+            };
+
+        to.SavedTransaction = transfer.SavedTo == null ? null : new TransactionDto()
+            {
+                asset_id = transfer.SavedTo.asset_id,
+                plaid_account_id = transfer.SavedTo.plaid_account_id,
+                amount = transfer.SavedTo.amount,
+                to_base = transfer.SavedTo.to_base,
+                currency = transfer.SavedTo.currency,
+            };
+
+        return (from, to);
+    }
+
+    private bool SimpleTransactionDeleted(SimpleTransactionForEdit simple)
+    {
+        if (simple.Transaction.amount == 0 
+            || TransactionsService.GetAccountTypeByUid(simple.AccountUid) != AccountType.Default)
+            return true;
+
+        var assetId = simple.AssetId;
+
+        var account = accounts.FirstOrDefault(x => x.AccountType == AccountType.Default 
+            && x.IdForType == assetId);
+
+        if (account == null)
+            return true;
+
+        if (simple.Transaction == null)
+            return false;
+
+        if (!TryAddAmount(account,
+            simple.Currency,
+            simple.Transaction.amount,
+            simple.Transaction.to_base))
+        {
+            return false;
+        }
+
+        var totalAccount = accounts.FirstOrDefault(x => x.AccountType == AccountType.Total);
+        if (totalAccount == null)
+            return true;
+
+        return TryAddAmount(totalAccount,
+            simple.Currency,
+            simple.Transaction.amount,
+            simple.Transaction.to_base);
+    }
+
+    private bool SimpleTransactionAdded(SimpleTransactionForEdit simple)
+    {
+        if (simple.AmountWithSign == 0
+         || TransactionsService.GetAccountTypeByUid(simple.AccountUid) != AccountType.Default)
+            return true;
+
+        var assetId = simple.AssetId;
+
+        var account = accounts.FirstOrDefault(x => x.AccountType == AccountType.Default 
+            && x.IdForType == assetId);
+
+        if (account == null)
+            return true;
+
+        if (!TryAddAmount(account,
+            simple.Currency,
+            -simple.AmountWithSign ?? 0,
+            -simple.SavedTransaction?.to_base))
+        {
+            return false;
+        }
+
+        var totalAccount = accounts.FirstOrDefault(x => x.AccountType == AccountType.Total);
+        if (totalAccount == null)
+            return true;
+
+        return TryAddAmount(totalAccount,
+            simple.Currency,
+            -simple.AmountWithSign ?? 0,
+            -simple.SavedTransaction?.to_base);
+    }
+
+    protected bool TryAddAmount(
+      AccountDisplay account,
+      string currency,
+      decimal amount,
+      decimal? primaryCurrencyAmount)
+    {
+        if (String.Equals(account.Currency, currency, StringComparison.InvariantCultureIgnoreCase))
+        {
+            account.AddAmount(amount);
+            if (CurrentAccount?.Uid == account.Uid)
+            {
+                TryRefreshRunningBalances();
+            }
+            return true;
+        }
+        else if (string.Equals(account.Currency, settingsService.PrimaryCurrency, StringComparison.InvariantCultureIgnoreCase)
+            && primaryCurrencyAmount != null)
+        {
+            account.AddAmount(primaryCurrencyAmount.Value);
+            if (CurrentAccount?.Uid == account.Uid)
+            {
+                TryRefreshRunningBalances();
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private void TryRefreshRunningBalances()
+    {
+        if (CurrentAccount != null && Transactions != null)
+        {
+            RunningBalanceCalculator.CalculateRunningBalances(
+                Transactions,
+                CurrentAccount.Balance,
+                CurrentAccount.Currency);
+        }
+    }
+
+    protected override async Task<bool> TransactionAdded(BaseTransactionForEdit updated)
+    {
+        if (updated.TranType == TransactionType.Simple)
+        {
+            var simple = (SimpleTransactionForEdit)updated;
+            if (!SimpleTransactionAdded(simple))
+            {
+                await RefreshAccountsInTheBackground();
+                return false;
+            }
+        }
+        else if (updated.TranType == TransactionType.Split)
+        {
+            var split = (SplitTransactionForEdit)updated;
+            var simple = new SimpleTransactionForEdit();
+            simple.UpdateWith(split, settingsService);
+            if (!SimpleTransactionAdded(simple))
+            {
+                await RefreshAccountsInTheBackground();
+                return false;
+            }
+        }
+        else if (updated.TranType == TransactionType.Transfer)
+        {
+            var transfer = (AccountTransferTransactionForEdit)updated;
+
+            (var from, var to) = GetTransferDetails(transfer);
+
+            if (!SimpleTransactionAdded(from)
+                || !SimpleTransactionAdded(to))
+            {
+                await RefreshAccountsInTheBackground();
+                return false;
+            }
+        }
+        TryRefreshRunningBalances();
+        return true;
+
+    }
+
+    private async Task AccountListNavigateRight()
+    {
+        if (transactionListRef != null)
+        {
+            await transactionListRef.FocusAsync();
+        }
+    }
+
+    protected override bool ShouldAddTransactionToList(TransactionDisplay tran, BaseTransactionForEdit forEdit)
+    {
+        if (transactionListContext == TransactionListContext.Account)
+        {
+            if (tran.AccountUid == CurrentAccount?.Uid)
+                return true;
+
+            if (tran.TranType == TransactionType.Transfer)
+            {
+                var transfer = (AccountTransferTransactionForEdit)forEdit;
+                return transfer.AccountUidFrom == CurrentAccount?.Uid
+                    || transfer.AccountUidTo == CurrentAccount?.Uid;
+            }
+
+            return false;
+        }
+        return true;
+    }
+}

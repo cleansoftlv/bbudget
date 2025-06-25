@@ -1,0 +1,9 @@
+﻿main {
+    flex: 1;
+}
+
+@media (min-width: 991px) {
+    main {
+        background-color: #fafafa;
+    }
+}

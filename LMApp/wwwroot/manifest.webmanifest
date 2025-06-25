@@ -1,0 +1,50 @@
+{
+  "name": "BBudget - Lunch Money companion",
+  "short_name": "BBudget",
+  "description": "BBudget",
+  "id": "lm.bbudget.app",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#03173d",
+  "theme_color": "#03173d",
+  "categories": [ "finance", "productivity" ],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icon-mask.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-mask-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-mask-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    }
+  ]
+}

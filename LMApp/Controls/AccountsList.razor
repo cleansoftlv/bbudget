@@ -1,0 +1,166 @@
+﻿@using LMApp.Models.Account
+@using LMApp.Models.UI
+@using System.Text
+@inject FormatService formatService
+@inject Utils utils
+<div @ref="containerRef" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="preventKeyDownDefault" tabindex="0">
+    @foreach (var item in Accounts.Select((account,index)=>(account:account, index:index)))
+    {
+        <div class="@GetRowClass(item.account, item.index)" data-index="@item.index">
+            <a href="javascript:" class="account-row-inner" @onclick="()=>OnClick(item.account)" role="button">
+                <div class="container p-0">
+                    <div class="row g-0">
+                        <div class="col-8 mb-2">
+                            <h5>
+                                @item.account.Name
+                            </h5>
+                        </div>
+                        <div class="col-4 text-end balance text-secondary">@formatService.FormatBalance(item.account.Balance, item.account.Currency, item.account.IsLiability)</div>
+                        @if (item.account.LiabilitiesBalance.HasValue)
+                        {
+                            <div class="col-6 text-secondary">Liabilities: @formatService.FormatBalance(item.account.LiabilitiesBalance.Value, item.account.Currency, true)</div>
+                        }
+                        @if (item.account.AssetsBalance.HasValue)
+                        {
+                            <div class="col-6 text-secondary text-end">Assets: @formatService.FormatBalance(item.account.AssetsBalance.Value, item.account.Currency, false)</div>
+                        }
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+@code {
+    private ElementReference containerRef;
+    private int selectedIndex = -1;
+
+    private string GetRowClass(AccountDisplay account, int index)
+    {
+        var sb = new StringBuilder("account-row ");
+        sb.Append(account.AccountType.ToString().ToLower());
+        if (ActiveAccountUid == account.Uid)
+        {
+            sb.Append(" active");
+        }
+        if (selectedIndex == index)
+        {
+            sb.Append(" keyboard-selected");
+        }
+        return sb.ToString();
+    }
+
+    [Parameter]
+    public AccountDisplay[] Accounts { get; set; }
+
+    [Parameter]
+    public EventCallback OnNavidateRight { get; set; }
+
+    [Parameter]
+    public string ActiveAccountUid { get; set; }
+
+    [Parameter]
+    public EventCallback<AccountDisplay> AccountSelected { get; set; }
+
+    private Task OnClick(AccountDisplay account)
+    {
+        return AccountSelected.InvokeAsync(account);
+    }
+
+    private bool preventKeyDownDefault;
+
+   
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        preventKeyDownDefault = false;
+        if (Accounts == null || Accounts.Length == 0)
+            return;
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                if (selectedIndex < Accounts.Length - 1)
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex++;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                break;
+            case "ArrowUp":
+                if (selectedIndex > 0)
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex--;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                else if (selectedIndex == -1 && Accounts.Length > 0)
+                {
+                    preventKeyDownDefault = true;
+                    selectedIndex = 0;
+                    StateHasChanged();
+                    await ScrollToSelectedItem();
+                }
+                break;
+            case "ArrowRight":
+                await OnNavidateRight.InvokeAsync();
+                break;
+            case "Enter":
+                if (selectedIndex >= 0 && selectedIndex < Accounts.Length)
+                {
+                    preventKeyDownDefault = true;
+                    await OnClick(Accounts[selectedIndex]);
+                }
+                break;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Find the index of the active account
+        if (!string.IsNullOrEmpty(ActiveAccountUid) && Accounts != null)
+        {
+            var activeIndex = Array.FindIndex(Accounts, a => a.Uid == ActiveAccountUid);
+            if (activeIndex >= 0)
+            {
+                selectedIndex = activeIndex;
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await TryFocus();
+        }
+    }
+
+    private async Task ScrollToSelectedItem()
+    {
+        await Task.Yield(); // Ensure UI updates before scrolling
+        await utils.ScrollToSelectedItem(containerRef, "keyboard-selected");
+    }
+
+
+    public Task FocusAsync()
+    {
+        return TryFocus();
+    }
+
+    private async Task TryFocus()
+    {
+        if (containerRef.Context != null && containerRef.Id != null)
+        {
+            try
+            {
+                await containerRef.FocusAsync();
+            }
+            catch 
+            {
+                //ignore error
+            }
+        }
+    }
+}

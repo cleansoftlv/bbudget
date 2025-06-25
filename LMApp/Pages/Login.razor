@@ -1,0 +1,325 @@
+﻿@using LMApp.Models.Account;
+@using System.Diagnostics.CodeAnalysis
+@using System.Net
+@using LMApp.Models.Login
+@using Shared.Login
+@page "/login"
+@inherits BasePage
+@layout MainLayout
+
+<PageTitle>Login</PageTitle>
+
+@if (LoginCallbackState == "noauth")
+{
+    <Alert class="mb-4 mt2" Color="Color.Info">
+        <h4 class="alert-heading">Welcome to BBudget for Lunch Money</h4>
+        <p>
+            To use this application, please login.
+        </p>
+        <p>
+            You can read more about BBudget for Lunch Money in the <NavLink href="about">About</NavLink> page.
+        </p>
+    </Alert>
+}
+else if (LoginCallbackState == "logoutreturn")
+{
+    <Alert class="mb-4 mt2" Color="Color.Success">
+        <p>
+            You have successfully logged out.
+        </p>
+    </Alert>
+}
+else if (LoginCallbackState == "deleteprofilereturn")
+{
+    <Alert class="mb-4 mt2" Color="Color.Success">
+        <p>
+            Your profile and all related information was deleted from BBudget.
+        </p>
+    </Alert>
+}
+<h1>Login</h1>
+<div class="container-fluid g-0">
+    <div class="row">
+        <div class="col-12">
+            @if (IsLoading)
+            {
+                <p class="text-center m-4">
+                    <Spinner />
+                </p>
+            }
+            else if (LoginCallbackState == "ok" && !UseAddSso)
+            {
+                <Alert Color="Color.Success">
+                    <p>You have logged in successfully.</p>
+                    <p>
+                        <a href="/" class="btn btn-primary">Proceed</a>
+                    </p>
+                </Alert>
+            }
+            else if (LoginCallbackState == "ok" && UseAddSso)
+            {
+                <Alert Color="Color.Success">
+                    <p>You have successfully added new credentials to your profile.</p>
+                    <p>
+                        <a href="/auth" class="btn btn-primary">Proceed</a>
+                    </p>
+                </Alert>
+            }
+            else if (LoginCallbackState == "auth")
+            {
+                <Alert Color="Color.Success">
+                    <p>You have logged in successfully. Please add a Lunch Money token to use the app.</p>
+                    <p>
+                        <a href="/auth?noAuth=true" class="btn btn-primary">Proceed</a>
+                    </p>
+                </Alert>
+            }
+            else if (LoginCallbackState == "canttakesso")
+            {
+                <Alert Color="Color.Warning">
+                    <p>Credentials are not added.</p>
+                    <p>You are trying to add credentials that are already linked to another BBudget profile. This other profile has only these credentials and will become inaccessible if you take them.</p>
+                    <p>To add these credentials to your profile, please delete the other profile first.</p>
+                    <p>You can do this by logging out, logging in with the same credentials you were trying to add, and deleting the profile from the Profile page.</p>
+                    <p>After that, you can log in to your current profile and add these credentials.</p>
+                    <p>
+                        <a href="/auth" class="btn btn-primary">Proceed</a>
+                    </p>
+                </Alert>
+            }
+            else if (LoginCallbackState == "error" && !UseAddSso)
+            {
+                <Alert Color="Color.Warning">
+                    <p>Login process was unsuccessful. Please try again.</p>
+                    <p>
+                        <a href="@navigationManager.GetUriWithQueryParameter("cb", "")" class="btn btn-primary">Proceed</a>
+                    </p>
+                </Alert>
+            }
+            else if (LoginCallbackState == "error" && UseAddSso)
+            {
+                <Alert Color="Color.Warning">
+                    <p>Attempt to add new credentials to your account failed. Please try again.</p>
+                    <p>
+                        <a href="@navigationManager.GetUriWithQueryParameter("cb", "")" class="btn btn-primary">Proceed</a>
+                    </p>
+                </Alert>
+            }
+            else if (LoginCallbackState == "lmlogin")
+            {
+                <EditForm FormName="LmLoginForm" Model="LmLoginModel" OnValidSubmit="DoLmLogin">
+                    <DataAnnotationsValidator />
+                    @if (ShowTokenInvalidError)
+                    {
+                        <Alert class="mb-4" Color="Color.Warning">
+                            <p>Lunch Money Dev token is invalid. Please try again.</p>
+                        </Alert>
+                    }
+                    else
+                    {
+                        <Alert class="mb-4" Color="Color.Info">
+                            <p>To log in with your Lunch Money account, you need to create a Dev token.</p>
+                            <p>A Dev token can be generated in Lunch Money developer settings.</p>
+                            <p>Please save this token, as you will use it as your password for BBudget. Lunch Money will not show it to you again.</p>
+                            <p>To generate a token, just click "Request New Access Token" in developer settings.</p>
+                            <p><a href="https://my.lunchmoney.app/developers" target="_blank">Open developer settings</a></p>
+                        </Alert>
+                    }
+                    <div class="mb-4">
+                        <BootstrapPassword ShowLabel="true"
+                                        Id="Payee"
+                                        @bind-Value="LmLoginModel.DevToken" />
+                        <ValidationMessage For="() => LmLoginModel.DevToken" />
+                    </div>
+                    <div class="mb-4">
+                        <LoadingPanel IsLoading="LmLoginInProgress" ErrorMessage="@LmLoginError" OnRetry="() => {LmLoginError = null;}">
+                            <Button Size="Size.Large"
+                                    Color="Color.Primary"
+                                    ButtonType="ButtonType.Submit"
+                                    Text="Login" />
+                        </LoadingPanel>
+                    </div>
+                </EditForm>
+                <div>
+                    <p>
+                        <a href="@navigationManager.GetUriWithQueryParameter("cb", "")">← Back</a>
+                    </p>
+                </div>
+            }
+            else //Login screen
+            {
+                if (HasAddSsoParam)
+                {
+                    <Alert class="mb-4" Color="Color.Info">
+                        <p>Please login with new credentials to link them to your BBudget profile.</p>
+                    </Alert>
+                }
+                <div class="mb-2">
+                    <a href="@navigationManager.GetUriWithQueryParameter("cb", "lmlogin")" class="btn btn-outline-primary">Lunch Money Account</a>
+                </div>
+                <div class="mb-2">
+                    <a href="/.auth/login/aad?post_login_redirect_uri=@CallBackUrl" class="btn btn-outline-primary">Microsoft Account</a>
+                </div>
+                <div class="mb-2">
+                    <a href="/.auth/login/github?post_login_redirect_uri=@CallBackUrl" class="btn btn-outline-primary">GitHub Account</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    [SupplyParameterFromQuery(Name = "cb")]
+    public string LoginCallbackState { get; set; }
+    [SupplyParameterFromQuery(Name = "addsso")]
+    public bool HasAddSsoParam { get; set; }
+
+    private bool UseAddSso => HasAddSsoParam;
+
+    private string CallBackUrl { get; set; }
+
+    public override bool AccountRequired => false;
+    public override bool AuthRequired => false;
+    public override bool SettingsRequired => false;
+
+    private bool ShowTokenInvalidError = false;
+    private bool LmLoginInProgress = false;
+    private string LmLoginError;
+
+
+
+    private LMLoginModel LmLoginModel = new LMLoginModel();
+
+    private async Task DoLmLogin()
+    {
+        ShowTokenInvalidError = false;
+        LmLoginInProgress = true;
+        LmLoginError = null;
+        try
+        {
+            if (UseAddSso)
+            {
+                var resp = await userService.AddLmSso(LmLoginModel.DevToken);
+                ProcessAddSsoResponse(resp);
+            }
+            else
+            {
+                var authInfo = await userService.LmTokenLogin(LmLoginModel.DevToken);
+                if (authInfo == null)
+                {
+                    ShowTokenInvalidError = true;
+                    return;
+                }
+                await SetAuthInfoAndRedirect(authInfo);
+            }
+        }
+        catch (Exception ex)
+        {
+            ex.LogIfRequired(log);
+            LmLoginError = ex.GetDescriptionForUser();
+        }
+        finally
+        {
+            LmLoginInProgress = false;
+        }
+    }
+
+    private void ProcessAddSsoResponse(AddSsoResponse resp)
+    {
+        if (resp != null)
+        {
+            if (resp.Response == Services.Auth.SsoAddResult.CannotTakeFromOtherUser)
+            {
+                navigationManager.NavigateTo(navigationManager.GetUriWithQueryParameter("cb", "canttakesso"));
+                return;
+            }
+
+            if (userService.AuthInfo != null)
+            {
+                if (resp.Response == Services.Auth.SsoAddResult.Ok
+                    || resp.Response == Services.Auth.SsoAddResult.TakenFromOtherUser)
+                {
+                    userService.AuthInfo.SsoAccounts.Add(resp.Sso);
+                }
+                else if (resp.Response == Services.Auth.SsoAddResult.Duplicate)
+                {
+                    userService.AuthInfo.SsoAccounts = userService.AuthInfo.SsoAccounts.Where(
+                        x => x.Provider != resp.Sso.Provider
+                            || x.SsoId != resp.Sso.SsoId)
+                            .Append(resp.Sso).ToList();
+                }
+            }
+            navigationManager.NavigateTo(navigationManager.GetUriWithQueryParameter("cb", "ok"));
+        }
+        else
+        {
+            navigationManager.NavigateTo(navigationManager.GetUriWithQueryParameter("cb", "error"));
+        }
+    }
+
+    private async Task SetAuthInfoAndRedirect(AuthUserInfo authInfo)
+    {
+        if (authInfo != null)
+        {
+            await userService.SetAuthInfo(authInfo);
+        }
+
+        if (authInfo != null && authInfo.Accounts != null && authInfo.Accounts.Any())
+        {
+            navigationManager.NavigateTo(navigationManager.GetUriWithQueryParameter("cb", "ok"));
+        }
+        else if (authInfo != null)
+        {
+            navigationManager.NavigateTo(navigationManager.GetUriWithQueryParameter("cb", "auth"));
+        }
+        else
+        {
+            navigationManager.NavigateTo(navigationManager.GetUriWithQueryParameter("cb", "error"));
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsLoading = true;
+        CallBackUrl = Uri.EscapeDataString(navigationManager.ToAbsoluteUri(navigationManager.GetUriWithQueryParameter("cb", "return")).ToString());
+        await base.OnInitializedAsync();
+    }
+
+    override protected async Task OnParametersSetAsync()
+    {
+        if (LoginCallbackState == "return")
+        {
+            IsLoading = true;
+            try
+            {
+                if (UseAddSso)
+                {
+                    var resp = await userService.AddSso();
+                    ProcessAddSsoResponse(resp);
+
+                }
+                else
+                {
+                    var authInfo = await userService.Login();
+                    await SetAuthInfoAndRedirect(authInfo);
+                }
+            }
+            catch
+            {
+                navigationManager.NavigateTo(navigationManager.GetUriWithQueryParameter("cb", "error"));
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+        else
+        {
+            IsLoading = false;
+        }
+    }
+
+}

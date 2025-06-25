@@ -1,0 +1,300 @@
+﻿@using LMApp.Controls.Bootstrap
+@using LMApp.Models
+@using LMApp.Models.Account
+@using LMApp.Models.Categories
+@using LMApp.Models.Context
+@using LMApp.Models.Transactions
+@using LMApp.Models.UI
+@inject SettingsService settingsService
+@inject UserContextService userService
+@inject FormatService formatService
+@inherits BaseNestedTransactionForm
+
+
+<EditForm EditContext="Context" FormName="SimpleTranEdit" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="fix-enter" @ref="RootDiv">
+        <div class="mb-4">
+            <BootstrapInput ShowLabel="true"
+                            UseInputEvent="true"
+                            @ref="firstInputRef"
+                            DisplayText="Payee"
+                            Id="Payee"
+                            @bind-Value="Transaction.Payee" />
+        </div>
+        <div class="mb-4">
+            <SearchEntitySelect DisplayText="Category"
+                                Id="Category"
+                                Items="Categories"
+                                @bind-Value="Transaction.CategoryId" />
+        </div>
+        <div class="mb-4">
+            <SearchEntitySelectString DisplayText="Account"
+                                      Id="Account"
+                                      Items="Accounts"
+                                      IsDisabled="Transaction.IsPlaidReadonly"
+                                      @bind-Value="Transaction.AccountUid"
+                                      OnValueChanged="x=>AccountChanged()" />
+        </div>
+        <div class="mb-4">
+            <label class="form-label" for="Amount">Amount</label>
+            <BootstrapInputGroup>
+                <BootstrapInputNumber Id="Amount"
+                                      UseInputEvent="true"
+                                      @bind-Value="Transaction.Amount"
+                                      IsDisabled="Transaction.IsPlaidReadonly"
+                                      FormatString="0.##"
+                                      Step="0.01" />
+                <Dropdown @bind-Value="@Transaction.Currency"
+                          Items="@Currencies"
+                          IsDisabled="Transaction.IsPlaidReadonly"
+                          Color="settingsService.GetCurrencyColor(Transaction.Currency)" />
+                <Dropdown @bind-Value="@Transaction.IsCredit"
+                          Items="@CreditDebit"
+                          IsDisabled="Transaction.IsPlaidReadonly"
+                          Color="@(Transaction.IsCredit? Color.Success: Color.Light)" />
+            </BootstrapInputGroup>
+        </div>
+        <div class="mb-4">
+            <DateTimePickerExt ShowLabel="true"
+                               @ref="DatePicker"
+                               DisplayText="Date"
+                               Id="Date"
+                               DateFormat="@ClientConstants.DateFormat"
+                               @bind-Value="Transaction.Date"
+                               ShowIcon="false" />
+        </div>
+        <div class="mb-4">
+            <BootstrapInput ShowLabel="true"
+                            UseInputEvent="true"
+                            DisplayText="Notes"
+                            Id="Notes"
+                            @bind-Value="Transaction.Notes" />
+        </div>
+        @if (!Transaction.IsCleared)
+        {
+            <UnreviewedTranStatus />
+        }
+        <ValidationSummary />
+        <div class="mb-2 mt-4">
+            @if (IsSaving)
+            {
+                <Spinner />
+            }
+            else
+            {
+                <div class="d-flex justify-content-between">
+                    <div class="text-start">
+                        <Button Size="Size.Large" ButtonType="ButtonType.Button" Color="Color.Secondary" IsOutline="true" Text="Cancel" OnClick="OnCancel" />
+                        @if (Transaction.Id != 0)
+                        {
+                            if (HasFirstTranForTransfer)
+                            {
+                                <Button class="ms-4" Size="Size.Large" ButtonType="ButtonType.Button" Color="@(userService.TransactionForCreateTransfer.Id == Transaction.Id ? Color.Secondary : Color.Primary)" IsOutline="false" Text="Create Transfer" title="Creates transfer from this and previously selected transaction" OnClick="OnCreateTransfer" />
+                            }
+                            else
+                            {
+                                @if (!Transaction.IsPlaid)
+                                {
+                                    <Button class="ms-4" Size="Size.Large" ButtonType="ButtonType.Button" Color="Color.Danger" IsOutline="true" Text="Delete" OnClick="OnDelete" />
+                                }
+                            }
+                        }
+                        <div class="dropdown d-inline ms-4">
+                            <button class="btn btn-outline-secondary btn-lg" type="button" id="moreActions" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="moreActions">
+                                @if (Transaction.Id == 0)
+                                {
+                                    <li>
+                                        <Button class="dropdown-item" OnClick="SaveAndNext" Color="Color.None">Create and next</Button>
+                                    </li>
+                                }
+                                else
+                                {
+                                    @if (ShowAndNextOnSave)
+                                    {
+                                        <li>
+                                            <Button class="dropdown-item" OnClick="SaveAndNext" Color="Color.None">Save and next</Button>
+                                        </li>
+                                    }
+                                    @if (HasFirstTranForTransfer && !Transaction.IsPlaid)
+                                    {
+                                        <li>
+                                            <Button class="dropdown-item" OnClick="OnDelete" Color="Color.None">Delete</Button>
+                                        </li>
+                                    }
+                                    <li>
+                                        <Button class="dropdown-item" OnClick="OnCopy" Color="Color.None">Copy</Button>
+                                    </li>
+                                    @if (!HasFirstTranForTransfer)
+                                    {
+                                        <li>
+                                            <Button class="dropdown-item" OnClick="OnCreateTransfer" Color="Color.None">Create Transfer</Button>
+                                        </li>
+                                    }
+                                }
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <Button class="dropdown-item" OnClick="ShowHotkeysHelp" Color="Color.None">
+                                        <i class="fa-solid fa-keyboard me-2"></i>Keyboard Shortcuts
+                                    </Button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <Button Size="Size.Large"
+                                IsDisabled="SaveDisabled"
+                                Color="SaveButtonColor"
+                                ButtonType="ButtonType.Submit"
+                                Text="@SaveButtonText" />
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</EditForm>
+
+<HotkeysHelpModal @ref="hotkeysHelpModal" />
+
+@code {
+
+    private EditForm Form;
+    private BootstrapInput<string> firstInputRef;
+
+    [Parameter]
+    public SimpleTransactionForEdit Transaction { get; set; }
+
+    protected override BaseTransactionForEdit BaseTran => Transaction;
+
+    private bool HasFirstTranForTransfer => userService.TransactionForCreateTransfer != null;
+
+    private DateTimePickerExt DatePicker;
+
+    [Parameter]
+    public EventCallback<SimpleTransactionForEdit> SaveTransaction { get; set; }
+
+    [Parameter]
+    public EventCallback<SimpleTransactionForEdit> SaveAndNextTransaction { get; set; }
+
+    [Parameter]
+    public EventCallback<SimpleTransactionForEdit> CreateTransfer { get; set; }
+
+    private HotkeysHelpModal hotkeysHelpModal;
+
+
+    private EditContext Context;
+
+
+    [Parameter]
+    public IEnumerable<SelectedItem> Categories { get; set; }
+
+    [Parameter]
+    public IEnumerable<SelectedItem> Accounts { get; set; }
+
+    [Parameter]
+    public IEnumerable<SelectedItem> Currencies { get; set; }
+
+    [Parameter]
+    public UnifiedAccountInfo[] AccountLookup { get; set; }
+
+    private UnifiedAccountInfo Account { get; set; }
+
+    private IEnumerable<SelectedItem> CreditDebit;
+    private IEnumerable<SelectedItem> SaveItems;
+
+
+    private Task AccountChanged()
+    {
+        SetAccoutDtos();
+        if (Account != null)
+        {
+            Transaction.Currency = Account.Currency;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void SetAccoutDtos()
+    {
+        Account = AccountLookup.FirstOrDefault(x => x.AccountUid == Transaction.AccountUid);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        Transaction.TrimAll();
+        await SaveTransaction.InvokeAsync(Transaction);
+    }
+
+    private async Task SaveAndNext()
+    {
+        if (Context.Validate())
+        {
+            await SaveAndNextTransaction.InvokeAsync(Transaction);
+        }
+    }
+
+    private async Task OnCreateTransfer()
+    {
+        await CreateTransfer.InvokeAsync(Transaction);
+    }
+
+    private async Task ShowHotkeysHelp()
+    {
+        await hotkeysHelpModal.Show();
+    }
+
+    protected override async Task OnSave()
+    {
+        if (Context.Validate())
+        {
+            Transaction.TrimAll();
+            await SaveTransaction.InvokeAsync(Transaction);
+        }
+    }
+
+    override protected void OnInitialized()
+    {
+        CreditDebit = [new SelectedItem
+            {
+                Text = "Expense",
+                 Value = "false"
+            }, new SelectedItem
+        {
+              Text = "Credit",
+              Value = "true"
+        }];
+    }
+
+    override protected void OnParametersSet()
+    {
+        // Set up the base class callbacks
+        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+        CreateTransferCallback = EventCallback.Factory.Create(this, async () => await OnCreateTransfer());
+
+        if (Transaction != null)
+        {
+            Context = new EditContext(Transaction);
+        }
+        else
+        {
+            Context = null;
+        }
+    }
+
+    public Task FocusAsync()
+    {
+        return TryFocus();
+    }
+
+    private async Task TryFocus()
+    {
+        if (firstInputRef != null)
+        {
+            await firstInputRef.FocusAsync();
+        }
+    }
+
+}

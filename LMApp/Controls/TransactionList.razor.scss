@@ -1,0 +1,53 @@
+﻿.tran-row {
+    padding: 0.5rem;
+    cursor: pointer;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-text-decoration: none;
+    text-decoration: none;
+    color: inherit;
+
+    &:not(:first-child) {
+        border-top: lightgray 1px solid;
+    }
+
+    &.active {
+        background-color: var(--bs-primary-bg-subtle);
+    }
+
+    &:hover {
+        background-color: #efefef;
+    }
+
+    &.active:hover {
+        background-color: var(--bs-primary-border-subtle);
+    }
+
+    &.next-month-open:not(:first-child) {
+        border-top: #efefef 10px solid;
+    }
+}
+
+.tran-notes { 
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.amount-editor {
+    display: flex;
+}
+
+
+div:focus-within .tran-row.keyboard-selected {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
+}
+
+/* Remove default focus outline from container */
+div[tabindex]:focus {
+    outline: none;
+}

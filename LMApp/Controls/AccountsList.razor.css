@@ -1,0 +1,70 @@
+﻿@charset "UTF-8";
+.account-row:not(:first-child) {
+  border-top: lightgray 1px solid;
+}
+.account-row.total h5:before {
+  content: "∑";
+  color: var(--bs-primary);
+  margin-right: 0.5rem;
+}
+.account-row.active {
+  background-color: var(--bs-primary-bg-subtle);
+}
+.account-row.active:hover {
+  background-color: var(--bs-primary-border-subtle);
+}
+
+.account-row .account-row-inner {
+  padding: 0.5rem;
+  cursor: pointer;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-text-decoration: none;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.account-row:hover {
+  background-color: #efefef;
+}
+
+.balance {
+  font-size: 1.25em;
+}
+
+div:focus-within .account-row.keyboard-selected {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+/* Remove default focus outline from container */
+div[tabindex]:focus {
+  outline: none;
+}
+
+@media (min-width: 641px) {
+  .account-row:not(:first-child) {
+    border-top: none;
+  }
+  .account-row:not(:first-child) .account-row-inner {
+    border-top: lightgray 1px solid;
+  }
+  .account-row .account-row-inner {
+    padding: 0.5rem 1rem;
+  }
+  .account-row:hover {
+    background-color: unset;
+  }
+  .account-row .account-row-inner:hover {
+    background-color: #efefef;
+  }
+}
+@media (min-width: 991px) {
+  .account-row .account-row-inner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

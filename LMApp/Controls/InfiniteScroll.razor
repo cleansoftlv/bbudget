@@ -1,0 +1,41 @@
+﻿@using LMApp.Models.UI
+@inject Utils utils
+<div class="@(@class)" @ref="List">
+    @ChildContent
+</div>
+@code{
+
+    private DotNetObjectReference<InfiniteScroll> selfReference;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            selfReference = DotNetObjectReference.Create(this);
+            var polyfillDebounceIntervalMs = 400;
+            await utils.Init();
+            await utils.AttachScrollEndEventWithPolyfill(nameof(OnScrollHandler), List, selfReference, polyfillDebounceIntervalMs);
+        }
+    }
+
+    private ElementReference List;
+
+    [Parameter]
+    public EventCallback OnScrollEnd { get; set; }
+
+    [Parameter]
+    public string @class { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [JSInvokable]
+    public async Task OnScrollHandler()
+    {
+        var scrollInfo = await utils.GetScrollInfo(List);
+        if (scrollInfo.isAtBottom)
+        {
+            await OnScrollEnd.InvokeAsync();
+        }
+    }
+}

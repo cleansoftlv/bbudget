@@ -1,0 +1,414 @@
+﻿@using LMApp.Models.Account;
+@using System.Diagnostics.CodeAnalysis
+@using System.Net
+@using LMApp.Models.UI
+@using Shared.Login
+@page "/auth"
+@inherits BasePage
+@inject FormatService formatService
+
+<PageTitle>Profile</PageTitle>
+
+
+<LoadingPanel IsLoading="IsLoading || userContexts == null" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    @if (AuthError)
+    {
+        <Alert class="mb-4 mt2" Color="Color.Danger">
+            <h4 class="alert-heading">Authentication error</h4>
+            <p>There was an error authenticating with Lunch Money because token was rejected. Please remove the active account and add it back.</p>
+        </Alert>
+    }
+    else if (NoAuthError)
+    {
+        <Alert class="mb-4 mt2" Color="Color.Info">
+            <h4 class="alert-heading">Welcome to BBudget for Lunch Money</h4>
+            <p>
+                To use this application, please add a Lunch Money account developer token. You can create a token here -
+                <a href="https://my.lunchmoney.app/developers" target="_blank">Lunch Money > Settings > Developers</a>
+            </p>
+            <p>
+                You can read more about BBudget for Lunch Money in the <NavLink href="about">About</NavLink> page.
+            </p>
+        </Alert>
+    }
+    else if (LicenseError)
+    {
+        <Alert class="mb-4 mt2" Color="Color.Warning">
+            @if (userService.CurrentAccount != null)
+            {
+                <p>License for @userService.CurrentAccount.BudgetName expired on @formatService.FormatDate(formatService.ConvertFromUtcToLocal(userService.CurrentAccount.LicenseExpirationDate))</p>
+            }
+            else
+            {
+                <p>License for one of your accounts has expired.</p>
+            }
+            <p class="mb-4">
+                Please purchase a license to use BBudget for Lunch Money or switch to another account with a valid license.
+            </p>
+            <div>
+                <a href="license/purchase" class="btn btn-primary">Purchase license</a>
+            </div>
+        </Alert>
+    }
+    <h1>Profile</h1>
+    <div class="container-fluid g-0">
+        <h4>Lunch Money accounts</h4>
+        <div class="row">
+            @foreach (var context in userContexts)
+            {
+                <div class="col-12 col-md-6">
+                    <div class="card mb-4 shadow-sm @(IsActiveAccount(context) ? "bg-success bg-opacity-10" : null)">
+                        <div class="card-body">
+                            <h5 class="card-title">@context.Name</h5>
+                            <p class="card-subtitle">@context.UserName</p>
+                            <p class="card-text">
+                                License:
+                                <a href="license">
+                                    @(context.IsPaidLicense ? "Paid" : "Trial") till @formatService.FormatDate(context.LicenseTill)
+                                </a>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                @if (!IsActiveAccount(context))
+                                {
+                                    <button type="button" disabled="@saving" class="btn btn-sm btn-secondary" @onclick="e => ActivateAccount(context)">Select</button>
+                                }
+                                else
+                                {
+                                    <span class="text-bg-success bg-opacity-100 badge">Active</span>
+                                }
+                                <button type="button" class="btn btn-outline-danger" @onclick="e => RemoveAccount(context)">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="col-12 col-md-6">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Add New Account</h5>
+                        <div class="card-text">
+                            <div>
+                                <label for="newDevToken">Developer token:</label>
+                                <input id="newDevToken" name="newDevToken" type="password" class="form-control" required @bind="newAccountToken" placeholder="" />
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-primary" disabled="@saving" @onclick="AddAccount">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <LoadingPanel IsLoading="saving" ErrorClass="my-4">
+        </LoadingPanel>
+        <h4>Your login</h4>
+        <div class="row">
+            @foreach (var sso in authUserInfo.SsoAccounts)
+            {
+                <div class="col-12 col-md-6">
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">@formatService.AuthProviderName(sso.Provider)</h5>
+                            <p class="card-text">@sso.Name</p>
+                            @if (authUserInfo.SsoAccounts.Count > 1)
+                            {
+                                <div>
+                                    <button type="button" class="btn btn-outline-danger" @onclick="e => RemoveSso(sso)">Remove</button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="mb-4">
+            <LoadingPanel IsLoading="LogoutInProgress" ErrorMessage="@LogoutError" OnRetry="Logout">
+                <Button class="me-1 mb-2" Color="Color.Primary" IsOutline="true" Text="Log out" OnClick="Logout" />
+                <Button class="me-4 mb-2" Color="Color.Primary" IsOutline="true" Text="Add credentials" OnClick="AddSso" />
+                <Button class="mb-2" Color="Color.Danger" IsOutline="true" Text="Delete BBudget Profile" OnClick="DeleteProfile" />
+            </LoadingPanel>
+        </div>
+
+    </div>
+</LoadingPanel>
+
+@code {
+
+    [SupplyParameterFromQuery(Name = "authError")]
+    public bool AuthError { get; set; }
+
+    [SupplyParameterFromQuery(Name = "noLicense")]
+    public bool LicenseError { get; set; }
+
+
+    [SupplyParameterFromQuery(Name = "noAuth")]
+    public bool NoAuthError { get; set; }
+
+    private bool IsActiveAccount(LMAccountInfo acc)
+    {
+        return userService.CurrentAccount != null && userService.CurrentAccount.Id == acc.Id;
+    }
+
+
+    public override bool AccountRequired => false;
+    public override bool SettingsRequired => false;
+
+    private List<LMAccountInfo> userContexts;
+    private string newAccountToken;
+    private bool saving;
+    private AuthUserInfo authUserInfo;
+
+    private bool LogoutInProgress;
+    private string LogoutError;
+
+    private Task AddSso()
+    {
+        navigationManager.NavigateTo("/login?addsso=true");
+        return Task.CompletedTask;
+    }
+
+    private async Task Logout()
+    {
+        await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+        {
+            Title = "Log out",
+            Message = new MarkupString($"Are you sure you want to log out?"),
+            AdditionalButtonText = "Log out",
+            AdditionalButtonColor = Color.Danger,
+            AdditionalButtonCallback = DoLogout
+        });
+    }
+
+    private async Task DeleteProfile()
+    {
+        await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+        {
+            Title = "Delete BBudget Profile",
+            Message = new MarkupString($"Are you sure you want to delete all your information from BBudget and log out?<br/><br/><strong>Important:</strong> This will only delete your BBudget profile and settings. Your data in Lunch Money will NOT be affected or deleted."),
+            AdditionalButtonText = "Delete my profile",
+            AdditionalButtonColor = Color.Danger,
+            AdditionalButtonCallback = DoDeleteProfile
+        });
+    }
+
+
+
+    private async Task DoLogout()
+    {
+        await ModalContainer.Modal.Hide();
+        LogoutInProgress = true;
+        try
+        {
+            await userService.Logout();
+        }
+        catch (Exception er)
+        {
+            er.LogIfRequired(log);
+            LogoutError = er.GetDescriptionForUser();
+            LogoutInProgress = false;
+            return;
+        }
+        const string callBackUrl = "/login?cb=logoutreturn";
+        await StaticAppLogout(callBackUrl);
+
+        LogoutInProgress = false;
+    }
+
+    private async Task StaticAppLogout(string callBackUrl)
+    {
+        var needStaticWebAppLogout = await userService.CheckStaticAppAuth();
+        if (needStaticWebAppLogout)
+        {
+            navigationManager.NavigateTo($"/.auth/logout?post_logout_redirect_uri={Uri.EscapeDataString(callBackUrl)}", forceLoad: true);
+        }
+        else
+        {
+            navigationManager.NavigateTo(callBackUrl);
+        }
+    }
+
+    private async Task DoDeleteProfile()
+    {
+        await ModalContainer.Modal.Hide();
+        LogoutInProgress = true;
+        try
+        {
+            await userService.DeleteProfile();
+        }
+        catch (Exception er)
+        {
+            er.LogIfRequired(log);
+            LogoutError = er.GetDescriptionForUser();
+            LogoutInProgress = false;
+            return;
+        }
+        const string callBackUrl = "/login?cb=deleteprofilereturn";
+        await StaticAppLogout(callBackUrl);
+        LogoutInProgress = false;
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (LoadCancelled)
+        {
+            return;
+        }
+        authUserInfo = userService.AuthInfo;
+        userContexts = userService.AuthInfo.Accounts.OrderBy(x => x.Name).ToList();
+    }
+
+    private async Task ShowMessage(string title, string message)
+    {
+        await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+        {
+            Title = title,
+            Message = new MarkupString(message)
+        });
+    }
+
+    private async Task RemoveAccount(LMAccountInfo context)
+    {
+        await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+        {
+            Title = "Remove account",
+            Message = new MarkupString($"Are you sure you want to remove {WebUtility.HtmlEncode(context.Name)}?"),
+            AdditionalButtonText = "Remove",
+            AdditionalButtonColor = Color.Danger,
+            AdditionalButtonCallback = () => RemoveAccountConfirmed(context)
+        });
+    }
+
+    private async Task RemoveSso(SsoInfo sso)
+    {
+        await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+        {
+            Title = "Remove credentials",
+            Message = new MarkupString($"Are you sure you want to delete {WebUtility.HtmlEncode(sso.Name)} ({WebUtility.HtmlEncode(formatService.AuthProviderName(sso.Provider))})?"),
+            AdditionalButtonText = "Remove",
+            AdditionalButtonColor = Color.Danger,
+            AdditionalButtonCallback = () => RemoveSsoConfirmed(sso)
+        });
+    }
+
+    private async Task ActivateAccount(LMAccountInfo context)
+    {
+        saving = true;
+        try
+        {
+            await userService.ActivateLMAccount(context);
+        }
+        catch (Exception e)
+        {
+            saving = false;
+            e.LogIfRequired(log);
+            var desc = e.GetDescriptionForUser();
+            await ShowMessage("Error", $"An error occurred while trying to set the account as active. {desc} Please try again.");
+            return;
+        }
+        saving = false;
+    }
+
+    private async Task RemoveAccountConfirmed(LMAccountInfo account)
+    {
+        saving = true;
+        await ModalContainer.Modal.Hide();
+        try
+        {
+            await userService.RemoveLMAccount(account);
+        }
+        catch (Exception e)
+        {
+            saving = false;
+            e.LogIfRequired(log);
+            var desc = e.GetDescriptionForUser();
+            await ShowMessage("Error", $"An error occurred while trying to remove the account. {desc} Please try again.");
+            return;
+        }
+        userContexts = userService.AuthInfo.Accounts.OrderBy(x => x.Name).ToList();
+        AuthError = false;
+        saving = false;
+        StateHasChanged();
+    }
+
+    private async Task RemoveSsoConfirmed(SsoInfo sso)
+    {
+        saving = true;
+        await ModalContainer.Modal.Hide();
+        try
+        {
+            await userService.RemoveSso(sso);
+        }
+        catch (Exception e)
+        {
+            saving = false;
+            e.LogIfRequired(log);
+            var desc = e.GetDescriptionForUser();
+            await ShowMessage("Error", $"An error occurred while trying to remove login credentials. {desc} Please try again.");
+            return;
+        }
+        authUserInfo = userService.AuthInfo;
+        AuthError = false;
+        saving = false;
+        StateHasChanged();
+    }
+
+    private async Task AddAccount()
+    {
+        if (string.IsNullOrEmpty(newAccountToken))
+        {
+            await ShowMessage("Developer token is required", "Please enter a valid developer token to add an account.");
+            return;
+        }
+
+        if (userContexts.Any(x => x.Token == newAccountToken))
+        {
+            await ShowMessage("Account is not added", "The same Lunch Money developer token is already added.");
+            return;
+        }
+
+        saving = true;
+
+        UserContext newContext;
+
+        try
+        {
+            newContext = await userService.LoadContext(newAccountToken);
+            newContext.IsActive = true;
+            await userService.AddLMAccount(newContext);
+        }
+        catch (HttpRequestException x) when (x.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            await ShowMessage(
+                "Incorrect developer token",
+                "The developer token you entered is incorrect. Lunch Money doesn't accept it. Please try again.");
+            saving = false;
+            return;
+        }
+        catch (Exception)
+        {
+            await ShowMessage(
+                "Error",
+                "An error occurred while trying to add the account. Request failed to reach Lunch Money. Please try again.");
+            saving = false;
+            return;
+        }
+        newAccountToken = string.Empty;
+        userContexts = userService.AuthInfo.Accounts.OrderBy(x => x.Name).ToList();
+        await ModalContainer.Modal.Show(
+            new Models.UI.InfoModalVM
+            {
+                Title = "Account added",
+                Message = new MarkupString($"{WebUtility.HtmlEncode(newContext.BudgetName)} account loaded and added successfully. Please go to settings to set up account."),
+                AdditionalButtonColor = Color.Success,
+                AdditionalButtonText = "Go to settings",
+                AdditionalButtonCallback = async () =>
+{
+    await ModalContainer.Modal.Hide();
+    navigationManager.NavigateTo("/settings");
+}
+            });
+        saving = false;
+    }
+}
