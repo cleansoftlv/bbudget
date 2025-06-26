@@ -17,7 +17,7 @@
             To use this application, please login.
         </p>
         <p>
-            You can read more about BBudget for Lunch Money in the <NavLink href="about">About</NavLink> page.
+            You can read more about BBudget features on <a href="https://www.bbudget.app">home page</a>.
         </p>
     </Alert>
 }
@@ -163,6 +163,13 @@ else if (LoginCallbackState == "deleteprofilereturn")
                 <div class="mb-2">
                     <a href="/.auth/login/github?post_login_redirect_uri=@CallBackUrl" class="btn btn-outline-primary">GitHub Account</a>
                 </div>
+
+                if (LoginCallbackState == null)
+                {
+                    <p class="mt-4 text-secondary">
+                        New to BBudget? Read more about <a href="https://www.bbudget.app">BBudget features</a>
+                    </p>
+                }
             }
         </div>
     </div>
