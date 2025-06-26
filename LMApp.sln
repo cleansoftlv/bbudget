@@ -15,6 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		fix_debug.ps1 = fix_debug.ps1
 		package.json = package.json
+		README.md = README.md
 		swa.ps1 = swa.ps1
 	EndProjectSection
 EndProject

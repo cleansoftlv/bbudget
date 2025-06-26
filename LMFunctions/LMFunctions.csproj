@@ -46,6 +46,12 @@
       <IsTransformFile>true</IsTransformFile>
       <DependentUpon>appSettings.json</DependentUpon>
     </None>
+    <None Update="appSettings.Release.sample.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="appSettings.sample.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
     <None Update="host.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -25,10 +25,14 @@
 
 	<ItemGroup>
 		<Content Remove="compilerconfig.json" />
+		<Content Remove="wwwroot\appsettings.sample.json" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="compilerconfig.json" />
+		<None Include="wwwroot\appsettings.sample.json">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>

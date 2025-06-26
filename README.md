@@ -43,8 +43,9 @@ cd bbudget
 
 **IMPORTANT**: Before you can run the project, you need to configure several files:
 
-1. **Find all `.sample` files and create copies without the `.sample` extension**
-2. **Replace all `<your...>` placeholders with actual values**
+1. **Find all `.sample` and files and create copies without the `.sample` extension**
+2. **Find all `_sample` and files and create copies without the `_sample` part**
+3. **Replace all `<your...>` placeholders with actual values**
 
 Here are the configuration files you need to set up:
 
