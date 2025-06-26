@@ -1,14 +1,217 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BBudget – Simple Budgeting Companion for Lunch Money</title>
     <base href="/" />
-    <meta name="description" content="BBudget is a fast, mobile-friendly companion app for Lunch Money users.">
+    <meta name="description" content="BBudget is a fast, mobile-friendly companion app for Lunch Money users. Features budget tracking, account management, transaction review, and powerful reporting tools.">
     <link rel="icon" href="icon-512.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="app.min.css" rel="stylesheet">
+    <style>
+        .feature-section {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 3rem 1rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            margin-bottom: 3rem;
+            text-align: left;
+        }
+
+            .feature-card img {
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                max-width: 100%;
+                height: auto;
+                cursor: pointer;
+                transition: transform 0.2s;
+            }
+
+                .feature-card img:hover {
+                    transform: scale(1.02);
+                }
+
+            .feature-card h3 {
+                color: #fff;
+                margin-bottom: 1rem;
+                text-align: left;
+            }
+
+            .feature-card p {
+                color: rgba(255, 255, 255, 0.9);
+                text-align: left;
+            }
+
+            .feature-card ul {
+                color: rgba(255, 255, 255, 0.9);
+                padding-left: 1.5rem;
+                list-style-type: disc;
+                list-style-position: outside;
+                margin-left: 0;
+            }
+
+            .feature-card li {
+                margin-bottom: 0.75rem;
+                line-height: 1.6;
+                text-align: left;
+            }
+
+            .feature-card ul ul {
+                margin-top: 0.5rem;
+                padding-left: 1.5rem;
+                list-style-type: circle;
+                list-style-position: outside;
+            }
+
+                .feature-card ul ul li {
+                    margin-bottom: 0.5rem;
+                }
+
+        .mobile-screenshots {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .mobile-screenshot {
+            flex: 0 0 auto;
+            width: 200px;
+            text-align: center;
+        }
+
+            .mobile-screenshot img {
+                width: 100%;
+                max-width: 200px;
+                height: auto;
+                border-radius: 0.5rem;
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+                cursor: pointer;
+                transition: transform 0.2s;
+            }
+
+                .mobile-screenshot img:hover {
+                    transform: scale(1.05);
+                }
+
+            .mobile-screenshot.large-screenshot {
+                width: 100%;
+                max-width: 600px;
+                margin: 1rem auto;
+            }
+
+                .mobile-screenshot.large-screenshot img {
+                    max-width: 400px;
+                    margin: 0 auto;
+                }
+
+        .badge-feature {
+            background-color: rgba(0, 123, 255, 0.2);
+            color: #4db8ff;
+            border: 1px solid rgba(0, 123, 255, 0.3);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .pricing-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-screenshot {
+                width: 150px;
+            }
+
+                .mobile-screenshot.large-screenshot img {
+                    max-width: 100%;
+                }
+        }
+
+        /* Lightbox styles */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            padding: 20px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.95);
+            cursor: pointer;
+        }
+
+        .lightbox-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90vh;
+            object-fit: contain;
+            animation: zoom 0.3s;
+        }
+
+        .lightbox-caption {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            text-align: center;
+            color: #ccc;
+            padding: 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .close-lightbox {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+            .close-lightbox:hover,
+            .close-lightbox:focus {
+                color: #bbb;
+                text-decoration: none;
+            }
+
+        @keyframes zoom {
+            from {
+                transform: scale(0.1)
+            }
+
+            to {
+                transform: scale(1)
+            }
+        }
+
+        @media only screen and (max-width: 700px) {
+            .lightbox-content {
+                max-width: 98%;
+            }
+
+            .close-lightbox {
+                top: 10px;
+                right: 20px;
+                font-size: 35px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container py-5 text-center">
@@ -16,6 +219,11 @@
             <h1 class="display-5 fw-bold">BBudget</h1>
             <h2 class="fw-bold mb-4">Lunch Money companion app</h2>
             <p class="lead">A fast, clean, mobile-first budgeting app for Lunch Money users.</p>
+            <div class="mt-3">
+                <span class="badge-feature">60-day Free Trial</span>
+                <span class="badge-feature">$12/year</span>
+                <span class="badge-feature">Open Source</span>
+            </div>
             <a href="https://lm.bbudget.app" class="btn btn-primary btn-lg mt-3">Open BBudget App</a>
         </header>
 
@@ -24,37 +232,322 @@
                 <div class="card p-4 mb-4 text-start">
                     <h2 class="h4 fw-bold">Why BBudget?</h2>
                     <p>BBudget is a lightweight companion to the <a href="https://lunchmoney.app/">Lunch Money budgeting platform</a>. Built for speed, ease of use, and a seamless mobile experience, it offers the essential tools without the complexity.</p>
-                    <p>Lunch Money provides a lot features and is great budgeting platform, however less techincal users may find it hard to use for daily operations. BBudget was built to help less technical user with manual transaction input, imported transaction review and other simple operations.</p>
+                    <p>Lunch Money provides a lot features and is great budgeting platform, however less technical users may find it hard to use for daily operations. BBudget was built to help less technical user with manual transaction input, imported transaction review and other simple operations.</p>
                 </div>
 
                 <div class="card p-4 mb-4 text-start">
-                    <h2 class="h4 fw-bold">Key Features</h2>
+                    <h2 class="h4 fw-bold">Key Highlights</h2>
                     <ul class="mb-0">
-                        <li>📱 Mobile-optimized interface with responsive design</li>
-                        <li>⚡ Fast, intuitive navigation for quick manual budgeting</li>
-                        <li>🔄 Syncs directly with your Lunch Money data via API</li>
-                        <li>🔐 Secure and privacy-conscious architecture</li>
-                        <li>🆓 60-day free trial with no credit card required, 1$ per month after that.</li>
+                        <li>📱 <strong>Responsive UI</strong> - Works great on all screen sizes: mobile, tablet, laptop, desktop</li>
+                        <li>🔐 <strong>Security First</strong> - No financial data stored on backend, all data loaded directly from Lunch Money to your browser</li>
+                        <li>💻 <strong>Open Source</strong> - AGPLv3 licensed with commercial licensing available. <a href="https://github.com/cleansoftlv/bbudget" target="_blank">View on GitHub</a></li>
+                        <li>🌐 <strong>Multiple Accounts</strong> - Add unlimited Lunch Money budgeting accounts to one BBudget profile</li>
+                        <li>🔑 <strong>Flexible Authentication</strong> - Login with Lunch Money dev token, Microsoft account, or GitHub</li>
+                        <li>👥 <strong>Collaboration Ready</strong> - Budget collaborators can use BBudget free when account owner has a license</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Features Section -->
+        <div class="feature-section">
+            <h2 class="display-6 fw-bold mb-5">Powerful Features for Easy Budgeting</h2>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <!-- Feature 1: Budget Management -->
+                    <div class="feature-card">
+                        <h3>💰 Smart Budget Management</h3>
+                        <p>Take control of your monthly budget with powerful category-based tracking and instant insights.</p>
+                        <ul>
+                            <li>View monthly budget for each category with clear indication of remaining funds</li>
+                            <li>See overspent categories at a glance</li>
+                            <li>Separate "Total" category shows overall monthly spending</li>
+                            <li>Navigate between months with simple arrow controls</li>
+                            <li>One-click navigation from category to its transactions</li>
+                            <li>Context-aware transaction creation - preselects current category</li>
+                            <li>Keyboard navigation support (arrows and Enter)</li>
+                            <li>Real-time balance updates when editing transactions</li>
+                        </ul>
+                        <img src="screenshots/feature 1 - categories.png" alt="Budget Categories Management" class="mb-3" />
+                        <div class="mobile-screenshots mt-3">
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - categories.png" alt="Mobile Categories View" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 2: Accounts Management -->
+                    <div class="feature-card">
+                        <h3>💳 Comprehensive Account Management</h3>
+                        <p>Manage all your financial accounts in one place with real-time balances and running totals.</p>
+                        <ul>
+                            <li>Alphabetically sorted account list for easy navigation</li>
+                            <li>Total balance, assets, and liabilities displayed at the top</li>
+                            <li>One-click access to account transactions</li>
+                            <li>Infinite scrolling transaction list - no month switching needed</li>
+                            <li>Running balance shown for each transaction</li>
+                            <li>Multi-currency support</li>
+                            <li>Supports Plaid-synced, crypto, and manually managed accounts</li>
+                            <li>Search transactions with simple Ctrl+F</li>
+                            <li>Instant balance updates after any transaction edit</li>
+                        </ul>
+                        <img src="screenshots/feature 2- accounts - transfer.png" alt="Accounts and Transfers" class="mb-3" />
+                        <div class="mobile-screenshots mt-3">
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - accounts.png" alt="Mobile Accounts View" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 3: Advanced Transactions -->
+                    <div class="feature-card">
+                        <h3>📝 Advanced Transaction Management</h3>
+                        <p>Create and manage transactions with powerful features that make budgeting effortless.</p>
+                        <ul>
+                            <li><strong>Simple transactions</strong> - Quick expense/income entry in multiple currencies</li>
+                            <li><strong>Account transfers</strong> - Same or cross-currency transfers between accounts</li>
+                            <li><strong>Split transactions</strong> - Divide expenses across categories with auto-calculated last split</li>
+                            <li>Easy transaction type conversion with toggle switch</li>
+                            <li>Copy any existing transaction as template</li>
+                            <li>Delete transactions (except Plaid accounts)</li>
+                            <li>Keyboard shortcuts: Save (Ctrl+S), Save & Next, Copy</li>
+                            <li>Unique URLs for sharing transactions with collaborators</li>
+                            <li>Duplicate prevention when converting to transfers</li>
+                            <li>Group existing transactions into transfers</li>
+                            <li>Full Plaid account support for reviewing and categorizing</li>
+                        </ul>
+                        <div class="mobile-screenshots mt-3">
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - transaction form.png" alt="Transaction Form" />
+                            </div>
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile- transfer.png" alt="Transfer Creation" />
+                            </div>
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - cross-currency transfer.png" alt="Cross-currency Transfer" />
+                            </div>
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - split transaction.png" alt="Split Transaction" />
+                            </div>
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - group transactions into transfer.png" alt="Group Transfer" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 4: Unreviewed Transactions -->
+                    <div class="feature-card">
+                        <h3>🔍 Streamlined Transaction Review</h3>
+                        <p>Never miss an unreviewed transaction with our dedicated review workflow.</p>
+                        <ul>
+                            <li>Separate list of all unreviewed transactions from CSV imports or Plaid syncs</li>
+                            <li>Review transactions from all accounts in one convenient place</li>
+                            <li>Mark as reviewed with a simple save action</li>
+                            <li>Quickly find matching transactions for transfer creation</li>
+                            <li>Create Transfer feature for linking related transactions</li>
+                        </ul>
+                        <img src="screenshots/feature 3 - list of unreviewed transactions.png" alt="Unreviewed Transactions List" class="mb-3" />
+                        <div class="mobile-screenshots mt-3">
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - unreviewed transactions.png" alt="Mobile Unreviewed Transactions" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 5: Reporting -->
+                    <div class="feature-card">
+                        <h3>📊 Powerful Reporting Tools</h3>
+                        <p>Generate detailed reports that give you real insights into your financial health.</p>
+
+                        <h4 class="mt-4">Account Balance Reports</h4>
+                        <ul>
+                            <li>Export monthly closing balances for all accounts as CSV</li>
+                            <li>Always shows real-time calculated balances from transactions</li>
+                            <li>Not dependent on historical snapshots - always accurate</li>
+                            <li>Perfect for reconciling with bank statements</li>
+                            <li>Essential when entering transactions after month-end</li>
+                        </ul>
+                        <img src="screenshots/feature 4 - real balance report.png" alt="Real Balance Report" class="mb-3" />
+                        <img src="screenshots/feature 5 - real closing balance report.png" alt="Closing Balance Report" class="mb-3" />
+
+                        <h4 class="mt-4">Category Reports</h4>
+                        <ul>
+                            <li>Export category expenses per month per currency as CSV</li>
+                            <li>Essential for multi-currency budgeting</li>
+                            <li>Helps track expenses when currencies can't be mixed</li>
+                            <li>Perfect for business expense tracking with currency conversion rules</li>
+                        </ul>
+                        <img src="screenshots/feture 6 - categories report.png" alt="Categories Report" class="mb-3" />
+                        <img src="screenshots/feature 7  - categories report CSV.png" alt="Categories CSV Export" class="mb-3" />
+                    </div>
+
+                    <!-- Feature 6: Multiple Budgets -->
+                    <div class="feature-card">
+                        <h3>🎯 Multiple Budget & Account Support</h3>
+                        <p>Manage all your Lunch Money budgets from one BBudget account.</p>
+                        <ul>
+                            <li>Add unlimited Lunch Money budgeting accounts</li>
+                            <li>Switch between budgets with one click</li>
+                            <li>Single sign-on across all your devices</li>
+                            <li>Login once, access everywhere</li>
+                            <li>
+                                Support for multiple authentication providers:
+                                <ul>
+                                    <li>Lunch Money dev token</li>
+                                    <li>Microsoft Account</li>
+                                    <li>GitHub Account</li>
+                                </ul>
+                            </li>
+                            <li>Secure logout to protect your data</li>
+                            <li>Delete profile option with data removal (Lunch Money data remains intact)</li>
+                        </ul>
+                        <img src="screenshots/feature 6 - multiple budgets.png" alt="Multiple Budgets Support" class="mb-3" />
+                    </div>
+
+                    <!-- Mobile Optimization -->
+                    <div class="feature-card">
+                        <h3>📱 True Mobile-First Design</h3>
+                        <p>BBudget is built from the ground up for mobile use, with every feature optimized for touch interaction.</p>
+                        <ul>
+                            <li>Responsive design adapts to any screen size</li>
+                            <li>Touch-optimized controls and gestures</li>
+                            <li>Fast performance on mobile networks</li>
+                            <li>All features available on mobile - no compromises</li>
+                            <li>Progressive Web App capabilities</li>
+                        </ul>
+                        <div class="mobile-screenshots mt-3">
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - accounts.png" alt="Mobile Accounts" />
+                                <p class="small mt-2">Accounts</p>
+                            </div>
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - categories.png" alt="Mobile Categories" />
+                                <p class="small mt-2">Categories</p>
+                            </div>
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - transaction form.png" alt="Mobile Transaction" />
+                                <p class="small mt-2">Transactions</p>
+                            </div>
+                            <div class="mobile-screenshot">
+                                <img src="screenshots/mobile - unreviewed transactions.png" alt="Mobile Review" />
+                                <p class="small mt-2">Review Queue</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Section -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="pricing-card text-center">
+                    <h2 class="h3 fw-bold mb-4">Simple, Transparent Pricing</h2>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h4>Free Trial</h4>
+                            <p class="display-6 fw-bold">60 Days</p>
+                            <ul class="list-unstyled">
+                                <li>✓ Full feature access</li>
+                                <li>✓ No credit card required</li>
+                                <li>✓ Unlimited budgets</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h4>Annual License</h4>
+                            <p class="display-6 fw-bold">$12/year</p>
+                            <ul class="list-unstyled">
+                                <li>✓ All features included</li>
+                                <li>✓ Unlimited Lunch Money accounts</li>
+                                <li>✓ Priority support</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="mt-3 small">Budget collaborators can use BBudget free when the account owner has a paid license</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center mt-5">
+            <div class="col-lg-8">
+                <div class="card p-4 mb-4 text-start">
+                    <h2 class="h4 fw-bold">Security & Privacy</h2>
+                    <p>Your financial data security is our top priority:</p>
+                    <ul>
+                        <li>BBudget does not store or access any financial information on our servers</li>
+                        <li>All data is loaded directly from Lunch Money to your browser</li>
+                        <li>Dev tokens are encrypted when stored for multi-device access</li>
+                        <li>Open source code for full transparency</li>
+                        <li>Self-hosting option available for maximum control</li>
                     </ul>
                 </div>
 
                 <div class="card p-4 mb-4 text-start">
                     <h2 class="h4 fw-bold">Developed by CleanSoft</h2>
-                    <p>BBudget is proudly developed and maintained by <a href="https://www.cleansoft.lv" target="_blank">CleanSoft</a>. CleanSoft is not affiliated with  Lunchbag Labs, Inc. (Lunch Money developer). BBudget application uses Lunch Money public API to store your financial information. Lunch Money account is required to use BBudget.</p>
+                    <p>BBudget is proudly developed and maintained by <a href="https://www.cleansoft.lv" target="_blank">CleanSoft</a>. CleanSoft is not affiliated with Lunchbag Labs, Inc. (Lunch Money developer). BBudget application uses Lunch Money public API to store your financial information. Lunch Money account is required to use BBudget.</p>
                 </div>
 
                 <div class="card p-4 text-center">
-                    <h2 class="h4 fw-bold mb-3">Start Budgeting Smarter</h2>
-                    <p>Try BBudget free for 60 days. No sign-up hassle — just budgeting done right.</p>
+                    <h2 class="h4 fw-bold mb-3">Start Budgeting Smarter Today</h2>
+                    <p>Join thousands of users who've simplified their budgeting with BBudget.</p>
                     <a href="https://lm.bbudget.app" class="btn btn-primary btn-lg">Open BBudget</a>
+                    <p class="mt-3 small">60-day free trial • No credit card required</p>
                 </div>
             </div>
         </div>
 
         <footer class="pt-5 mt-5 text-center">
-            <p class="mb-0">© 2025 BBudget · <a href="https://www.cleansoft.lv" target="_blank">CleanSoft</a></p>
+            <p class="mb-0">© 2025 BBudget · <a href="https://www.cleansoft.lv" target="_blank">CleanSoft</a> · <a href="https://github.com/cleansoftlv/bbudget" target="_blank">GitHub</a></p>
         </footer>
     </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox">
+        <span class="close-lightbox">&times;</span>
+        <img class="lightbox-content" id="lightbox-img">
+        <div class="lightbox-caption" id="lightbox-caption"></div>
+    </div>
+
+    <script>
+        // Get the lightbox elements
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const lightboxCaption = document.getElementById('lightbox-caption');
+        const closeBtn = document.getElementsByClassName('close-lightbox')[0];
+
+        // Add click event to all images
+        document.addEventListener('DOMContentLoaded', function () {
+            const images = document.querySelectorAll('.feature-card img, .mobile-screenshot img');
+
+            images.forEach(img => {
+                img.addEventListener('click', function () {
+                    lightbox.style.display = 'block';
+                    lightboxImg.src = this.src;
+                    lightboxCaption.textContent = this.alt || '';
+                });
+            });
+        });
+
+        // Close lightbox when clicking the X
+        closeBtn.addEventListener('click', function () {
+            lightbox.style.display = 'none';
+        });
+
+        // Close lightbox when clicking outside the image
+        lightbox.addEventListener('click', function (event) {
+            if (event.target === lightbox) {
+                lightbox.style.display = 'none';
+            }
+        });
+
+        // Close lightbox with Escape key
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && lightbox.style.display === 'block') {
+                lightbox.style.display = 'none';
+            }
+        });
+    </script>
 
 </body>
 </html>
