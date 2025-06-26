@@ -19,3 +19,200 @@ footer a {
   color: #ddd;
   text-decoration: underline;
 }
+
+.feature-section {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  padding: 3rem 1rem;
+  margin: 3rem 0;
+}
+
+.feature-card {
+  margin-bottom: 3rem;
+  text-align: left;
+}
+
+.feature-card img {
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 100%;
+  height: auto;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.feature-card img:hover {
+  transform: scale(1.02);
+}
+
+.feature-card h3 {
+  color: #fff;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.feature-card p {
+  color: rgba(255, 255, 255, 0.9);
+  text-align: left;
+}
+
+.feature-card ul {
+  color: rgba(255, 255, 255, 0.9);
+  padding-left: 1.5rem;
+  list-style-type: disc;
+  list-style-position: outside;
+  margin-left: 0;
+}
+
+.feature-card li {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.feature-card ul ul {
+  margin-top: 0.5rem;
+  padding-left: 1.5rem;
+  list-style-type: circle;
+  list-style-position: outside;
+}
+
+.feature-card ul ul li {
+  margin-bottom: 0.5rem;
+}
+
+.mobile-screenshots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.mobile-screenshot {
+  flex: 0 0 auto;
+  width: 200px;
+  text-align: center;
+}
+
+.mobile-screenshot img {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.mobile-screenshot img:hover {
+  transform: scale(1.05);
+}
+
+.mobile-screenshot.large-screenshot {
+  width: 100%;
+  max-width: 600px;
+  margin: 1rem auto;
+}
+
+.mobile-screenshot.large-screenshot img {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.badge-feature {
+  background-color: rgba(0, 123, 255, 0.2);
+  color: #4db8ff;
+  border: 1px solid rgba(0, 123, 255, 0.3);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.pricing-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .mobile-screenshot {
+    width: 150px;
+  }
+  .mobile-screenshot.large-screenshot img {
+    max-width: 100%;
+  }
+}
+/* Lightbox styles */
+.lightbox {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  padding: 20px;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.95);
+  cursor: pointer;
+}
+
+.lightbox-content {
+  margin: auto;
+  display: block;
+  max-width: 90%;
+  max-height: 90vh;
+  object-fit: contain;
+  animation: zoom 0.3s;
+}
+
+.lightbox-caption {
+  margin: auto;
+  display: block;
+  max-width: 90%;
+  text-align: center;
+  color: #ccc;
+  padding: 10px 0;
+  font-size: 0.9rem;
+}
+
+.close-lightbox {
+  position: absolute;
+  top: 15px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.close-lightbox:hover,
+.close-lightbox:focus {
+  color: #bbb;
+  text-decoration: none;
+}
+
+@keyframes zoom {
+  from {
+    transform: scale(0.1);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@media only screen and (max-width: 700px) {
+  .lightbox-content {
+    max-width: 98%;
+  }
+  .close-lightbox {
+    top: 10px;
+    right: 20px;
+    font-size: 35px;
+  }
+}
