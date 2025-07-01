@@ -2,7 +2,8 @@
 
 BBudget is an open source client for Lunch Money budgeting platform, providing bank conversion services through a modern web application built with Blazor WebAssembly and Azure Functions.
 
-Published BBudget is available here: **[https://www.bbudget.app](https://www.bbudget.app)**
+Published BBudget is available here:
+**[https://www.bbudget.app](https://www.bbudget.app/?utm_source=github&utm_medium=readme&utm_campaign=referral)**
 
 ## License
 
