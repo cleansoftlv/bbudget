@@ -5,6 +5,7 @@
 @using LMApp.Models.UI
 @inject SettingsService settingsService
 @inject ToastService toastService
+@inject NavigationManager navigationManager
 @inherits BasePage
 <PageTitle>Settings</PageTitle>
 @if (NoSettings)
@@ -22,9 +23,17 @@
         <p class="mb-2">
             Categories, accounts, and budgets can be configured in Lunch Money settings.
         </p>
-        <a href="https://my.lunchmoney.app/settings" target="_blank" class="btn btn-primary">
-           Open Lunch Money Settings
-        </a>
+        <p>
+            <a href="https://my.lunchmoney.app/settings" target="_blank" class="btn btn-primary">
+                Open Lunch Money Settings
+            </a>
+        </p>
+        <p class="mb-2">
+            After updating settings in Lunch Money (categories, accounts, or budgets), you need to reload BBudget for the changes to take effect.
+        </p>
+        <button class="btn btn-warning" @onclick="ReloadBBudget">
+            <i class="fa-solid fa-refresh"></i> Reload BBudget
+        </button>
     </Alert>
     <div class="container-fluid mt-4 g-0">
         <div class="row">
@@ -39,7 +48,7 @@
                     <MultiSelect id="AdditionalCurrencies"
                                  Items="AllCurrencies"
                                  ShowSearch="true"
-                                 OnValueChanged="x=> Save()"
+                                 OnValueChanged="x => Save()"
                                  @bind-Value="SelectedCurrencies" />
                     <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return additional currencies set in your account. Please select all additional currencies you are using in your account.</Alert>
                 </div>
@@ -63,7 +72,7 @@
                     </Alert>
                 </div>
                 <div class="mb-4">
-                    <Toggle ShowLabel="true" DisplayText="Sort transactions list after loading next transaction page" OnText="Sort after load" OffText="Don't sort" Id="SortOnLoadMore" @bind-Value="SortTransactionsOnLoadMore" OnValueChanged="x=> Save()" />
+                    <Toggle ShowLabel="true" DisplayText="Sort transactions list after loading next transaction page" OnText="Sort after load" OffText="Don't sort" Id="SortOnLoadMore" @bind-Value="SortTransactionsOnLoadMore" OnValueChanged="x => Save()" />
                     <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return transactions sorted by date. When scrolling to the end of the transaction list, more transactions will be loaded. By default, loaded transactions will be added to the end of the list. If you turn on this setting, transactions will be added and the entire list will be sorted.</Alert>
                 </div>
             </div>
@@ -97,19 +106,19 @@
 
         AllCurrencies = settingsService.AllSupportedCurrencies
             .Select(x => new SelectedItem
-                {
-                    IsDisabled = x == settingsService.PrimaryCurrency,
-                    Value = x,
-                    Text = x
-                }).ToList();
+            {
+                IsDisabled = x == settingsService.PrimaryCurrency,
+                Value = x,
+                Text = x
+            }).ToList();
 
 
         Categories = settingsService.GetCachedCategories().Select(x => new SelectedItem
-            {
-                Active = true,
-                Value = x.id.ToString(),
-                Text = x.name
-            }).ToList();
+        {
+            Active = true,
+            Value = x.id.ToString(),
+            Text = x.name
+        }).ToList();
 
         SelectedCurrencies = settingsService.AdditionalCurrencies ?? Array.Empty<string>();
         TransferCategoryId = settingsService.Settings.TransferCategoryId;
@@ -153,5 +162,10 @@
             });
         }
         StateHasChanged();
+    }
+
+    private void ReloadBBudget()
+    {
+        navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
     }
 }
