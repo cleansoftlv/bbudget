@@ -128,7 +128,7 @@
     protected override void OnParametersSet()
     {
         // Find the index of the active category
-        if (ActiveCategoryId.HasValue && Categories != null)
+        if (ActiveCategoryId.HasValue && Categories != null && selectedIndex < 0)
         {
             var activeIndex = Array.FindIndex(Categories, c => c.CategoryId == ActiveCategoryId);
             if (activeIndex >= 0)
