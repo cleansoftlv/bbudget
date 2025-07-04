@@ -64,7 +64,7 @@ namespace LMApp.Models.Transactions
                 return (!string.IsNullOrEmpty(CurrencyFrom) &&
                        !string.IsNullOrEmpty(CurrencyTo) &&
                        !string.Equals(CurrencyFrom, CurrencyTo, StringComparison.OrdinalIgnoreCase))
-                       || (AmountFromWithSign != null && AmoutToWithSign != null && AmountFromWithSign != (AmoutToWithSign * -1));
+                       || (Id != 0 && From != null && To != null && From.amount * -1 != To.amount);
             }
         }
 
