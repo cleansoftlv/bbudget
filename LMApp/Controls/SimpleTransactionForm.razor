@@ -26,7 +26,8 @@
             <SearchEntitySelect DisplayText="Category"
                                 Id="Category"
                                 Items="Categories"
-                                @bind-Value="Transaction.CategoryId" />
+                                @bind-Value="Transaction.CategoryId"
+                                OnValueChanged="x=>OnCategoryChanged(x)" />
         </div>
         <div class="mb-4">
             <SearchEntitySelectString DisplayText="Account"
@@ -214,6 +215,20 @@
             Transaction.Currency = Account.Currency;
         }
         StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OnCategoryChanged(long? categoryId)
+    {
+        // Auto-set credit for income categories
+        if (categoryId.HasValue)
+        {
+            var category = settingsService.GetCachedCategory(categoryId.Value);
+            if (category != null && category.is_income)
+            {
+                Transaction.IsCredit = true;
+            }
+        }
         return Task.CompletedTask;
     }
 
