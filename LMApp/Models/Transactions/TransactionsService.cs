@@ -825,6 +825,7 @@ namespace LMApp.Models.Transactions
                             tran.Amount = tran.To.amount;
                             tran.Currency = tran.To.currency;
                         }
+                        tran.IsCrossCurrencyTransfer = dto.category_id == _settingsService.Settings.CrossCurrencyTransferCategoryId;
                         break;
                     }
                 case TransactionType.Split:

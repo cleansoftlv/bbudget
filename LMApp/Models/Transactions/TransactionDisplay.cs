@@ -37,6 +37,8 @@ namespace LMApp.Models.Transactions
 
         public bool IsInsideGroup { get; set; }
         public long? GroupId { get; set; }
+        public bool IsCrossCurrencyTransfer { get; set; }
+
 
         public long? ParentId { get; set; }
 

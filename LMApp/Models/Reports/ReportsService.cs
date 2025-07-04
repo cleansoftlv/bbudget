@@ -12,13 +12,17 @@ namespace LMApp.Models.Reports
     {
         private readonly TransactionsService _transactionsService;
         private readonly BudgetService _budgetService;
+        private readonly SettingsService _settingsService;
 
         public ReportsService(
             TransactionsService transactionsService,
-            BudgetService budgetService)
+            BudgetService budgetService,
+            SettingsService settingsService)
         {
             _transactionsService = transactionsService;
             _budgetService = budgetService;
+            _settingsService = settingsService;
+
         }
 
         public async Task<ExpenseReportData> GenerateExpenseReportAsync(
@@ -34,6 +38,18 @@ namespace LMApp.Models.Reports
             reportData.FromMonth = currentMonthStart.AddMonths(-monthCount + 1);
             reportData.ToMonth = currentMonthStart.AddMonths(1).AddDays(-1);
 
+            bool includeCrossCurrencyInBudget = false;
+            
+            long? crossCurrencyTransferCategory = _settingsService.Settings.CrossCurrencyTransferCategoryId;
+            if (crossCurrencyTransferCategory != null)
+            {
+                var category = _settingsService.GetCachedCategory(crossCurrencyTransferCategory.Value);
+                if (category != null && !category.exclude_from_budget)
+                {
+                    includeCrossCurrencyInBudget = true;
+                }
+            }
+
             // Load transactions for all months
             for (int i = 0; i < monthCount; i++)
             {
@@ -42,14 +58,14 @@ namespace LMApp.Models.Reports
 
                 progressCallback?.Invoke($"Processing transactions for {monthStart:yyyy-MM}");
 
-                var monthExpenses = await GetExpensesForMonth(monthStart, monthEnd);
+                var monthExpenses = await GetExpensesForMonth(monthStart, monthEnd, includeCrossCurrencyInBudget);
                 reportData.Expenses.AddRange(monthExpenses);
             }
 
             return reportData;
         }
 
-        private async Task<List<MonthlyExpense>> GetExpensesForMonth(DateTime monthStart, DateTime monthEnd)
+        private async Task<List<MonthlyExpense>> GetExpensesForMonth(DateTime monthStart, DateTime monthEnd, bool includeCrossCurrencyInBudget)
         {
             // First, load ALL transactions for the month
             var allTransactions = new List<TransactionDisplay>();
@@ -73,12 +89,11 @@ namespace LMApp.Models.Reports
 
                 hasMore = result.HasMore;
             }
-
             // Now filter and process all transactions at once
             var filteredTransactions = allTransactions
                 .Where(t => t.TranType != TransactionType.Split
                          && t.TranType != TransactionType.TransferPart
-                         && t.TranType != TransactionType.Transfer
+                         && (t.TranType != TransactionType.Transfer || (includeCrossCurrencyInBudget && t.IsCrossCurrencyTransfer))
                          && !t.IsInsideGroup)
                 .ToList();
 
