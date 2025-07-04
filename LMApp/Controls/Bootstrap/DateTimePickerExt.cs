@@ -13,6 +13,11 @@ namespace LMApp.Controls.Bootstrap
 
     public class DateTimePickerExt:DateTimePicker<DateTime>
     {
+        public DateTimePickerExt()
+        {
+            IsEditable = true;
+        }
+
 
         [Inject]
         public Utils Utils { get; set; }
