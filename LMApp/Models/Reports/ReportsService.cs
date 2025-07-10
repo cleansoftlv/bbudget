@@ -510,7 +510,7 @@ namespace LMApp.Models.Reports
             // Add data rows (excluding total row as requested)
             foreach (var monthData in reportData.MonthlyData.OrderBy(m => m.Month))
             {
-                csv.AppendLine($"{monthData.Month:yyyy-MM-dd},{monthData.Income:F2},{monthData.Expenses:F2},{monthData.Balance:F2},{EscapeCsvField(reportData.Currency.ToUpper())}");
+                csv.AppendLine($"{monthData.Month:yyyy-MM},{monthData.Income:F2},{monthData.Expenses:F2},{monthData.Balance:F2},{EscapeCsvField(reportData.Currency.ToUpper())}");
             }
 
             return csv.ToString();
