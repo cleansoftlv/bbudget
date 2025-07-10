@@ -58,7 +58,7 @@
                             else if (NextMonthVisible)
                             {
                                 <div class="text-center p-2">
-                                    <a href="javascript:" @onclick="() => NavigateToMonth(1, nav: NavDirection.None)"><i class="fa-solid fa-arrow-up"></i> @MonthStart.AddMonths(1).ToString("MMMM yyyy")</a>
+                                    <a href="javascript:" @onclick="() => NavigateToMonth(1, nav: NavDirection.None)"><i class="fa-solid fa-arrow-up"></i> @formatService.FormatMonth(MonthStart.AddMonths(1))</a>
                                 </div>
                             }
                             @if (BudgetLoadError != null)
@@ -409,7 +409,7 @@
     private async Task SwitchMonth(int count, bool allowCache)
     {
         MonthStart = MonthStart.AddMonths(count);
-        BudgetName = MonthStart.ToString("MMMM yyyy");
+        BudgetName = formatService.FormatMonth(MonthStart);
         NextMonthVisible = MonthStart.AddMonths(1) <= DateTime.Now;
         await LoadBudget(allowCache);
     }

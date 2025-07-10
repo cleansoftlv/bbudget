@@ -22,5 +22,17 @@
   {
     "outputFile": "Pages/Purchase.razor.css",
     "inputFile": "Pages/Purchase.razor.scss"
+  },
+  {
+    "outputFile": "Pages/ReportsPages/BalanceReport.razor.css",
+    "inputFile": "Pages/ReportsPages/BalanceReport.razor.scss"
+  },
+  {
+    "outputFile": "Pages/ReportsPages/ExpenseReport.razor.css",
+    "inputFile": "Pages/ReportsPages/ExpenseReport.razor.scss"
+  },
+  {
+    "outputFile": "Pages/ReportsPages/IncomeSpendingReport.razor.css",
+    "inputFile": "Pages/ReportsPages/IncomeSpendingReport.razor.scss"
   }
 ]

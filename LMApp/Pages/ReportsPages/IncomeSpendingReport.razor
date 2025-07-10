@@ -1,24 +1,26 @@
-@page "/reports/expenses"
+@page "/reports/income-spending"
+@using LMApp.Models.Context
 @using LMApp.Models.Reports
 @using LMApp.Models.UI
 @layout MainLayout
 @inherits BasePage
 @inject ReportsService reportsService
 @inject FormatService formatService
+@inject SettingsService settingsService
 
-<PageTitle>Category Report</PageTitle>
 
-<h1 class="d-none d-big-block">Category Report</h1>
+<PageTitle>Income vs Spending Report</PageTitle>
+
+<h1 class="d-none d-big-block">Income vs Spending Report</h1>
 <LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
     <div class="container-fluid g-0">
         <div class="row">
             <div class="col-12">
                 <div class="mb-4">
                     <p class="text-muted">
-                        This report shows transaction balances by category over the specified number of months. 
-                        Each category is displayed as a row, with columns for each month and currency combination.
-                        All transactions (expenses, income, and transfers) are included in the analysis.
-                        The report is exported as a pivot table with categories as rows and month/currency combinations as columns.
+                        This report shows your income versus spending for the specified number of months.
+                        All amounts are displayed in your base currency.
+                        The report includes all transactions marked as income and expenses, except from categories with "Exclude from totals".
                     </p>
                 </div>
 
@@ -63,7 +65,42 @@
                         Report generated successfully! The report includes transaction data from 
                         @formatService.FormatMonth(ReportData.FromMonth) to @formatService.FormatMonth(ReportData.ToMonth) 
                         (@NumberOfMonths month@(NumberOfMonths == 1 ? "" : "s")).
-                        The CSV will be formatted as a pivot table with categories as rows and month/currency combinations as columns.
+                    </div>
+
+                    <div class="table-responsive mb-4">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th class="text-end">Income</th>
+                                    <th class="text-end">Expenses</th>
+                                    <th class="text-end">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var monthData in ReportData.MonthlyData.OrderBy(m => m.Month))
+                                {
+                                    <tr>
+                                        <td>@formatService.FormatMonth(monthData.Month)</td>
+                                        <td class="text-end">@formatService.FormatBalance(monthData.Income, ReportData.Currency, isLiability: false)</td>
+                                        <td class="text-end">@formatService.FormatBalance(monthData.Expenses, ReportData.Currency)</td>
+                                        <td class="text-end">
+                                            @formatService.FormatBalance(monthData.Balance, ReportData.Currency,isLiability: monthData.Balance >= 0)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold">
+                                    <td>Total</td>
+                                    <td class="text-end">@formatService.FormatBalance(ReportData.TotalIncome, ReportData.Currency, isLiability: false)</td>
+                                    <td class="text-end">@formatService.FormatBalance(ReportData.TotalExpenses, ReportData.Currency, isLiability: false)</td>
+                                    <td class="text-end">
+                                        @formatService.FormatBalance(ReportData.TotalBalance, ReportData.Currency, isLiability: ReportData.TotalBalance >= 0)
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
                             
                     <div class="text-center">
@@ -72,7 +109,7 @@
                                 Icon="fa-solid fa-download"
                                 OnClick="DownloadReport"
                                 class="btn-lg mb-4">
-                            Download Category Report (CSV)
+                            Download Income vs Spending Report (CSV)
                         </Button>
                         <Button Color="Color.Secondary" 
                                 Size="Size.Large"
@@ -88,8 +125,7 @@
                     <div class="text-center text-sm-start">
                         <Button Color="Color.Primary" 
                                 Size="Size.Large"
-                                Icon="fa-solid fa-chart-pie"
-                                OnClick="GenerateReport"
+                                Icon="fa-solid fa-chart-line"                                OnClick="GenerateReport"
                                 IsDisabled="IsGenerating"
                                 class="btn-lg">
                             Generate Report
@@ -117,9 +153,8 @@
 
 
 @code {
-    private ExpenseReportData ReportData;
-    private bool IsGenerating = false;
-    private string ProgressMessage = "";
+    private IncomeSpendingReportData ReportData;
+    private bool IsGenerating = false;    private string ProgressMessage = "";
     private string GenerateError = "";
     private string ValidationError = "";
     private int NumberOfMonths = 3;
@@ -135,7 +170,7 @@
         if (LoadCancelled)
             return;
 
-        userService.SetActivePageState("Category Report", true);
+        userService.SetActivePageState("Income vs Spending Report", true);
         userService.SetActivePageBackHandler(EventCallback.Factory.Create(this, BackToReports));
     }
 
@@ -150,8 +185,7 @@
         }
 
         if (NumberOfMonths > 24)
-        {
-            ValidationError = "Number of months cannot exceed 24";
+        {            ValidationError = "Number of months cannot exceed 24";
             return false;
         }
 
@@ -175,15 +209,14 @@
 
         try
         {
-            ReportData = await reportsService.GenerateExpenseReportAsync(NumberOfMonths, UpdateProgress);
+            ReportData = await reportsService.GenerateIncomeSpendingReportAsync(NumberOfMonths, UpdateProgress);
             ProgressMessage = "Report completed!";
         }
         catch (Exception ex)
         {
             GenerateError = $"Failed to generate report: {ex.Message}";
         }
-        finally
-        {
+        finally        {
             IsGenerating = false;
             StateHasChanged();
         }
@@ -211,12 +244,11 @@
 
         try
         {
-            var csvContent = reportsService.GenerateExpenseReportCsv(ReportData);
-            var fileName = $"category-report-{NumberOfMonths}months-{DateTime.Now:yyyy-MM-dd}.csv";
+            var csvContent = reportsService.GenerateIncomeSpendingReportCsv(ReportData);
+            var fileName = $"income-spending-report-{NumberOfMonths}months-{DateTime.Now:yyyy-MM-dd}.csv";
 
             await utils.DownloadFile(fileName, csvContent, "text/csv");
-        }
-        catch (Exception ex)
+        }        catch (Exception ex)
         {
             GenerateError = $"Failed to download report: {ex.Message}";
             StateHasChanged();

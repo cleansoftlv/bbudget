@@ -22,6 +22,8 @@ namespace LMApp.Models
         public const string TransactionStatusUncleared = "uncleared";
 
         public const string DateFormat = "dd.MM.yyyy";
+        public const string MonthFormatWithYear = "MMMM yyyy";
+        public const string MonthFormatNoYear = "MMMM";
         public const string ClientNameKey = "ClientName";
 
 

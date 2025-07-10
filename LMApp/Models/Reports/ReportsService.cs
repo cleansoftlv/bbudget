@@ -39,7 +39,7 @@ namespace LMApp.Models.Reports
             reportData.ToMonth = currentMonthStart.AddMonths(1).AddDays(-1);
 
             bool includeCrossCurrencyInBudget = false;
-            
+
             long? crossCurrencyTransferCategory = _settingsService.Settings.CrossCurrencyTransferCategoryId;
             if (crossCurrencyTransferCategory != null)
             {
@@ -428,6 +428,92 @@ namespace LMApp.Models.Reports
 
             // If no special characters, still quote for consistency (optional)
             return $"\"{field}\"";
+        }
+
+        public async Task<IncomeSpendingReportData> GenerateIncomeSpendingReportAsync(
+            int monthCount = 6,
+            Action<string> progressCallback = null)
+        {
+            progressCallback?.Invoke("Loading transaction data...");
+
+            var reportData = new IncomeSpendingReportData();
+            var currentDate = DateTime.Now.Date;
+            var currentMonthStart = new DateTime(currentDate.Year, currentDate.Month, 1);
+
+            reportData.FromMonth = currentMonthStart.AddMonths(-monthCount + 1);
+            reportData.ToMonth = currentMonthStart.AddMonths(1).AddDays(-1);
+            reportData.Currency = _settingsService.PrimaryCurrency;    
+
+            // Process each month
+            for (int i = 0; i < monthCount; i++)
+            {
+                var monthStart = currentMonthStart.AddMonths(-monthCount + 1 + i);
+                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+                progressCallback?.Invoke($"Processing transactions for {monthStart:yyyy-MM}");
+
+                var monthData = await GetIncomeSpendingForMonth(monthStart, monthEnd);
+                reportData.MonthlyData.Add(monthData);
+            }
+
+            return reportData;
+        }
+
+        private async Task<MonthlyIncomeSpending> GetIncomeSpendingForMonth(DateTime monthStart, DateTime monthEnd)
+        {
+            var monthData = new MonthlyIncomeSpending
+            {
+                Month = monthStart,
+                Income = 0,
+                Expenses = 0
+            };
+
+            // Load ALL transactions for the month
+            var allTransactions = await GetAllTransactionsForAllAccountsInMonth(monthStart, monthEnd);
+
+            // Filter and process transactions
+            foreach (var transaction in allTransactions)
+            {
+                // Skip internal transfers, splits, and transfer parts
+                if (transaction.TranType == TransactionType.SplitPart ||
+                    transaction.TranType == TransactionType.TransferPart ||
+                    transaction.IsInsideGroup)
+                {
+                    continue;
+                }
+
+                // Use the base currency amount (to_base) from the transaction
+                var baseAmount = transaction.Transaction.to_base;
+
+                // Determine if it's income or expense based on the is_income flag
+                if (transaction.Transaction?.is_income == true)
+                {
+                    monthData.Income -= baseAmount;
+                }
+                else if (transaction.Transaction?.exclude_from_totals != true)
+                {
+                    // Only count as expense if not excluded from budget
+                    monthData.Expenses += baseAmount;
+                }
+            }
+
+            return monthData;
+        }
+
+        public string GenerateIncomeSpendingReportCsv(IncomeSpendingReportData reportData)
+        {
+            var csv = new StringBuilder();
+
+            // Add header row
+            csv.AppendLine("Month,Income,Expenses,Balance,Currency");
+
+            // Add data rows (excluding total row as requested)
+            foreach (var monthData in reportData.MonthlyData.OrderBy(m => m.Month))
+            {
+                csv.AppendLine($"{monthData.Month:yyyy-MM-dd},{monthData.Income:F2},{monthData.Expenses:F2},{monthData.Balance:F2},{EscapeCsvField(reportData.Currency.ToUpper())}");
+            }
+
+            return csv.ToString();
         }
     }
 }

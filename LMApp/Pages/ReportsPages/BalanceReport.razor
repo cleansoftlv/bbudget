@@ -4,6 +4,7 @@
 @layout MainLayout
 @inherits BasePage
 @inject ReportsService reportsService
+@inject FormatService formatService
 
 <PageTitle>Balance Report</PageTitle>
 
@@ -60,7 +61,7 @@
                     <div class="alert alert-success mb-4">
                         <i class="fa-solid fa-check-circle me-2"></i>
                         Report generated successfully! The report includes data from 
-                        @ReportData.FromMonth.ToString("MMMM yyyy") to @ReportData.ToMonth.ToString("MMMM yyyy") 
+                        @formatService.FormatMonth(ReportData.FromMonth) to @formatService.FormatMonth(ReportData.ToMonth) 
                         (@NumberOfMonths month@(NumberOfMonths == 1 ? "" : "s")).
                         The CSV will be formatted as a pivot table with accounts as rows and months as columns.
                     </div>

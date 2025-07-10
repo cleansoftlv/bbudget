@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LMApp.Models.Reports
 {
@@ -33,5 +34,27 @@ namespace LMApp.Models.Reports
         public List<MonthlyExpense> Expenses { get; set; } = new List<MonthlyExpense>();
         public DateTime FromMonth { get; set; }
         public DateTime ToMonth { get; set; }
+    }
+
+    public class MonthlyIncomeSpending
+    {
+        public DateTime Month { get; set; }
+        public decimal Income { get; set; }
+        public decimal Expenses { get; set; }
+        public decimal Balance => Income - Expenses;
+    }
+
+    public class IncomeSpendingReportData
+    {
+        public List<MonthlyIncomeSpending> MonthlyData { get; set; } = new List<MonthlyIncomeSpending>();
+        public DateTime FromMonth { get; set; }
+        public DateTime ToMonth { get; set; }
+
+        public string Currency { get; set; }
+
+
+        public decimal TotalIncome => MonthlyData.Sum(m => m.Income);
+        public decimal TotalExpenses => MonthlyData.Sum(m => m.Expenses);
+        public decimal TotalBalance => TotalIncome - TotalExpenses;
     }
 }

@@ -57,6 +57,16 @@ namespace LMApp.Models.UI
             return date.ToString(ClientConstants.DateFormat);
         }
 
+        public string FormatMonth(DateTime date)
+        {
+            if (date.Year == DateTime.Now.Year)
+            {
+                return date.ToString(ClientConstants.MonthFormatNoYear);
+            }
+
+            return date.ToString(ClientConstants.MonthFormatWithYear);
+        }
+
         public static string LimitLength(string s, int maxLength, string trimToken = "…")
         {
             return TextHelper.LimitLength(s, maxLength, trimToken);
