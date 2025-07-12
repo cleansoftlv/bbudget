@@ -459,7 +459,9 @@ namespace LMApp.Models.Reports
             return reportData;
         }
 
-        private async Task<MonthlyIncomeSpending> GetIncomeSpendingForMonth(DateTime monthStart, DateTime monthEnd)
+        private async Task<MonthlyIncomeSpending> GetIncomeSpendingForMonth(
+            DateTime monthStart,
+            DateTime monthEnd)
         {
             var monthData = new MonthlyIncomeSpending
             {
@@ -475,7 +477,7 @@ namespace LMApp.Models.Reports
             foreach (var transaction in allTransactions)
             {
                 // Skip internal transfers, splits, and transfer parts
-                if (transaction.TranType == TransactionType.SplitPart ||
+                if (transaction.TranType == TransactionType.Split ||
                     transaction.TranType == TransactionType.TransferPart ||
                     transaction.IsInsideGroup)
                 {
@@ -485,7 +487,6 @@ namespace LMApp.Models.Reports
                 // Use the base currency amount (to_base) from the transaction
                 var baseAmount = transaction.Transaction.to_base;
 
-                // Determine if it's income or expense based on the is_income flag
                 if (transaction.Transaction?.is_income == true)
                 {
                     monthData.Income -= baseAmount;
