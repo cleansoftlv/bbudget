@@ -32,8 +32,6 @@ namespace LMApp.Pages
         [Inject]
         public ILogger<BasePage> log { get; set; }
 
-
-
         [CascadingParameter] public IModalContainer ModalContainer { get; set; }
 
         [CascadingParameter]
@@ -151,6 +149,8 @@ namespace LMApp.Pages
                     navigationManager.NavigateTo("/auth?noLicense=true");
                     return;
                 }
+
+                userService.EnsureCorrectAccountIdInUrl();
             }
             if (SettingsRequired)
             {

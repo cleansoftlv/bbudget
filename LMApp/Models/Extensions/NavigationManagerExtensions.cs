@@ -38,7 +38,9 @@ namespace LMApp.Models.Extensions
 
             if (QueryHelpers.ParseQuery(uri.Query).TryGetValue(key, out var valueFromQueryString))
             {
-                switch (Type.GetTypeCode(typeof(T)))
+                var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+
+                switch (Type.GetTypeCode(targetType))
                 {
                     case TypeCode.Int32:
                         if (int.TryParse(valueFromQueryString, CultureInfo.InvariantCulture, out var valueAsInt))

@@ -21,20 +21,20 @@
                 <div class="ui-panel" id="first-ui-panel">
                     <div class="p-header xs">
                         <MobileTabNav />
-                        <div class="@($"{(!ShowUnreviewed? "sm": null)} header-text")">
+                        <div class="@($"{(!ShowUnreviewed ? "sm" : null)} header-text")">
                             @(ShowUnreviewed ? "Unreviewed Transactions" : "Transactions")
                         </div>
                     </div>
                     <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
                         <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
                             <TransactionList @ref="transactionListRef" Transactions="@Transactions"
-                            HasMore="HasMoreTrans"
-                            LoadMoreLoadError="@LoadMoreTransactionsError"
-                            ListContext="TransactionListContext.None"
-                            LoadingMore="LoadingMoreTrans"
-                            ActiveTransactionId="SelectedTransaction?.Id"
-                            TransactionSelected="NavigateToTransaction"
-                            OnLoadMore="LoadMoreTransactions" />
+                                             HasMore="HasMoreTrans"
+                                             LoadMoreLoadError="@LoadMoreTransactionsError"
+                                             ListContext="TransactionListContext.None"
+                                             LoadingMore="LoadingMoreTrans"
+                                             ActiveTransactionId="SelectedTransaction?.Id"
+                                             TransactionSelected="NavigateToTransaction"
+                                             OnLoadMore="LoadMoreTransactions" />
                         </InfiniteScroll>
                     </LoadingPanel>
                 </div>
@@ -49,19 +49,19 @@
                     </div>
                     <div class="p-body">
                         <LoadingPanel IsLoading="@(TransactionInEdit == null)"
-                        ErrorMessage="@LoadSingleTransactionError"
-                        OnRetry="RetryShowTransaction">
+                                      ErrorMessage="@LoadSingleTransactionError"
+                                      OnRetry="RetryShowTransaction">
                             <TransactionForm Transaction="@TransactionInEdit"
-                                SaveTransaction="t => SaveTransaction(t)"
-                                SaveTransactionAndNext="SaveTransactionAndNext"
-                                CreateTransfer="CreateTransfer"
-                                SaveError="@SaveTransactionError"
-                                Ungroup="UngroupWithConfirm"
-                                Copy="CopyTransaction"
-                                Delete="DeleteTransaction"
-                                ShowAndNextOnSave="@(ShowUnreviewed && TransactionInEdit.Id != 0)"
-                                IsSaving="IsSaving"
-                                Cancel="CloseTranForm" />
+                                             SaveTransaction="t => SaveTransaction(t)"
+                                             SaveTransactionAndNext="SaveTransactionAndNext"
+                                             CreateTransfer="CreateTransfer"
+                                             SaveError="@SaveTransactionError"
+                                             Ungroup="UngroupWithConfirm"
+                                             Copy="CopyTransaction"
+                                             Delete="DeleteTransaction"
+                                             ShowAndNextOnSave="@(ShowUnreviewed && TransactionInEdit.Id != 0)"
+                                             IsSaving="IsSaving"
+                                             Cancel="CloseTranForm" />
                         </LoadingPanel>
                     </div>
                 </div>
@@ -136,6 +136,7 @@
         userService.SetActivePageBackHandler(EventCallback.Factory.Create(this, ActiveBageBack));
     }
 
+
     protected override async Task OnParametersSetAsync()
     {
         if (LoadCancelled || userService.CurrentAccount == null)
@@ -147,11 +148,7 @@
         var oldShowUnreviewed = ShowUnreviewed;
         ShowUnreviewed = navigationManager.RelativeUriPathEquals("transactions/unreviewed");
 
-        if (Transactions == null || oldShowUnreviewed != ShowUnreviewed)
-        {
-            Transactions = null;
-            await LoadTransactions();
-        }
+        await LoadTransactions();
         await base.OnParametersSetAsync();
     }
 
@@ -162,7 +159,7 @@
     protected override async Task CloseTranForm()
     {
         await base.CloseTranForm();
-        
+
         // Focus the transaction list after closing transaction form
         if (transactionListRef != null)
         {
@@ -183,25 +180,39 @@
 
     private async Task RetryLoadTransactions()
     {
-        LoadTransactionsError = null;
-        await LoadTransactions();
+        await LoadTransactions(force: true);
     }
 
-    private async Task LoadTransactions()
+    private bool? DisplayingUnreviewed = null;
+
+    private async Task LoadTransactions(bool force = false)
     {
+        if (DisplayingUnreviewed == ShowUnreviewed 
+            && !force)
+            return;
+
         LoadTransactionsError = null;
+        Transactions = null;
+        DisplayingUnreviewed = ShowUnreviewed;
 
         try
         {
             var res = await transactionsService.GetAllTransactionsAsync(
                 status: ShowUnreviewed ? ClientConstants.TransactionStatusUncleared : null
             );
+
+            if (DisplayingUnreviewed != ShowUnreviewed)
+                return;
+
             UnfilteredTransactionCount = res.Transactions.Count;
             Transactions = FilterTransactions(res.Transactions).ToList();
             HasMoreTrans = res.HasMore;
         }
         catch (HttpRequestException ex)
         {
+            if (DisplayingUnreviewed != ShowUnreviewed)
+                return;
+
             ex.LogIfRequired(log);
             LoadTransactionsError = ex.GetDescriptionForUser();
         }

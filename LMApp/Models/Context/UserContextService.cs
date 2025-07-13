@@ -19,7 +19,8 @@ public class UserContextService(
     CascadingValueSource<AuthUserInfo> currentAuthSource,
     LicenseCheckService licenseCheck,
     LocalStorageService localStorageService,
-    IApplicationInsights appInsights
+    IApplicationInsights appInsights,
+    NavigationManager navManager
     )
 {
     private const string ActiveAccountLSKey = "activeAccountId";
@@ -29,6 +30,7 @@ public class UserContextService(
     private readonly CascadingValueSource<AuthUserInfo> _currentAuthSource = currentAuthSource;
     private readonly LocalStorageService _localStorageService = localStorageService;
     private readonly IApplicationInsights _appInsights = appInsights;
+    private readonly NavigationManager _navManager = navManager;
 
     private UserContext _account;
     public UserContext CurrentAccount
@@ -223,7 +225,7 @@ public class UserContextService(
             resp.NewSignature,
             AuthInfo.Accounts.Append(lmAccount)))
         {
-            await LoadAndStoreCurrentAuthUser(force: true);
+            await LoadAndStoreCurrentAuthUser(force: true, allowSaveToSettings: true);
         }
         else
         {
@@ -231,7 +233,7 @@ public class UserContextService(
             AuthInfo.Accounts.Add(lmAccount);
             if (lmAccount.IsActive)
             {
-                await SelectActiveAccountFromAuthInfo(lmAccount.Id, freshContext: context);
+                await SelectActiveAccountFromAuthInfo(lmAccount.Id, freshContext: context, allowSaveToSettings: true);
             }
         }
         return lmAccount;
@@ -276,7 +278,7 @@ public class UserContextService(
             resp.NewSignature,
             AuthInfo.Accounts.Where(x => x.Id != context.Id)))
         {
-            await LoadAndStoreCurrentAuthUser(force: true);
+            await LoadAndStoreCurrentAuthUser(force: true, allowSaveToSettings: true);
         }
         else
         {
@@ -284,7 +286,7 @@ public class UserContextService(
             AuthInfo.Signature = resp.NewSignature;
             if (CurrentAccount != null && CurrentAccount.ApiToken == context.Token)
             {
-                await SelectActiveAccountFromAuthInfo();
+                await SelectActiveAccountFromAuthInfo(allowSaveToSettings: true);
             }
         }
     }
@@ -308,7 +310,7 @@ public class UserContextService(
         var isValid = calcSign == newSignature.Signature;
         if (!isValid)
         {
-            await LoadAndStoreCurrentAuthUser(force: true);
+            await LoadAndStoreCurrentAuthUser(force: true, allowSaveToSettings: true);
         }
     }
 
@@ -323,13 +325,14 @@ public class UserContextService(
         await _localStorageService.Save(ActiveAccountLSKey, lmAccount.Id.ToString());
         await SaveActiveLMAccount(lmAccount.Id);
         AuthInfo.Accounts.ForEach(x => x.IsActive = x.Id == lmAccount.Id);
-        await SelectActiveAccountFromAuthInfo();
+        await SelectActiveAccountFromAuthInfo(allowSaveToSettings: true);
     }
 
     private async Task DoSwitchAccount(
         UserContext context,
         LMAccountSettings accountSettings,
-        AccountsAndCateogries accAndCat
+        AccountsAndCateogries accAndCat,
+        bool allowSaveToSettings
         )
     {
         CurrentAccount = context;
@@ -343,18 +346,30 @@ public class UserContextService(
         {
             AuthInfo.Accounts.ForEach(x => x.IsActive = x.Id == context.Id);
         }
-        if (CurrentAccount != null)
+        if (allowSaveToSettings)
         {
-            await _localStorageService.Save(ActiveAccountLSKey, CurrentAccount.Id.ToString());
-        }
-        else
-        {
-            await _localStorageService.Remove(ActiveAccountLSKey);
+            if (CurrentAccount != null)
+            {
+                await _localStorageService.Save(ActiveAccountLSKey, CurrentAccount.Id.ToString());
+            }
+            else
+            {
+                await _localStorageService.Remove(ActiveAccountLSKey);
+            }
         }
         await _currentAccountSource.NotifyChangedAsync(context);
     }
 
-    public async ValueTask<AuthUserInfo> LoadAndStoreCurrentAuthUser(bool force = false)
+    public void EnsureCorrectAccountIdInUrl()
+    {
+        var urlAccountId = _navManager.GetQueryStringOrDefault<long?>("bid");
+        if (urlAccountId != CurrentAccount?.AccountId)
+        {
+            _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("bid", CurrentAccount?.AccountId), false, true);
+        }
+    }
+
+    public async ValueTask<AuthUserInfo> LoadAndStoreCurrentAuthUser(bool force = false, bool allowSaveToSettings = false)
     {
         if (AuthInfo != null && !force)
         {
@@ -373,8 +388,13 @@ public class UserContextService(
         AuthInfo = res;
         await _appInsights.SetAuthenticatedUserContext(res.Id.ToString());
         await _currentAuthSource.NotifyChangedAsync(AuthInfo);
-        await SelectActiveAccountFromAuthInfo();
+        await SelectActiveAccountFromAuthInfo(null, null, GetLMAccountIdFromUrl(), allowSaveToSettings);
         return res;
+    }
+
+    private long? GetLMAccountIdFromUrl()
+    {
+        return _navManager.GetQueryStringOrDefault<long?>("bid");
     }
 
     public async Task<AuthUserInfo> Login()
@@ -510,22 +530,30 @@ public class UserContextService(
         AuthInfo = authUserInfo;
         if (authUserInfo.Accounts != null && authUserInfo.Accounts.Any())
         {
-            await SelectActiveAccountFromAuthInfo();
+            await SelectActiveAccountFromAuthInfo(allowSaveToSettings: true);
         }
         await _currentAuthSource.NotifyChangedAsync(AuthInfo);
     }
 
-    public async Task SelectActiveAccountFromAuthInfo(int? id = null, UserContext freshContext = null)
+    public async Task SelectActiveAccountFromAuthInfo(
+        int? id = null,
+        UserContext freshContext = null,
+        long? lmAccountId = null,
+        bool allowSaveToSettings = true)
     {
         if (AuthInfo == null)
         {
-            await DoSwitchAccount(null, null, null);
+            await DoSwitchAccount(null, null, null, allowSaveToSettings);
             return;
         }
         LMAccountInfo currentAccount = null;
         if (id != null)
         {
             currentAccount = AuthInfo.Accounts.FirstOrDefault(x => x.Id == id);
+        }
+        else if (lmAccountId != null)
+        {
+            currentAccount = AuthInfo.Accounts.FirstOrDefault(x => x.LMAccountId == lmAccountId);
         }
         else
         {
@@ -545,7 +573,7 @@ public class UserContextService(
         }
         if (currentAccount == null)
         {
-            await DoSwitchAccount(null, null, null);
+            await DoSwitchAccount(null, null, null, allowSaveToSettings);
             return;
         }
         var classifiersTask = LoadClassifiers(currentAccount.Token);
@@ -562,7 +590,7 @@ public class UserContextService(
         var classifiers = await classifiersTask;
         var settings = currentAccount.Settings ?? new LMAccountSettings();
 
-        await DoSwitchAccount(updatedAccount, settings, classifiers);
+        await DoSwitchAccount(updatedAccount, settings, classifiers, allowSaveToSettings);
     }
 
 
