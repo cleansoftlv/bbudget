@@ -15,7 +15,7 @@
                                 @item.category.Name
                             </h5>
                         </div>
-                        <div class="col-4 col-sm-4 text-end">@formatService.FormatBalance(item.category.ProgressAmount, item.category.Currency)</div>
+                        <div class="col-4 col-sm-4 text-end" title="Left to spend">@formatService.FormatBalance(item.category.ProgressAmount, item.category.Currency)</div>
                     </div>
                     <div class="row g-0">
                         <div class="col-8 col-sm-8">
@@ -26,7 +26,7 @@
                                                                          Color="item.category.ProgressPercent < 0? Color.Danger: Color.Success"
                                                                          Height="10"
                                                                          class="@(item.category.ProgressPercent < 0? "flip-bar": null)"
-                                                                         title="@($"{(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%")"
+                                                                         title="@($"Left: {(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%, {(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income? "Left to earn": "Spent")}:  {formatService.FormatBalanceNoHtml(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income? item.category.BudgetedAmount - item.category.ProgressAmount: item.category.ActualAmount, item.category.Currency)}")"
                                                                          IsShowValue="false" />
                                 </div>
                             }
@@ -35,7 +35,7 @@
                                 // @:Budget not set
                             }
                         </div>
-                        <div class="col-4 col-sm-4 text-end text-secondary align-text-top">@formatService.FormatBalance(item.category.BudgetedAmount, item.category.Currency)</div>
+                        <div class="col-4 col-sm-4 text-end text-secondary align-text-top" title="Budgeted amount">@formatService.FormatBalance(item.category.BudgetedAmount, item.category.Currency)</div>
                     </div>
                 </div>
             </a>

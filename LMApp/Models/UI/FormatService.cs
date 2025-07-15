@@ -52,6 +52,25 @@ namespace LMApp.Models.UI
             return new MarkupString(sb.ToString());
         }
 
+        public string FormatBalanceNoHtml(decimal amount, string currency, bool isLiability = false)
+        {
+            var sb = new StringBuilder();
+            if (amount < 0)
+            {
+                sb.Append('-');
+            }
+            else if (amount > 0 && isLiability)
+            {
+                sb.Append("+");
+            }
+
+            string amountStr = FormatAmountDecimals(amount);
+            sb.Append(amountStr);
+            sb.Append(" ");
+            sb.Append(CurrencyToSymbol(currency));
+            return sb.ToString();
+        }
+
         public string FormatDate(DateTime date)
         {
             return date.ToString(ClientConstants.DateFormat);
