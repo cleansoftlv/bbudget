@@ -3,6 +3,11 @@
     display: inline-block;
 }
 
+.spent-icon{
+    opacity: 0.2;
+    margin-right:0.5em;
+}
+
 .budget-category-row {
     &:not(:first-child) {
         border-top: lightgray 1px solid;

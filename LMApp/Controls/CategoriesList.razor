@@ -1,13 +1,15 @@
-﻿@using LMApp.Models.UI
+﻿@using LMApp.Models.Context
+@using LMApp.Models.UI
 @using System.Text
 @inject FormatService formatService
 @inject Utils utils
+@inject SettingsService settingsService
 <div @ref="containerRef" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="preventKeyDownDefault" tabindex="0">
-    @foreach (var item in Categories.Select((category,index)=>(category:category,index:index)))
+    @foreach (var item in Categories.Select((category, index) => (category: category, index: index)))
     {
         var currentIndex = Array.IndexOf(Categories, item.category);
         <div class="@GetRowClass(item.category, item.index)" data-index="@item.index">
-            <a href="javascript:" class="budget-category-row-inner" @onclick="e=>OnClick(item.category)" role="button">
+            <a href="javascript:" class="budget-category-row-inner" @onclick="e => OnClick(item.category)" role="button">
                 <div class="container p-0">
                     <div class="row g-0">
                         <div class="col-8 col-sm-8 mb-2">
@@ -15,18 +17,24 @@
                                 @item.category.Name
                             </h5>
                         </div>
-                        <div class="col-4 col-sm-4 text-end" title="Left to spend">@formatService.FormatBalance(item.category.ProgressAmount, item.category.Currency)</div>
+                        <div class="col-4 col-sm-4 text-end" title="@(ShowSpent ? "Spent" : "Left to spend")">
+                            @if (ShowSpent && item.category.CategoryType != Models.Categories.BudgetCategoryType.Income)
+                            {
+                                <i class="spent-icon fa-solid fa-circle-down text-muted"></i>
+                            }
+                            @formatService.FormatBalance(ShowSpent ? item.category.ActualAmount : item.category.ProgressAmount, item.category.Currency)
+                        </div>
                     </div>
                     <div class="row g-0">
                         <div class="col-8 col-sm-8">
                             @if (item.category.BudgetedAmount != 0)
                             {
                                 <div class="inline-progress-bar">
-                                    <BootstrapBlazor.Components.Progress Value="item.category.ProgressPercent < 0? item.category.OverspentPercent: item.category.ProgressPercent"
+                                    <BootstrapBlazor.Components.Progress Value="item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent"
                                                                          Color="item.category.ProgressPercent < 0? Color.Danger: Color.Success"
                                                                          Height="10"
-                                                                         class="@(item.category.ProgressPercent < 0? "flip-bar": null)"
-                                                                         title="@($"Left: {(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%, {(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income? "Left to earn": "Spent")}:  {formatService.FormatBalanceNoHtml(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income? item.category.BudgetedAmount - item.category.ProgressAmount: item.category.ActualAmount, item.category.Currency)}")"
+                                                                         class="@(item.category.ProgressPercent < 0 ? "flip-bar" : null)"
+                                                                         title="@($"Left: {(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%, {(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income ? "Left to earn" : "Spent")}:  {formatService.FormatBalanceNoHtml(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income ? item.category.BudgetedAmount - item.category.ProgressAmount : item.category.ActualAmount, item.category.Currency)}")"
                                                                          IsShowValue="false" />
                                 </div>
                             }
@@ -41,10 +49,14 @@
             </a>
         </div>
     }
+    <div class="p-4 text-center">
+        <Toggle @bind-Value="ShowSpent" OnValueChanged="OnSpentToggle" OnText="Amount spent" OffText="Amount left" Color="Color.Secondary" />
+    </div>
 </div>
 @code {
     private ElementReference containerRef;
     private int selectedIndex = -1;
+    private bool ShowSpent;
 
     private string GetRowClass(BudgetCategoryDisplay category, int index)
     {
@@ -59,6 +71,13 @@
             sb.Append(" keyboard-selected");
         }
         return sb.ToString();
+    }
+
+    private async Task OnSpentToggle(bool value)
+    {
+        var settings = await settingsService.GetLocalSettings();
+        settings.ShowAmountSpentInBudget = value;
+        await settingsService.SaveLocalSettings(settings);
     }
 
     [Parameter]
@@ -125,6 +144,13 @@
         }
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await settingsService.GetLocalSettings();
+        ShowSpent = settings.ShowAmountSpentInBudget;
+        await base.OnInitializedAsync();
+    }
+
     protected override void OnParametersSet()
     {
         // Find the index of the active category
@@ -158,7 +184,7 @@
         return TryFocus();
     }
 
-     private async Task TryFocus()
+    private async Task TryFocus()
     {
         if (containerRef.Context != null && containerRef.Id != null)
         {
@@ -166,7 +192,7 @@
             {
                 await containerRef.FocusAsync();
             }
-            catch 
+            catch
             {
                 //ignore error
             }
