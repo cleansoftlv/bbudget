@@ -23,7 +23,7 @@ namespace LMApp.Pages
         [SupplyParameterFromQuery(Name = "tid")]
         public long? UrlTransactionId { get; set; }
 
-       
+
 
 
 
@@ -175,10 +175,17 @@ namespace LMApp.Pages
             TransactionInEdit = tran;
             CurrentDisplayTranEditId = 0;
 
-            await StartTransition(BreakPoint.Large);
+            bool startTransition = !ShowTranForm;
+            if (startTransition)
+            {
+                await StartTransition(BreakPoint.Large);
+            }
             ShowTranForm = true;
             RefreshActivePage();
-            await EndTransition();
+            if (startTransition)
+            {
+                await EndTransition();
+            }
         }
 
         public async Task CopyTransaction(BaseTransactionForEdit tran)
@@ -268,9 +275,13 @@ namespace LMApp.Pages
 
         protected virtual async Task CloseTranForm()
         {
-            await StartTransition(BreakPoint.Large);
+            bool startTransition = ShowTranForm;
+
+            if (startTransition)
+                await StartTransition(BreakPoint.Large);
             DoCloseTranForm();
-            await EndTransition();
+            if (startTransition)
+                await EndTransition();
 
             await ResponsiveNavigate(navigationManager.GetUriWithQueryParameter("tid", (long?)null),
                 NavDirection.Back);
@@ -321,10 +332,13 @@ namespace LMApp.Pages
 
             LoadSingleTransactionError = null;
             SelectedTransaction = tran;
-            await StartTransition(BreakPoint.Large);
+            bool startTransition = !ShowTranForm;
+            if (startTransition)
+                await StartTransition(BreakPoint.Large);
             TransactionInEdit = null;
             ShowTranForm = true;
-            await EndTransition();
+            if (startTransition)
+                await EndTransition();
 
             try
             {
@@ -775,7 +789,7 @@ namespace LMApp.Pages
                         .Select(x => x.id)
                         .FirstOrDefault();
 
-                    foreach (var item in original.ChildTransactionIds.Where(x=>x.Id != toKeepId))
+                    foreach (var item in original.ChildTransactionIds.Where(x => x.Id != toKeepId))
                     {
                         await transactionsService.DeleteTransaction(item.Id);
                     }
@@ -921,7 +935,7 @@ namespace LMApp.Pages
 
                     tran.Id = toKeepId;
                 }
-                
+
                 var update = tran.GetUpdateDtos(settingsService).Single();
                 update.id = tran.Id;
                 await transactionsService.UpdateTransaction(update);

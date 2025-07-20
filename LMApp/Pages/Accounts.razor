@@ -142,7 +142,10 @@
 
         CurrentAccount = account;
 
-        await StartTransition(BreakPoint.Large);
+        bool startTransition = !ShowTranList;
+
+        if (startTransition)
+            await StartTransition(BreakPoint.Large);
 
         transactionListContext = account == null
             || account.AccountType == AccountType.Total
@@ -152,7 +155,8 @@
         ShowTranList = true;
         RefreshActivePage();
 
-        await EndTransition();
+        if (startTransition)
+            await EndTransition();
 
         var loadingAccountUid = CurrentAccount.Uid;
 

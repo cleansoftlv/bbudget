@@ -23,9 +23,9 @@
                         <MobileTabNav />
                         <div class="header-text">
                             <div>
-                                <Button Icon="fa-solid fa-caret-left" Color="Color.None" class="icon-btn" OnClick="()=>NavigateToMonth(-1)" />
+                                <Button Icon="fa-solid fa-caret-left" Color="Color.None" class="icon-btn" OnClick="() => NavigateToMonth(-1)" />
                                 @BudgetName
-                                <Button Icon="fa-solid fa-caret-right" Color="Color.None" class="@(!NextMonthVisible? "invisible": "icon-btn")" OnClick="()=>NavigateToMonth(+1)" />
+                                <Button Icon="fa-solid fa-caret-right" Color="Color.None" class="@(!NextMonthVisible ? "invisible" : "icon-btn")" OnClick="() => NavigateToMonth(+1)" />
                             </div>
                         </div>
                     </div>
@@ -185,7 +185,10 @@
             return;
 
         CurrentCategory = category;
-        await StartTransition(BreakPoint.Large);
+
+        bool startTransition = !ShowTranList;
+        if (startTransition)
+            await StartTransition(BreakPoint.Large);
 
         LoadingMoreTrans = false;
         HasMoreTrans = false;
@@ -199,7 +202,8 @@
 
         ShowTranList = true;
         RefreshActivePage();
-        await EndTransition();
+        if (startTransition)
+            await EndTransition();
 
         GetTransactionsResult res;
         var loadingId = category.CategoryId;
@@ -338,7 +342,7 @@
         await ResponsiveNavigate(
             navigationManager.GetUriWithQueryParameter("cid", (long?)null),
             NavDirection.Back);
-        
+
         // Focus the categories list after closing transaction list
         if (categoriesListRef != null)
         {
@@ -535,7 +539,7 @@
     protected override async Task CloseTranForm()
     {
         await base.CloseTranForm();
-        
+
         // Focus the transaction list after closing transaction form
         if (transactionListRef != null && ShowTranList)
         {
