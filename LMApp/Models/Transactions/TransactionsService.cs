@@ -591,7 +591,6 @@ namespace LMApp.Models.Transactions
                 item.AccountUid = split.AccountUid;
                 item.Currency = split.Currency;
                 item.Date = split.Date;
-                item.Notes = split.Notes;
                 item.Payee = split.Payee;
                 item.IsCredit = split.IsCredit;
                 item.Tags = split.Tags;
@@ -690,7 +689,6 @@ namespace LMApp.Models.Transactions
                 item.AccountUid = split.AccountUid;
                 item.Currency = split.Currency;
                 item.Date = split.Date;
-                item.Notes = split.Notes;
                 item.Payee = split.Payee;
                 item.IsCredit = split.IsCredit;
                 item.Tags = split.Tags;

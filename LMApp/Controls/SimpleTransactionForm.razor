@@ -284,14 +284,14 @@
               Text = "Credit",
               Value = "true"
         }];
+
+        // Set up the base class callbacks
+        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+        CreateTransferCallback = EventCallback.Factory.Create(this, async () => await OnCreateTransfer());
     }
 
     override protected void OnParametersSet()
     {
-        // Set up the base class callbacks
-        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
-        CreateTransferCallback = EventCallback.Factory.Create(this, async () => await OnCreateTransfer());
-
         if (Transaction != null)
         {
             Context = new EditContext(Transaction);

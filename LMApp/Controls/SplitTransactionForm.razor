@@ -68,6 +68,7 @@
         @foreach (var child in Transaction.Children)
         {
             var j = ++i;
+            var isLastChild = child == Transaction.Children.Last();
             <fieldset>
                 <hr />
                 <div class="mt-2 mb-4">
@@ -80,7 +81,7 @@
                 <div class="mb-2">
                     <label class="form-label" for="@($"Amount{j}")">Amount</label>
                     <BootstrapInputGroup>
-                        @if (child == Transaction.Children.Last())
+                        @if (isLastChild)
                         {
                             <BootstrapInputNumber IsDisabled="true"
                                                   Id="@($"Amount{j}")"
@@ -101,7 +102,7 @@
                                   Value="@Transaction.Currency"
                                   Items="@Currencies"
                                   Color="settingsService.GetCurrencyColor(Transaction.Currency)" />
-                        @if (child == Transaction.Children.Last())
+                        @if (isLastChild)
                         {
                             <Dropdown Id="@($"IsCredit{j}")"
                                       IsDisabled="true"
@@ -119,6 +120,55 @@
                         }
                     </BootstrapInputGroup>
                 </div>
+                @if (showNotesInputs.Contains(j - 1) || !string.IsNullOrWhiteSpace(child.Notes))
+                {
+                    <div class="mb-2">
+                        <BootstrapInput DisplayText="Notes"
+                                        UseInputEvent="true"
+                                        ShowLabel="true"
+                                        Id="@($"ChildNotes{j}")"
+                                        @bind-Value="child.Notes" />
+                    </div>
+                }
+                <div class="text-center mt-2 mb-2">
+                    <div class="d-inline-flex gap-1">
+                        @if (Transaction.Children.Count > 2)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-warning"
+                                    title="Delete this split part"
+                                    @onclick="() => RemoveSplitPart(j-1)">
+                                <i class="fa-solid fa-trash fa-xs"></i>
+                            </button>
+                        }
+                        @if (!isLastChild)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    title="Swap with next split part"
+                                    @onclick="() => SwapSplitParts(j-1, j)">
+                                <i class="fa-solid fa-arrow-down fa-xs"></i>
+                            </button>
+                        }
+                        else if (j > 1)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    title="Swap with previous split part"
+                                    @onclick="() => SwapSplitParts(j-2, j-1)">
+                                <i class="fa-solid fa-arrow-up fa-xs"></i>
+                            </button>
+                        }
+                        <Button Size="Size.Medium"
+                                ButtonType="ButtonType.Button"
+                                Color="Color.Secondary"
+                                IsOutline="true"
+                                IsDisabled="!string.IsNullOrWhiteSpace(child.Notes)"
+                                title="Add notes"
+                                Icon="fa-solid fa-note-sticky fa-xs"
+                                OnClick="() => ToggleNotesInput(j-1)" />
+                    </div>
+                </div>
             </fieldset>
         }
         <fieldset class="mt-2 mb-2">
@@ -129,16 +179,6 @@
                         Color="Color.Secondary"
                         Text="Add split"
                         OnClick="AddSplit" />
-                @if (Transaction.Children.Count > 2)
-                {
-                    <Button Size="Size.Large"
-                            class="ms-2"
-                            ButtonType="ButtonType.Button"
-                            Color="Color.Warning"
-                            IsOutline="true"
-                            Text="Remove split"
-                            OnClick="RemoveSplit" />
-                }
             </p>
         </fieldset>
         @if (!Transaction.IsCleared)
@@ -227,13 +267,21 @@
 
 @code {
 
+
+
+
+
+
+
     private EditContext EditContext = new EditContext(new object());
     private ValidationMessageStore messageStore;
     private BootstrapInput<string> firstInputRef;
-
+    private HashSet<int> showNotesInputs = new HashSet<int>();
 
     [Parameter]
     public SplitTransactionForEdit Transaction { get; set; }
+
+    private SplitTransactionForEdit _stateTran;
 
     protected override BaseTransactionForEdit BaseTran => Transaction;
 
@@ -267,7 +315,6 @@
             await SaveAndNextTransaction.InvokeAsync(Transaction);
         }
     }
-
 
     private Task AccountChanged()
     {
@@ -307,16 +354,84 @@
             Amount = null,
             CategoryId = null,
             Payee = Transaction.Payee,
-            Notes = Transaction.Notes,
+            Notes = string.Empty,
             Tags = Transaction.Tags?.ToList() ?? new List<string>(),
         });
     }
 
-    private void RemoveSplit()
+    private void RemoveSplitPart(int index)
     {
-        if (Transaction.Children.Count > 2)
+        if (Transaction.Children.Count > 2 && index >= 0 && index < Transaction.Children.Count)
         {
-            Transaction.Children.RemoveAt(Transaction.Children.Count - 1);
+            // Remove the split part
+            Transaction.Children.RemoveAt(index);
+
+            // Update showNotesInputs indices after removal
+            var newShowNotesInputs = new HashSet<int>();
+            foreach (var noteIndex in showNotesInputs)
+            {
+                if (noteIndex < index)
+                {
+                    newShowNotesInputs.Add(noteIndex);
+                }
+                else if (noteIndex > index)
+                {
+                    newShowNotesInputs.Add(noteIndex - 1);
+                }
+                // Skip the removed index
+            }
+
+            showNotesInputs = newShowNotesInputs;
+        }
+    }
+
+    private void SwapSplitParts(int index1, int index2)
+    {
+        if (index1 >= 0 && index1 < Transaction.Children.Count && 
+            index2 >= 0 && index2 < Transaction.Children.Count && 
+            index1 != index2)
+        {
+            var lastAmount = Transaction.LastChildAmount;
+            // Swap the children
+            var temp = Transaction.Children[index1];
+            Transaction.Children[index1] = Transaction.Children[index2];
+            Transaction.Children[index2] = temp;
+
+            if (index2 == Transaction.Children.Count - 1)
+            {
+                Transaction.Children[index1].Amount = lastAmount;
+            }
+
+            // Update showNotesInputs indices after swap
+            var newShowNotesInputs = new HashSet<int>();
+            foreach (var noteIndex in showNotesInputs)
+            {
+                if (noteIndex == index1)
+                {
+                    newShowNotesInputs.Add(index2);
+                }
+                else if (noteIndex == index2)
+                {
+                    newShowNotesInputs.Add(index1);
+                }
+                else
+                {
+                    newShowNotesInputs.Add(noteIndex);
+                }
+            }
+            showNotesInputs = newShowNotesInputs;
+        }
+    }
+
+    private void ToggleNotesInput(int index)
+    {
+        if (showNotesInputs.Contains(index))
+        {
+            showNotesInputs.Remove(index);
+        }
+        else
+        {
+            showNotesInputs.Add(index);
         }
     }
 
@@ -330,6 +445,7 @@
         Transaction.TrimAll();
         await SaveTransaction.InvokeAsync(Transaction);
     }
+
     private void InvalidSubmit()
     {
         int i = 1;
@@ -364,16 +480,33 @@
         }];
 
         messageStore = new(EditContext);
+          // Set up the base class callbacks
+        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+      
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        // Set up the base class callbacks
-        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
         // Note: SplitTransaction doesn't have CreateTransfer functionality
-
+        bool changed = _stateTran != Transaction;
         EditContext = new EditContext(Transaction);
         messageStore = new(EditContext);
+        _stateTran = Transaction;
+
+        if (changed)
+        {
+            showNotesInputs.Clear();
+             // Initialize showNotesInputs based on existing notes
+            for (int i = 0; i < Transaction.Children.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(Transaction.Children[i].Notes))
+                {
+                    showNotesInputs.Add(i);
+                }
+            }
+        }
+       
+
         await base.OnParametersSetAsync();
     }
 

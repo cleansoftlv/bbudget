@@ -46,7 +46,7 @@ namespace LMApp.Models.Transactions
         [Display(Name = "Account")]
         public string AccountUid { get; set; }
 
-       
+
 
         public string Currency { get; set; }
 
@@ -57,7 +57,7 @@ namespace LMApp.Models.Transactions
 
         public TransactionDto[] OriginalChildTransactions { get; set; }
 
-        public decimal LastChildAmount => Math.Abs((Amount ?? 0) - Children.Take(Children.Count - 1).Sum(c => c.Amount ?? 0));
+        public decimal LastChildAmount => (Amount ?? 0) - Children.Take(Children.Count - 1).Sum(c => c.Amount ?? 0);
 
         public bool IsLastChildCredit => IsCredit;
         public bool IsPlaid => TransactionsService.GetAccountTypeByUid(AccountUid) == Account.AccountType.Plaid;
@@ -238,6 +238,16 @@ namespace LMApp.Models.Transactions
             if (Children.Any(x => x.CategoryId == null))
             {
                 yield return new ValidationResult("All split parts must have a category", [nameof(Children)]);
+            }
+
+            if (Children.Take(Children.Count - 1).Any(x => x.Amount < 0))
+            {
+                yield return new ValidationResult("All split parts must have an amount greater than zero", [nameof(Children)]);
+            }
+
+            if (LastChildAmount <= 0)
+            {
+                yield return new ValidationResult("Total of split parts is greater than amount of transaction. Last split part amount should be greater than 0.", [nameof(Children)]);
             }
 
             if (IsPlaid &&

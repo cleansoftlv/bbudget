@@ -209,6 +209,8 @@
     [Parameter]
     public AccountTransferTransactionForEdit Transaction { get; set; }
 
+    private AccountTransferTransactionForEdit _stateTran;
+
     protected override BaseTransactionForEdit BaseTran => Transaction;
 
 
@@ -397,23 +399,28 @@
     override protected void OnInitialized()
     {
         SetAccoutDtos();
+        // Set up the base class callbacks
+        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+
     }
 
     override protected async Task OnParametersSetAsync()
     {
-        // Set up the base class callbacks
-        SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
         // Note: AccountTransfer doesn't have CreateTransfer functionality
-
         if (Transaction != null)
         {
-            Context = new EditContext(Transaction);
-            await LoadSwapCurrencyRateDisplay();
+            if (_stateTran != Transaction)
+            {
+                Context = new EditContext(Transaction);
+                await LoadSwapCurrencyRateDisplay();
+            }
         }
         else
         {
             Context = null;
         }
+
+        _stateTran = Transaction;
     }
 
     private async Task ShowHotkeysHelp()
