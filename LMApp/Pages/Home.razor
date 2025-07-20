@@ -615,6 +615,23 @@
                 }
             }
         }
+        else if (updated.TranType == TransactionType.Transfer)
+        {
+            var simple = new SimpleTransactionForEdit();
+            simple.UpdateWith(updated, settingsService);
+            if (updated?.Transaction?.amount != null)
+            {
+                var amount = updated.Transaction.amount;
+                simple.Amount = amount;
+                simple.IsCredit = amount < 0;
+                simple.Currency = updated.Transaction.currency;
+            }
+            if (!SimpleTransactionDeleted(simple))
+            {
+                await RefreshBudgetInTheBackground();
+                return false;
+            }
+        }
         return true;
     }
 
@@ -742,6 +759,23 @@
                     await RefreshBudgetInTheBackground();
                     return false;
                 }
+            }
+        }
+        else if (updated.TranType == TransactionType.Transfer)
+        {
+            var simple = new SimpleTransactionForEdit();
+            simple.UpdateWith(updated, settingsService);
+            if (updated?.SavedTransaction?.amount != null)
+            {
+                var amount = updated.SavedTransaction.amount;
+                simple.Amount = amount;
+                simple.IsCredit = amount < 0;
+                simple.Currency = updated.SavedTransaction.currency;
+            }
+            if (!SimpleTransactionAdded(simple))
+            {
+                await RefreshBudgetInTheBackground();
+                return false;
             }
         }
 
