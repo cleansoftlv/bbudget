@@ -222,11 +222,17 @@ export function share(url, title, text) {
     if (!url) return;
 
     if (navigator.share) {
-        navigator.share({
-            title: title,
-            text: text,
+        let options = {
             url: url
-        }).catch(error => {
+        };
+        if (title) {
+            options.title = title;
+        }
+        if (text) {
+            options.text = text;
+        }
+
+        navigator.share(options).catch(error => {
             console.error('Error sharing:', error);
         });
     } else {
