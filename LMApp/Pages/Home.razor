@@ -504,18 +504,24 @@
 
         categories = res.categories;
 
-
         if (ShowTranList && CurrentCategory != null)
         {
             var updated = categories.FirstOrDefault(x => x.CategoryId == CurrentCategory.CategoryId);
-            if (updated != null)
+            if (updated == null)
             {
-                await ShowCategory(updated, force: true);
+                updated = new BudgetCategoryDisplay
+                {
+                    Name = CurrentCategory.Name,
+                    CategoryId = CurrentCategory.CategoryId,
+                    CategoryType = CurrentCategory.CategoryType,
+                    Currency = CurrentCategory.Currency,
+                };
+                categories = categories.Append(updated)
+                    .OrderBy(x => x.CategoryType)
+                    .ThenBy(x => x.Name)
+                    .ToArray();
             }
-            else
-            {
-                await CloseTranList();
-            }
+            await ShowCategory(updated, force: true);
         }
         LoadingTransactions = false;
         if (res.cacheHit)
@@ -581,6 +587,25 @@
                 if (category != null)
                 {
                     await ShowCategory(category);
+                }
+                else
+                {
+                    var allCategories = settingsService.GetCachedCategories();
+                    var cat = allCategories.FirstOrDefault(x => x.id == UrlCategoryId);
+                    if (cat != null)
+                    {
+                        var newCategory = new BudgetCategoryDisplay
+                        {
+                            Name = cat.name,
+                            CategoryId = cat.id,
+                            CategoryType = cat.is_income ? BudgetCategoryType.Income : BudgetCategoryType.Expense,
+                            Currency = settingsService.PrimaryCurrency,
+                        };
+                        categories = categories.Append(newCategory)
+                            .OrderBy(x => x.CategoryType)
+                            .ThenBy(x => x.Name)
+                            .ToArray();
+                    }
                 }
             }
         }
