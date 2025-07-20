@@ -5,7 +5,9 @@
 @using LMApp.Models.UI
 @inject SettingsService settingsService
 @inject FormatService formatService
+@inject NavigationManager navManager
 @inject UserContextService userService
+@inject Utils utils
 <div @ref="containerRef" tabindex="0">
     @if (InternalTransaction != null)
     {
@@ -30,6 +32,7 @@
                                    SaveTransaction="OnSaveTransaction"
                                    SaveAndNextTransaction="OnSaveTransactionAndNext"
                                    CopyTransaction="OnCopy"
+                                   ShareTransaction="OnShare"
                                    Cancel="OnCancel"
                                    Accounts="Accounts"
                                    Delete="ConfirmDelete"
@@ -47,6 +50,7 @@
                                  SaveTransaction="OnSaveTransaction"
                                  SaveAndNextTransaction="OnSaveTransactionAndNext"
                                  CopyTransaction="OnCopy"
+                                 ShareTransaction="OnShare"
                                  Cancel="OnCancel"
                                  Ungroup="OnUngroup"
                                  Accounts="Accounts"
@@ -63,6 +67,7 @@
                                   SaveTransaction="OnSaveTransaction"
                                   SaveAndNextTransaction="OnSaveTransactionAndNext"
                                   CopyTransaction="OnCopy"
+                                  ShareTransaction="OnShare"
                                   Cancel="OnCancel"
                                   Accounts="Accounts"
                                   Delete="ConfirmDelete"
@@ -163,6 +168,12 @@
             //We should pass original transaction without changed type
             await Copy.InvokeAsync(Transaction);
         }
+    }
+
+    private async Task OnShare(BaseTransactionForEdit tran)
+    {
+        var fullUrl = navManager.GetUriWithQueryParameter("tid", tran.Id);
+        await utils.Share(fullUrl, $"BBudget transaction - {tran.Name}", null);
     }
 
     private async Task OnUngroup()

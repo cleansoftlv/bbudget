@@ -24,6 +24,8 @@ namespace LMApp.Models.Transactions
             get;
         }
 
+        public abstract string Name { get; }
+
         public abstract bool HasChanges { get; }
 
         public abstract bool TypeCanBeChanged { get; }

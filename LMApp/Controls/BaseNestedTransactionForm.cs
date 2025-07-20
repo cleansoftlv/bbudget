@@ -27,6 +27,9 @@ namespace LMApp.Controls
         [Parameter]
         public EventCallback<BaseTransactionForEdit> CopyTransaction { get; set; }
 
+        [Parameter]
+        public EventCallback<BaseTransactionForEdit> ShareTransaction { get; set; }
+
         [Parameter] 
         public EventCallback SaveAndNextCallback { get; set; }
 
@@ -36,6 +39,11 @@ namespace LMApp.Controls
         protected async Task OnCopy()
         {
             await CopyTransaction.InvokeAsync(BaseTran);
+        }
+
+        protected async Task OnShare()
+        {
+            await ShareTransaction.InvokeAsync(BaseTran);
         }
 
         [Parameter]

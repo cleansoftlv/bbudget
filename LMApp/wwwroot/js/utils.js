@@ -122,10 +122,10 @@ let globalHotkeyListener = null;
 export function registerTransactionFormHotkeys(component) {
     // Set this component as the active one
     activeTransactionFormComponent = component;
-    
+
     // Only add the global listener if it doesn't exist yet
     if (!globalHotkeyListener) {
-        globalHotkeyListener = function(e) {
+        globalHotkeyListener = function (e) {
             // Only handle if we have an active component
             if (!activeTransactionFormComponent) {
                 return;
@@ -180,7 +180,7 @@ export function registerTransactionFormHotkeys(component) {
 export function unregisterTransactionFormHotkeys() {
     // Clear the active component
     activeTransactionFormComponent = null;
-    
+
     // Remove the global listener
     if (globalHotkeyListener) {
         document.removeEventListener('keydown', globalHotkeyListener, true);
@@ -191,24 +191,24 @@ export function unregisterTransactionFormHotkeys() {
 // Scroll selected item into view for keyboard navigation
 export function scrollToSelectedItem(containerElement, selectedClass) {
     if (!containerElement) return;
-    
+
     const selectedElement = containerElement.querySelector('.' + selectedClass);
     if (!selectedElement) return;
-    
+
     // Find the actual scrollable parent (the one with overflow: auto)
     let scrollableParent = containerElement;
     let parent = containerElement.parentElement;
-    
+
     while (parent && parent !== document.body) {
         const style = window.getComputedStyle(parent);
-        if (style.overflow === 'auto' || style.overflow === 'scroll' || 
+        if (style.overflow === 'auto' || style.overflow === 'scroll' ||
             style.overflowY === 'auto' || style.overflowY === 'scroll') {
             scrollableParent = parent;
             break;
         }
         parent = parent.parentElement;
     }
-    
+
     const elementRect = selectedElement.getBoundingClientRect();
     const containerRect = scrollableParent.getBoundingClientRect();
     if (elementRect.top < containerRect.top) {
@@ -217,3 +217,20 @@ export function scrollToSelectedItem(containerElement, selectedClass) {
         selectedElement.scrollIntoView(false);
     }
 }
+
+export function share(url, title, text) {
+    if (!url) return;
+
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            text: text,
+            url: url
+        }).catch(error => {
+            console.error('Error sharing:', error);
+        });
+    } else {
+        console.warn('Web Share API not supported in this browser.');
+    }
+}
+

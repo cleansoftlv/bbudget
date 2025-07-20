@@ -174,6 +174,8 @@ namespace LMApp.Models.Transactions
 
         public override bool TypeCanBeChanged => Id == 0 || From?.plaid_account_id == null || To?.plaid_account_id == null;
 
+        public override string Name => $"Account transfer";
+
         public override TransactionForInsertDto[] GetInsertDtos(SettingsService settingsService)
         {
             var fromAccount = settingsService.FindAssetOrPlaidAccount(AccountUidFrom);

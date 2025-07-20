@@ -50,6 +50,9 @@ namespace LMApp.Models.Transactions
 
         public override bool HasEditChanges => false;
 
+        public override string Name => $"Other";
+
+
         public override TransactionForInsertDto[] GetInsertDtos(SettingsService settingsService)
         {
             throw new NotImplementedException();

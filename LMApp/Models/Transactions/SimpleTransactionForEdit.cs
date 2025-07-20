@@ -109,7 +109,7 @@ namespace LMApp.Models.Transactions
 
         public override bool TypeCanBeChanged => true;
 
-
+        public override string Name => Payee;
 
         public override TransactionForInsertDto[] GetInsertDtos(SettingsService settingsService)
         {

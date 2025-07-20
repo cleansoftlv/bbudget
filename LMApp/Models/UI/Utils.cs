@@ -29,7 +29,13 @@ namespace LMApp.Models.UI
             await module.InvokeVoidAsync("fixEnterIssue", elm);
         }
 
-      
+        public async ValueTask Share(string url, string title, string text)
+        {
+            await EnsureInit();
+            await module.InvokeVoidAsync("share", url, title, text);
+        }
+
+
         public async ValueTask FixBootstrapEnterHandling(ElementReference elm)
         {
             await EnsureInit();

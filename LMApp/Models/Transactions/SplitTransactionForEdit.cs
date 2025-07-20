@@ -132,6 +132,8 @@ namespace LMApp.Models.Transactions
         public override IdAndAmount[] ChildTransactionIds => Children.Select(x =>
             new IdAndAmount(x.Id, (x.Amount ?? 0) * (x.IsCredit ? -1 : 1))).ToArray();
 
+        public override string Name => Payee;
+
         public override TransactionForInsertDto[] GetInsertDtos(SettingsService settingsService)
         {
             var parsedUid = TransactionsService.ParseTranAccountUid(AccountUid);
