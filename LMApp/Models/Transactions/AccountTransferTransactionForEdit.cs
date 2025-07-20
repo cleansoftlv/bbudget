@@ -61,12 +61,15 @@ namespace LMApp.Models.Transactions
             get
             {
                 // AmountTo is only required when currencies are different
-                return (!string.IsNullOrEmpty(CurrencyFrom) &&
-                       !string.IsNullOrEmpty(CurrencyTo) &&
-                       !string.Equals(CurrencyFrom, CurrencyTo, StringComparison.OrdinalIgnoreCase))
+                return IsCrossCurrency
                        || (Id != 0 && From != null && To != null && From.amount * -1 != To.amount);
             }
         }
+
+        public bool IsCrossCurrency =>
+            !string.IsNullOrEmpty(CurrencyFrom) &&
+            !string.IsNullOrEmpty(CurrencyTo) &&
+            !string.Equals(CurrencyFrom, CurrencyTo, StringComparison.OrdinalIgnoreCase);
 
         public override bool HasEditChanges => AmountFromWithSign != From?.amount
           || CurrencyFrom != From?.currency

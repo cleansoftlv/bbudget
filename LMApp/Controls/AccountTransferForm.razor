@@ -86,6 +86,35 @@
                               Items="@Currencies" />
                 </BootstrapInputGroup>
             </div>
+            @if (Transaction.IsCrossCurrency)
+            {
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="flex-grow-1">
+                            <label class="form-label">Exchange Rate</label>
+                            <div class="form-control bg-light d-flex align-items-center justify-content-between" style="min-height: 38px;">
+                                <span class="text-muted">
+                                    @if (showFromToCurrencyRate)
+                                    {
+                                        @:@GetCurrencyRateDisplay() @formatService.CurrencyToSymbol(Transaction.CurrencyTo)
+                                    }
+                                    else
+                                    {
+                                        @:@GetCurrencyRateDisplay() @formatService.CurrencyToSymbol(Transaction.CurrencyFrom)
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                        <button type="button"
+                                class="btn btn-outline-secondary form-control w-auto"
+                                title="Swap rate display"
+                                style="margin-top: 32px;"
+                                @onclick="SwapCurrencyRateDisplay">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+            }
         }
         <div class="mb-4">
             <DateTimePickerExt ShowLabel="true"
@@ -231,7 +260,71 @@
     private UnifiedAccountInfo AccountFrom { get; set; }
     private UnifiedAccountInfo AccountTo { get; set; }
 
-    private Task AccountChanged(string uid)
+    // Currency rate display state
+    private bool showFromToCurrencyRate = true;
+
+    private async Task SwapCurrencyRateDisplay()
+    {
+        showFromToCurrencyRate = !showFromToCurrencyRate;
+        await SaveSwapCurrencyRateDisplay();
+    }
+
+    private async Task LoadSwapCurrencyRateDisplay()
+    {
+        if (Transaction == null || !Transaction.IsCrossCurrency)
+        {
+            showFromToCurrencyRate = true;
+            return;
+        }
+
+        var useFirst = await settingsService.LoadCurrencyExchangeRateUseFrom(Transaction.CurrencyFrom, Transaction.CurrencyTo);
+        if (useFirst == null)
+        {
+            showFromToCurrencyRate = true; // Default to showing From -> To rate
+            return;
+        }
+
+        if (settingsService.CompareCurrencies(Transaction.CurrencyFrom, Transaction.CurrencyTo) < 0)
+        {
+            useFirst = !useFirst.Value; // Swap if currencies are in reverse order
+        }
+
+        showFromToCurrencyRate = useFirst.Value;
+
+    }
+
+    private async Task SaveSwapCurrencyRateDisplay()
+    {
+        if (Transaction == null || !Transaction.IsCrossCurrency)
+            return;
+
+        await settingsService.SaveCurrencyExchangeRateUseFrom(Transaction.CurrencyFrom, Transaction.CurrencyTo, showFromToCurrencyRate);
+    }
+
+    private string GetCurrencyRateDisplay()
+    {
+        if (!Transaction.IsCrossCurrency || !Transaction.AmountFrom.HasValue || !Transaction.AmountTo.HasValue ||
+            Transaction.AmountFrom.Value == 0 || Transaction.AmountTo.Value == 0)
+        {
+            return "N/A";
+        }
+
+        decimal rate;
+        if (showFromToCurrencyRate)
+        {
+            // Calculate AmountTo/AmountFrom (how much of CurrencyTo per 1 CurrencyFrom)
+            rate = Transaction.AmountTo.Value / Transaction.AmountFrom.Value;
+        }
+        else
+        {
+            // Calculate AmountFrom/AmountTo (how much of CurrencyFrom per 1 CurrencyTo)
+            rate = Transaction.AmountFrom.Value / Transaction.AmountTo.Value;
+        }
+
+        return Math.Abs(rate).ToString("0.####");
+    }
+
+    private async Task AccountChanged(string uid)
     {
         SetAccoutDtos();
         if (AccountFrom != null)
@@ -248,9 +341,8 @@
         {
             Transaction.AmountTo = Transaction.AmountFrom;
         }
-
+        await LoadSwapCurrencyRateDisplay();
         StateHasChanged();
-        return Task.CompletedTask;
     }
 
     private async Task SwapAccounts()
@@ -273,6 +365,9 @@
             var tempCurrency = Transaction.CurrencyFrom;
             Transaction.CurrencyFrom = Transaction.CurrencyTo;
             Transaction.CurrencyTo = tempCurrency;
+
+            // Keep the currency rate display consistent after swapping
+            // No need to swap the display direction since the currencies themselves are swapped
         }
 
         // Update the account DTOs and trigger the same logic as manual change
@@ -304,7 +399,7 @@
         SetAccoutDtos();
     }
 
-    override protected void OnParametersSet()
+    override protected async Task OnParametersSetAsync()
     {
         // Set up the base class callbacks
         SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
@@ -313,6 +408,7 @@
         if (Transaction != null)
         {
             Context = new EditContext(Transaction);
+            await LoadSwapCurrencyRateDisplay();
         }
         else
         {

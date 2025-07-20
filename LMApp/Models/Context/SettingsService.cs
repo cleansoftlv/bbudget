@@ -103,6 +103,52 @@ namespace LMApp.Models.Context
             };
         }
 
+        public async Task<bool?> LoadCurrencyExchangeRateUseFrom(string currency1, string currency2)
+        {
+            string key = GetCurrencyExchangeModeSettingKey(currency1, currency2);
+
+            var val = await _localStorage.Load(key);
+            if (val == null)
+            {
+                return null; // No setting found
+            }
+
+            return val == "1";
+        }
+
+        public async Task SaveCurrencyExchangeRateUseFrom(string currency1, string currency2, bool useFrom)
+        {
+            string key = GetCurrencyExchangeModeSettingKey(currency1, currency2);
+            await _localStorage.Save(key, useFrom? "1": "0");
+        }
+
+        private static string GetCurrencyExchangeModeSettingKey(
+            string currency1, 
+            string currency2)
+        {
+            currency1 = currency1.ToUpper();
+            currency2 = currency2.ToUpper();
+
+            if (string.Compare(currency2, currency1, StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                var tmp = currency1;
+                currency1 = currency2;
+                currency2 = tmp;
+            }
+
+            var key = $"{LocalSettingsKey}_CurrencyRate_{currency1}_{currency2}";
+            return key;
+        }
+
+        public int CompareCurrencies(
+               string currency1,
+               string currency2)
+        {
+            currency1 = currency1.ToUpper();
+            currency2 = currency2.ToUpper();
+
+            return string.Compare(currency2, currency1, StringComparison.OrdinalIgnoreCase);
+        }
 
         public async Task<LocalSettings> GetLocalSettings()
         {
