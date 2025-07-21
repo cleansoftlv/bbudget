@@ -7,6 +7,7 @@
 @inherits BasePage
 @inject FormatService formatService
 
+
 <PageTitle>Profile</PageTitle>
 
 
@@ -70,7 +71,14 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 @if (!IsActiveAccount(context))
                                 {
-                                    <button type="button" disabled="@saving" class="btn btn-sm btn-secondary" @onclick="e => ActivateAccount(context)">Select</button>
+                                    if (enablingContext == context)
+                                    {
+                                        <Spinner />
+                                    }
+                                    else
+                                    {
+                                        <button type="button" disabled="@saving" class="btn btn-sm btn-secondary" @onclick="e => ActivateAccount(context)">Select</button>
+                                    }
                                 }
                                 else
                                 {
@@ -157,6 +165,7 @@
     private string newAccountToken;
     private bool saving;
     private AuthUserInfo authUserInfo;
+    private LMAccountInfo enablingContext;
 
     private bool LogoutInProgress;
     private string LogoutError;
@@ -294,6 +303,7 @@
 
     private async Task ActivateAccount(LMAccountInfo context)
     {
+        enablingContext = context;
         saving = true;
         try
         {
@@ -306,6 +316,10 @@
             var desc = e.GetDescriptionForUser();
             await ShowMessage("Error", $"An error occurred while trying to set the account as active. {desc} Please try again.");
             return;
+        }
+        finally
+        {
+            enablingContext = null;
         }
         saving = false;
     }

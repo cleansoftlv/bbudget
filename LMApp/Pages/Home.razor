@@ -564,20 +564,31 @@
         userService.SetActivePageBackHandler(EventCallback.Factory.Create(this, ActiveBageBack));
     }
 
+    private UserContext loadedAccount;
+
     protected override async Task OnParametersSetAsync()
     {
         if (LoadCancelled || userService.CurrentAccount == null)
             return;
 
+        bool allowCache = true;
+        if (loadedAccount != null && loadedAccount.Id == userService.CurrentAccount?.Id)
+        {
+            MonthStart = DateTime.MinValue;
+            allowCache = false;
+        }
+
         if (!String.IsNullOrEmpty(UrlMonthId))
         {
-            await GoToMonth(UrlMonthId, allowCache: true);
+            await GoToMonth(UrlMonthId, allowCache: allowCache);
         }
         else
         {
             var currentMonthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            await GoToMonth(currentMonthStart, allowCache: true);
+            await GoToMonth(currentMonthStart, allowCache: allowCache);
         }
+
+        loadedAccount = userService.CurrentAccount;
 
         if (UrlCategoryId.HasValue)
         {

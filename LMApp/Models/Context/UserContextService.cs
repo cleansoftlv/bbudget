@@ -562,14 +562,14 @@ public class UserContextService(
             {
                 currentAccount = AuthInfo.Accounts.FirstOrDefault(x => x.Id == idValue);
             }
-            if (currentAccount == null)
-            {
-                currentAccount = AuthInfo.Accounts.FirstOrDefault(x => x.IsActive);
-            }
-            if (currentAccount == null)
-            {
-                currentAccount = AuthInfo.Accounts.FirstOrDefault();
-            }
+        }
+        if (currentAccount == null)
+        {
+            currentAccount = AuthInfo.Accounts.FirstOrDefault(x => x.IsActive);
+        }
+        if (currentAccount == null)
+        {
+            currentAccount = AuthInfo.Accounts.FirstOrDefault();
         }
         if (currentAccount == null)
         {

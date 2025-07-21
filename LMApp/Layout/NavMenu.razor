@@ -1,4 +1,5 @@
 ﻿@inject UserContextService contextService
+@inject NavigationManager navManager
 @using LMApp.Models
 @using LMApp.Models.Account
 @using Shared.Login
@@ -33,47 +34,65 @@
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLinkExt class="nav-link" href="" Match="Models.UI.NavLinkExtMatch.PathAll">
-                Budget
-            </NavLinkExt>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="accounts">
-                Accounts
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLinkExt class="nav-link" href="transactions" Match="Models.UI.NavLinkExtMatch.PathAll">
-                Transactions
-            </NavLinkExt>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="transactions/unreviewed">
-                Unreviewed Transactions
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="reports">
-                Reports
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="settings">
-                Settings
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="auth">
-                Profile
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="license">
-                License
-            </NavLink>
-        </div>
-        @if (AuthInfo == null)
+        @if (Context != null)
+        {
+            <div class="nav-item px-3">
+                <NavLinkExt class="nav-link" href="" Match="Models.UI.NavLinkExtMatch.PathAll">
+                    Budget
+                </NavLinkExt>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="accounts">
+                    Accounts
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLinkExt class="nav-link" href="transactions" Match="Models.UI.NavLinkExtMatch.PathAll">
+                    Transactions
+                </NavLinkExt>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="transactions/unreviewed">
+                    Unreviewed Transactions
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="reports">
+                    Reports
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="settings">
+                    Settings
+                </NavLink>
+            </div>
+        }
+        @if (AuthInfo != null)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="auth">
+                    Profile
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="license">
+                    License
+                </NavLink>
+            </div>
+            @if (AuthInfo.Accounts.Count > 1 && Context != null)
+            {
+                <hr class="nav-div" />
+                @foreach (var acc in AuthInfo.Accounts.Where(x => x.Id != Context?.Id).OrderBy(x => x.Name))
+                {
+                    <div class="nav-item px-3">
+                        <a class="nav-link" href="javascript:" @onclick="() => SwitchAccount(acc)">@acc.Name</a>
+                    </div>
+                }
+                <hr class="nav-div" />
+            }
+
+        }
+        else if (AuthInfo == null)
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="login">
@@ -105,6 +124,12 @@
     protected override void OnInitialized()
     {
         contextService.OnActivePageChange += StateHasChanged;
+    }
+
+    private async Task SwitchAccount(LMAccountInfo account)
+    {
+        await contextService.ActivateLMAccount(account);
+        navManager.NavigateTo($"/?bid={account.LMAccountId}");
     }
 
     private async Task HandleBackClick()
