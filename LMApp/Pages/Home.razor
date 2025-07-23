@@ -572,9 +572,15 @@
             return;
 
         bool allowCache = true;
-        if (loadedAccount != null && loadedAccount.Id == userService.CurrentAccount?.Id)
+        if (loadedAccount != null 
+            && loadedAccount.Id != userService.CurrentAccount?.Id
+            && MonthStart != DateTime.MinValue)
         {
             MonthStart = DateTime.MinValue;
+            CurrentCategory = null;
+            SelectedTransaction = null;
+            ShowTranForm = false;
+            ShowTranList = false;
             allowCache = false;
         }
 
