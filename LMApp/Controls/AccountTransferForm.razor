@@ -286,7 +286,8 @@
             return;
         }
 
-        if (settingsService.CompareCurrencies(Transaction.CurrencyFrom, Transaction.CurrencyTo) < 0)
+
+        if (settingsService.CompareCurrencies(Transaction.CurrencyFrom, Transaction.CurrencyTo) > 0)
         {
             useFirst = !useFirst.Value; // Swap if currencies are in reverse order
         }
@@ -294,6 +295,7 @@
         showFromToCurrencyRate = useFirst.Value;
 
     }
+
 
     private async Task SaveSwapCurrencyRateDisplay()
     {

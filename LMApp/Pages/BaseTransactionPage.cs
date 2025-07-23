@@ -621,7 +621,7 @@ namespace LMApp.Pages
                                 {
                                     transfer.SavedFrom = newTran.From;
                                     transfer.SavedTo = newTran.To;
-                                }
+                                  }
                             }
                         }
                     }
