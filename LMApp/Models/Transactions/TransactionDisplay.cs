@@ -9,6 +9,8 @@ namespace LMApp.Models.Transactions
 
         public decimal Amount { get; set; }
 
+      
+
         public decimal? RunningBalance { get; set; }
 
         public string Payee { get; set; }
@@ -32,6 +34,9 @@ namespace LMApp.Models.Transactions
 
         public TransactionChildDto From { get; set; }
         public TransactionChildDto To { get; set; }
+
+        public decimal? TransferBalanceAmount { get; set; }
+        public string TransferBalanceCurrency { get; set; }
 
         public TransactionType TranType { get; set; }
 

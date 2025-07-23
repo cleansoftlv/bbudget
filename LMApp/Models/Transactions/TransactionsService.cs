@@ -813,6 +813,7 @@ namespace LMApp.Models.Transactions
                         tran.AccountName = sourceAccount?.Name ?? "<Unknown>";
 
                         tran.DestinationAccountName = destinationAccount?.Name ?? "<Unknown>";
+                      
                         if (tran.From != null)
                         {
                             tran.Amount = tran.From.amount;
@@ -824,6 +825,8 @@ namespace LMApp.Models.Transactions
                             tran.Currency = tran.To.currency;
                         }
                         tran.IsCrossCurrencyTransfer = dto.category_id == _settingsService.Settings.CrossCurrencyTransferCategoryId;
+                        tran.TransferBalanceAmount = dto.amount;
+                        tran.TransferBalanceCurrency = dto.currency;
                         break;
                     }
                 case TransactionType.Split:

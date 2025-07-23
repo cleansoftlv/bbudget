@@ -1,4 +1,4 @@
-﻿    @inject FormatService formatService
+﻿@inject FormatService formatService
 @inject Utils utils
 @using LMApp.Models.Transactions
 @using LMApp.Models.UI
@@ -26,7 +26,7 @@
                         @if ((item.tran.Context ?? ListContext) == TransactionListContext.Category)
                         {
                             @item.tran.AccountName
-                
+
                             @: > @item.tran.DestinationAccountName
                         }
                         else if ((item.tran.Context ?? ListContext) == TransactionListContext.Account)
@@ -43,7 +43,7 @@
                         else
                         {
                             @item.tran.AccountName
-                
+
                             @: > @item.tran.DestinationAccountName
                         }
                     }
@@ -70,7 +70,20 @@
                         }
                         else if (item.tran.TranType == TransactionType.Transfer)
                         {
-                            @:Transfer
+                            @if (item.tran.IsCrossCurrencyTransfer)
+                            {
+                                @:Currency exchange transfer
+                                @if (item.tran.TransferBalanceAmount.HasValue)
+                                {
+                                    <span title="@(item.tran.TransferBalanceAmount.Value > 0 ? "Currency exchange loss by market rate" : "Currency exchange gain by market rate")">
+                                        @formatService.FormatTranAmount(item.tran.TransferBalanceAmount.Value, item.tran.TransferBalanceCurrency)
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                @:Transfer
+                            }
                         }
                         else if (item.tran.TranType == TransactionType.TransferPart)
                         {
@@ -100,11 +113,37 @@
                         }
                         else if (item.tran.TranType == TransactionType.Transfer)
                         {
-                            @:Transfer
+                            @if (item.tran.IsCrossCurrencyTransfer)
+                            {
+                                @:Currency exchange transfer
+                                @if (item.tran.TransferBalanceAmount.HasValue)
+                                {
+                                    <span title="@(item.tran.TransferBalanceAmount.Value > 0 ? "Currency exchange loss by market rate" : "Currency exchange gain by market rate")">
+                                        @formatService.FormatTranAmount(item.tran.TransferBalanceAmount.Value, item.tran.TransferBalanceCurrency)
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                @:Transfer
+                            }
                         }
                         else if (item.tran.TranType == TransactionType.TransferPart)
                         {
-                            @:Transfer
+                            @if (item.tran.IsCrossCurrencyTransfer)
+                            {
+                                @:Currency exchange transfer
+                                @if (item.tran.TransferBalanceAmount.HasValue)
+                                {
+                                    <span title="@(item.tran.TransferBalanceAmount.Value > 0 ? "Currency exchange loss by market rate" : "Currency exchange gain by market rate")">
+                                        @formatService.FormatTranAmount(item.tran.TransferBalanceAmount.Value, item.tran.TransferBalanceCurrency)
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                @:Transfer
+                            }
                         }
                         else
                         {
@@ -116,7 +155,7 @@
                         if (item.tran.TranType == TransactionType.Simple)
                         {
                             @item.tran.CategoryName
-                
+
                             @: | @item.tran.AccountName
                         }
                         else if (item.tran.TranType == TransactionType.Split)
@@ -125,7 +164,20 @@
                         }
                         else if (item.tran.TranType == TransactionType.Transfer)
                         {
-                            @:Transfer
+                            @if (item.tran.IsCrossCurrencyTransfer)
+                            {
+                                @:Currency exchange transfer
+                                @if (item.tran.TransferBalanceAmount.HasValue)
+                                {
+                                    <span title="@(item.tran.TransferBalanceAmount.Value > 0 ? "Currency exchange loss by market rate" : "Currency exchange gain by market rate")">
+                                        @formatService.FormatTranAmount(item.tran.TransferBalanceAmount.Value, item.tran.TransferBalanceCurrency)
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                @:Transfer
+                            }
                         }
                         else if (item.tran.TranType == TransactionType.TransferPart)
                         {
