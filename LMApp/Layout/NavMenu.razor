@@ -1,5 +1,4 @@
 ﻿@inject UserContextService contextService
-@inject NavigationManager navManager
 @using LMApp.Models
 @using LMApp.Models.Account
 @using Shared.Login
@@ -85,7 +84,7 @@
                 @foreach (var acc in AuthInfo.Accounts.Where(x => x.Id != Context?.Id).OrderBy(x => x.Name))
                 {
                     <div class="nav-item px-3">
-                        <a class="nav-link" href="javascript:" @onclick="() => SwitchAccount(acc)">@acc.Name</a>
+                        <a class="nav-link" href="/?bid=@acc.LMAccountId">@acc.Name</a>
                     </div>
                 }
                 <hr class="nav-div" />
@@ -124,12 +123,6 @@
     protected override void OnInitialized()
     {
         contextService.OnActivePageChange += StateHasChanged;
-    }
-
-    private async Task SwitchAccount(LMAccountInfo account)
-    {
-        await contextService.ActivateLMAccount(account);
-        navManager.NavigateTo($"/?bid={account.LMAccountId}");
     }
 
     private async Task HandleBackClick()

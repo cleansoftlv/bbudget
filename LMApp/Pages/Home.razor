@@ -55,7 +55,7 @@
                             {
                                 <p class="text-center m-2"><Spinner Size="Size.Small" /></p>
                             }
-                            else if (NextMonthVisible)
+                            else if (NextMonthVisible && !NextMonthIsFuture)
                             {
                                 <div class="text-center p-2">
                                     <a href="javascript:" @onclick="() => NavigateToMonth(1, nav: NavDirection.None)"><i class="fa-solid fa-arrow-up"></i> @formatService.FormatMonth(MonthStart.AddMonths(1))</a>
@@ -134,6 +134,7 @@
 
     private DateTime MonthStart;
     private bool NextMonthVisible = false;
+    private bool NextMonthIsFuture = false;
 
     private async Task NavigateToCategory(BudgetCategoryDisplay category)
     {
@@ -210,7 +211,7 @@
         try
         {
             res = await budgetService.LoadCategoryTransactions(loadingId,
-                endDate: NextMonthVisible ? MonthStart.AddMonths(1).AddDays(-1) : null);
+                endDate: NextMonthVisible && !NextMonthIsFuture ? MonthStart.AddMonths(1).AddDays(-1) : null);
         }
         catch (HttpRequestException ex)
         {
@@ -250,7 +251,7 @@
             res = await budgetService.LoadCategoryTransactions(
                 loadingId,
                 offset: Math.Max(0, UnfilteredTransactionCount - ClientConstants.OverlapOffsetForTransactions),
-                endDate: NextMonthVisible ? MonthStart.AddMonths(1).AddDays(-1) : null);
+                endDate: NextMonthVisible && !NextMonthIsFuture ? MonthStart.AddMonths(1).AddDays(-1) : null);
 
             if (loadingId != CurrentCategory?.CategoryId || !ShowTranList)
             {
@@ -414,7 +415,9 @@
     {
         MonthStart = MonthStart.AddMonths(count);
         BudgetName = formatService.FormatMonth(MonthStart);
-        NextMonthVisible = MonthStart.AddMonths(1) <= DateTime.Now;
+        var now = DateTime.Now.Date;
+        NextMonthVisible = MonthStart.AddMonths(1) <= now.AddMonths(3);
+        NextMonthIsFuture = MonthStart.AddMonths(1) > now;
         await LoadBudget(allowCache);
     }
 
@@ -564,7 +567,6 @@
         userService.SetActivePageBackHandler(EventCallback.Factory.Create(this, ActiveBageBack));
     }
 
-    private UserContext loadedAccount;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -572,16 +574,13 @@
             return;
 
         bool allowCache = true;
-        if (loadedAccount != null 
-            && loadedAccount.Id != userService.CurrentAccount?.Id
-            && MonthStart != DateTime.MinValue)
+        if (!await base.EnsureCorrectAccountLoaded())
         {
             MonthStart = DateTime.MinValue;
-            CurrentCategory = null;
-            SelectedTransaction = null;
-            ShowTranForm = false;
-            ShowTranList = false;
+            categories = null;
             allowCache = false;
+            StateHasChanged();
+            await Task.Yield(); // Let Blazor render the changes
         }
 
         if (!String.IsNullOrEmpty(UrlMonthId))
@@ -594,7 +593,6 @@
             await GoToMonth(currentMonthStart, allowCache: allowCache);
         }
 
-        loadedAccount = userService.CurrentAccount;
 
         if (UrlCategoryId.HasValue)
         {

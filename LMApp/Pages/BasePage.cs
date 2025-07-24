@@ -1,5 +1,6 @@
 ﻿using BlazorApplicationInsights.Interfaces;
 using BootstrapBlazor.Components;
+using LMApp.Models.Account;
 using LMApp.Models.Extensions;
 using LMApp.Models.UI;
 using Microsoft.AspNetCore.Components;
@@ -83,6 +84,28 @@ namespace LMApp.Pages
             });
         }
 
+        private bool _reloadingAccount = false;
+        protected async Task<bool> EnsureCorrectAccountLoaded()
+        {
+            var lmAccountId = userService.GetLMAccountIdFromUrl();
+            if (userService.CurrentAccount != null
+                && lmAccountId != null
+                && lmAccountId != userService.CurrentAccount.AccountId
+                && !_reloadingAccount)
+            {
+                _reloadingAccount = true;
+                await userService.SelectActiveAccountFromAuthInfo(
+                    null, 
+                    null, 
+                    lmAccountId, 
+                    allowSaveToSettings: true);
+                _reloadingAccount = false;
+                return false;
+            }
+
+            return true;
+        }
+
         protected override async Task OnInitializedAsync()
         {
             userService.ClearActivePageState();
@@ -135,7 +158,22 @@ namespace LMApp.Pages
 
             if (AccountRequired)
             {
+                var urlAccountId = userService.GetLMAccountIdFromUrl();
+
                 var account = userService.CurrentAccount;
+
+                if (urlAccountId != null
+                    && account != null
+                    && account.AccountId != urlAccountId)
+                {
+                    await userService.SelectActiveAccountFromAuthInfo(
+                        null,
+                        null,
+                        urlAccountId,
+                        allowSaveToSettings: true);
+                    account = userService.CurrentAccount;
+                }
+
                 if (account == null)
                 {
                     LoadCancelled = true;

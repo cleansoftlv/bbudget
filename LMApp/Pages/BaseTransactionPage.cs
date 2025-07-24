@@ -49,6 +49,7 @@ namespace LMApp.Pages
             if (LoadCancelled)
                 return;
 
+
             if (UrlTransactionId.HasValue)
             {
                 if (UrlTransactionId == 0 && SelectedTransaction == null)
@@ -76,6 +77,7 @@ namespace LMApp.Pages
             {
                 DoCloseTranForm();
             }
+
             await base.OnParametersSetAsync();
         }
 

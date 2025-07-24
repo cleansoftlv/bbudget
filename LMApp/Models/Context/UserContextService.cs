@@ -392,7 +392,7 @@ public class UserContextService(
         return res;
     }
 
-    private long? GetLMAccountIdFromUrl()
+    public long? GetLMAccountIdFromUrl()
     {
         return _navManager.GetQueryStringOrDefault<long?>("bid");
     }
