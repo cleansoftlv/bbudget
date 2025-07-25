@@ -53,14 +53,14 @@
         @if (BudgetHasMultipleCurrencies)
         {
             <Toggle @bind-Value="ShowMultipleCurrencies"
-                    OnValueChanged="OnSettingsToggle" 
+                    OnValueChanged="()=>OnSettingsToggle()" 
                     OnText="Multiple" 
                     OffText="@formatService.CurrencyToSymbol(settingsService.PrimaryCurrency)" 
                     Color="Color.Secondary" />
         }
         <Toggle 
             @bind-Value="ShowSpent" 
-            OnValueChanged="OnSettingsToggle" 
+            OnValueChanged="()=>OnSettingsToggle()" 
             OnText="Amount spent"
             OffText="Amount left"
             Color="Color.Secondary" />
