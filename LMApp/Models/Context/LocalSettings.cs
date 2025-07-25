@@ -11,6 +11,7 @@ namespace LMApp.Models.Context
         public bool SkipCreateTransferHelp { get; set; }
 
         public bool ShowAmountSpentInBudget { get; set; }
+        public bool ShowMultipleCurrenciesInBudget { get; set; }
 
         public static LocalSettings CreateDefault() =>
             new LocalSettings

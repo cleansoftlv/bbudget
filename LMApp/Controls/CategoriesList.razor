@@ -18,23 +18,23 @@
                             </h5>
                         </div>
                         <div class="col-4 col-sm-4 text-end" title="@(ShowSpent ? "Spent" : "Left to spend")">
+                            @GetLeftOrSpent(item.category)
                             @if (ShowSpent && item.category.CategoryType != Models.Categories.BudgetCategoryType.Income)
                             {
                                 <i class="spent-icon fa-solid fa-circle-down text-muted"></i>
                             }
-                            @formatService.FormatBalance(ShowSpent ? item.category.ActualAmount : item.category.ProgressAmount, item.category.Currency)
                         </div>
                     </div>
                     <div class="row g-0">
                         <div class="col-8 col-sm-8">
-                            @if (item.category.BudgetedAmount != 0)
+                            @if (item.category.BudgetedAmountPrimary != 0)
                             {
                                 <div class="inline-progress-bar">
                                     <BootstrapBlazor.Components.Progress Value="item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent"
                                                                          Color="item.category.ProgressPercent < 0? Color.Danger: Color.Success"
                                                                          Height="10"
                                                                          class="@(item.category.ProgressPercent < 0 ? "flip-bar" : null)"
-                                                                         title="@($"Left: {(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%, {(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income ? "Left to earn" : "Spent")}:  {formatService.FormatBalanceNoHtml(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income ? item.category.BudgetedAmount - item.category.ProgressAmount : item.category.ActualAmount, item.category.Currency)}")"
+                                                                         title="@($"Left: {(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%, {(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income ? "Left to earn" : "Spent")}:  {GetTooltipAmount(item.category)}")"
                                                                          IsShowValue="false" />
                                 </div>
                             }
@@ -43,20 +43,89 @@
                                 // @:Budget not set
                             }
                         </div>
-                        <div class="col-4 col-sm-4 text-end text-secondary align-text-top" title="Budgeted amount">@formatService.FormatBalance(item.category.BudgetedAmount, item.category.Currency)</div>
+                        <div class="col-4 col-sm-4 text-end text-secondary align-text-top" title="Budgeted amount">@GetBudgetedAmount(item.category)</div>
                     </div>
                 </div>
             </a>
         </div>
     }
-    <div class="p-4 text-center">
-        <Toggle @bind-Value="ShowSpent" OnValueChanged="OnSpentToggle" OnText="Amount spent" OffText="Amount left" Color="Color.Secondary" />
+    <div class="p-4 d-flex justify-content-center gap-2">
+        @if (BudgetHasMultipleCurrencies)
+        {
+            <Toggle @bind-Value="ShowMultipleCurrencies"
+                    OnValueChanged="OnSettingsToggle" 
+                    OnText="Multiple" 
+                    OffText="@formatService.CurrencyToSymbol(settingsService.PrimaryCurrency)" 
+                    Color="Color.Secondary" />
+        }
+        <Toggle 
+            @bind-Value="ShowSpent" 
+            OnValueChanged="OnSettingsToggle" 
+            OnText="Amount spent"
+            OffText="Amount left"
+            Color="Color.Secondary" />
     </div>
 </div>
 @code {
     private ElementReference containerRef;
     private int selectedIndex = -1;
     private bool ShowSpent;
+    private bool ShowMultipleCurrencies;
+    private bool BudgetHasMultipleCurrencies;
+
+    private MarkupString GetBudgetedAmount(BudgetCategoryDisplay category)
+    {
+        if (ShowMultipleCurrencies)
+        {
+            return formatService.FormatBalance(category.BudgetedAmount,
+                category.Currency);
+        }
+        else
+        {
+            return formatService.FormatBalance(category.BudgetedAmountPrimary,
+                category.PrimaryCurrency);
+        }
+    }
+
+    private MarkupString GetLeftOrSpent(BudgetCategoryDisplay category)
+    {
+        if (ShowMultipleCurrencies)
+        {
+            return formatService.FormatBalance(ShowSpent
+                ? category.ActualAmount :
+                category.ProgressAmount,
+                category.Currency,
+                isAprox: !category.BudgetedInPrimary);
+        }
+        else
+        {
+            return formatService.FormatBalance(ShowSpent
+                ? category.ActualAmountPrimary :
+                category.ProgressAmountPrimary,
+                category.PrimaryCurrency);
+        }
+    }
+
+    private string GetTooltipAmount(BudgetCategoryDisplay category)
+    {
+        if (ShowMultipleCurrencies)
+        {
+            return formatService.FormatBalanceNoHtml(
+                category.CategoryType == Models.Categories.BudgetCategoryType.Income
+                ? category.BudgetedAmount - category.ProgressAmount
+                : category.ActualAmount,
+                category.Currency,
+            isAprox: !category.BudgetedInPrimary);
+        }
+        else
+        {
+            return formatService.FormatBalanceNoHtml(
+                category.CategoryType == Models.Categories.BudgetCategoryType.Income
+                ? category.BudgetedAmountPrimary - category.ProgressAmountPrimary
+                : category.ActualAmountPrimary,
+                category.PrimaryCurrency);
+        }
+    }
 
     private string GetRowClass(BudgetCategoryDisplay category, int index)
     {
@@ -73,10 +142,11 @@
         return sb.ToString();
     }
 
-    private async Task OnSpentToggle(bool value)
+    private async Task OnSettingsToggle(bool value)
     {
         var settings = await settingsService.GetLocalSettings();
         settings.ShowAmountSpentInBudget = value;
+        settings.ShowMultipleCurrenciesInBudget = ShowMultipleCurrencies;
         await settingsService.SaveLocalSettings(settings);
     }
 
@@ -148,6 +218,7 @@
     {
         var settings = await settingsService.GetLocalSettings();
         ShowSpent = settings.ShowAmountSpentInBudget;
+        ShowMultipleCurrencies = settings.ShowMultipleCurrenciesInBudget;
         await base.OnInitializedAsync();
     }
 
@@ -162,6 +233,8 @@
                 selectedIndex = activeIndex;
             }
         }
+
+        BudgetHasMultipleCurrencies = Categories?.Any(c => c.BudgetedInPrimary == false) ?? false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

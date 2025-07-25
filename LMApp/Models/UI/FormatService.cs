@@ -17,7 +17,11 @@ namespace LMApp.Models.UI
 {
     public class FormatService
     {
-        public MarkupString FormatBalance(decimal amount, string currency, bool isLiability = false)
+        public MarkupString FormatBalance(
+            decimal amount,
+            string currency,
+            bool isLiability = false,
+            bool isAprox = false)
         {
             var sb = new StringBuilder();
             bool needClose = false;
@@ -26,17 +30,30 @@ namespace LMApp.Models.UI
                 needClose = true;
                 if (isLiability)
                 {
+                    if (isAprox)
+                        sb.Append("~ ");
+
                     sb.Append('-');
                 }
                 else
                 {
-                    sb.Append("<span class='amount-neg'>-");
+                    sb.Append("<span class='amount-neg'>");
+                    if (isAprox)
+                        sb.Append("~ ");
+                    sb.Append('-');
                 }
             }
             else if (amount > 0 && isLiability)
             {
                 needClose = true;
-                sb.Append("<span class='amount-credit'>+");
+                sb.Append("<span class='amount-credit'>");
+                if (isAprox)
+                    sb.Append("~ ");
+                sb.Append("+");
+            }
+            else if (isAprox)
+            {
+                sb.Append("~ ");
             }
 
             string amountStr = FormatAmountDecimals(amount);
@@ -52,9 +69,17 @@ namespace LMApp.Models.UI
             return new MarkupString(sb.ToString());
         }
 
-        public string FormatBalanceNoHtml(decimal amount, string currency, bool isLiability = false)
+        public string FormatBalanceNoHtml(
+            decimal amount,
+            string currency,
+            bool isLiability = false,
+            bool isAprox = false)
         {
             var sb = new StringBuilder();
+            if (isAprox)
+            {
+                sb.Append("~ ");
+            }
             if (amount < 0)
             {
                 sb.Append('-');

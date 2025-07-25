@@ -50,12 +50,14 @@ namespace LMApp.Models.Categories
                     BudgetCategoryType.Expense,
                 CategoryId = category_id.Value,
                 Name = category_name,
-                BudgetedAmount = data.budget_to_base,
-                ActualAmount = is_income ? -data.spending_to_base : data.spending_to_base,
-                ProgressAmount = is_income
+                BudgetedAmountPrimary = data.budget_to_base,
+                ActualAmountPrimary = is_income ? -data.spending_to_base : data.spending_to_base,
+                ProgressAmountPrimary = is_income
                     ? -data.spending_to_base
                     : data.budget_to_base - data.spending_to_base,
-                Currency = primaryCurrency
+                PrimaryCurrency = primaryCurrency,
+                Currency = data.budget_currency,
+                BudgetedAmount = data.budget_amount
             };
         }
     }

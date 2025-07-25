@@ -63,11 +63,14 @@ namespace LMApp.Models.Categories
                 Name = "All expenses",
                 CategoryType = BudgetCategoryType.Total,
                 CategoryId = TotalCategoryId,
-                BudgetedAmount = withoutIncome.Sum(x => x.BudgetedAmount),
-                ActualAmount = withoutIncome.Sum(x => x.ActualAmount),
-                Currency = _settingsService.PrimaryCurrency,
-                ProgressAmount = withoutIncome.Sum(x => x.ProgressAmount),
+                BudgetedAmountPrimary = withoutIncome.Sum(x => x.BudgetedAmountPrimary),
+                ActualAmountPrimary = withoutIncome.Sum(x => x.ActualAmountPrimary),
+                PrimaryCurrency = _settingsService.PrimaryCurrency,
+                ProgressAmountPrimary = withoutIncome.Sum(x => x.ProgressAmountPrimary),
             };
+
+            total.BudgetedAmount = total.BudgetedAmountPrimary;
+            total.Currency = _settingsService.PrimaryCurrency;
 
             var res = new[] { total }
                 .Concat(categories.OrderBy(x => x.CategoryType).ThenBy(x => x.Name)).ToArray();

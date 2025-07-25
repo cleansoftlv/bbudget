@@ -5,38 +5,51 @@ public class BudgetCategoryDisplay
     public string Name { get; set; }
     public long CategoryId { get; set; }
 
-    public decimal BudgetedAmount { get; set; }
-    public decimal ProgressAmount { get; set; }
-    public decimal ActualAmount { get; set; }
+    public decimal BudgetedAmountPrimary { get; set; }
+    public decimal ProgressAmountPrimary { get; set; }
+    public decimal ActualAmountPrimary { get; set; }
 
+    public string PrimaryCurrency { get; set; }
+
+    public decimal BudgetedAmount { get; set; }
     public string Currency { get; set; }
+
+    public bool BudgetedInPrimary => string.Equals(Currency, PrimaryCurrency, StringComparison.OrdinalIgnoreCase);
+
+    public decimal ProgressAmount => BudgetedInPrimary
+        ? ProgressAmountPrimary
+        : Math.Round(ProgressAmountPrimary * BudgetedAmount / BudgetedAmountPrimary, 2);
+
+    public decimal ActualAmount => BudgetedInPrimary
+        ? ActualAmountPrimary
+        : Math.Round(ActualAmountPrimary * BudgetedAmount / BudgetedAmountPrimary, 2);
 
     public void AddAmount(decimal amount)
     {
-        ActualAmount += CategoryType == BudgetCategoryType.Income
+        ActualAmountPrimary += CategoryType == BudgetCategoryType.Income
             ? -amount : amount;
-        ProgressAmount += -amount;
+        ProgressAmountPrimary += -amount;
     }
 
     public BudgetCategoryType CategoryType { get; set; }
 
-    public double UsedPercent => BudgetedAmount != 0 
-        ? Math.Round(Decimal.ToDouble(ActualAmount / BudgetedAmount * 100),0) 
+    public double UsedPercent => BudgetedAmountPrimary != 0 
+        ? Math.Round(Decimal.ToDouble(ActualAmountPrimary / BudgetedAmountPrimary * 100),0) 
         : 0.0;
-    public double ProgressPercent => BudgetedAmount != 0 
-        ? Math.Round(Decimal.ToDouble(ProgressAmount / BudgetedAmount * 100),0) 
+    public double ProgressPercent => BudgetedAmountPrimary != 0 
+        ? Math.Round(Decimal.ToDouble(ProgressAmountPrimary / BudgetedAmountPrimary * 100),0) 
         : 0.0;
 
-    public double OverspentPercent => BudgetedAmount != 0 && ActualAmount > BudgetedAmount
-        ? Math.Round(Decimal.ToDouble((ActualAmount - BudgetedAmount) / BudgetedAmount * 100), 0)
+    public double OverspentPercent => BudgetedAmountPrimary != 0 && ActualAmountPrimary > BudgetedAmountPrimary
+        ? Math.Round(Decimal.ToDouble((ActualAmountPrimary - BudgetedAmountPrimary) / BudgetedAmountPrimary * 100), 0)
         : 0.0;
 
     public void UpdateWith(BudgetCategoryDisplay other)
     {
-        BudgetedAmount = other.BudgetedAmount;
-        ProgressAmount = other.ProgressAmount;
-        ActualAmount = other.ActualAmount;
-        Currency = other.Currency;
+        BudgetedAmountPrimary = other.BudgetedAmountPrimary;
+        ProgressAmountPrimary = other.ProgressAmountPrimary;
+        ActualAmountPrimary = other.ActualAmountPrimary;
+        PrimaryCurrency = other.PrimaryCurrency;
     }
 
 }

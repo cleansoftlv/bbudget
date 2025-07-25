@@ -517,7 +517,8 @@
                     Name = CurrentCategory.Name,
                     CategoryId = CurrentCategory.CategoryId,
                     CategoryType = CurrentCategory.CategoryType,
-                    Currency = CurrentCategory.Currency,
+                    PrimaryCurrency = CurrentCategory.PrimaryCurrency,
+                    Currency = CurrentCategory.Currency
                 };
                 categories = categories.Append(updated)
                     .OrderBy(x => x.CategoryType)
@@ -593,7 +594,6 @@
             await GoToMonth(currentMonthStart, allowCache: allowCache);
         }
 
-
         if (UrlCategoryId.HasValue)
         {
             if (categories != null)
@@ -614,7 +614,8 @@
                             Name = cat.name,
                             CategoryId = cat.id,
                             CategoryType = cat.is_income ? BudgetCategoryType.Income : BudgetCategoryType.Expense,
-                            Currency = settingsService.PrimaryCurrency,
+                            PrimaryCurrency = settingsService.PrimaryCurrency,
+                            Currency = settingsService.PrimaryCurrency
                         };
                         categories = categories.Append(newCategory)
                             .OrderBy(x => x.CategoryType)
@@ -753,12 +754,12 @@
         decimal amount,
         decimal? primaryCurrencyAmount)
     {
-        if (String.Equals(category.Currency, currency, StringComparison.InvariantCultureIgnoreCase))
+        if (String.Equals(category.PrimaryCurrency, currency, StringComparison.InvariantCultureIgnoreCase))
         {
             category.AddAmount(amount);
             return true;
         }
-        else if (string.Equals(category.Currency
+        else if (string.Equals(category.PrimaryCurrency
                     , settingsService.PrimaryCurrency
                     , StringComparison.InvariantCultureIgnoreCase)
             && primaryCurrencyAmount != null)
