@@ -142,10 +142,10 @@
         return sb.ToString();
     }
 
-    private async Task OnSettingsToggle(bool value)
+    private async Task OnSettingsToggle()
     {
         var settings = await settingsService.GetLocalSettings();
-        settings.ShowAmountSpentInBudget = value;
+        settings.ShowAmountSpentInBudget = ShowSpent;
         settings.ShowMultipleCurrenciesInBudget = ShowMultipleCurrencies;
         await settingsService.SaveLocalSettings(settings);
     }
