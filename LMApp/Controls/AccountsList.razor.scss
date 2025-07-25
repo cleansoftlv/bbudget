@@ -81,3 +81,8 @@ div[tabindex]:focus {
     }
 }
 
+@media (min-width: 991px) and (max-width: 1050px), (min-width: 1401px) and (max-width: 1450px) {
+    .total-sub-label {
+        display: block;
+    }
+}

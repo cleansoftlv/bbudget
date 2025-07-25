@@ -10,19 +10,19 @@
             <a href="javascript:" class="account-row-inner" @onclick="()=>OnClick(item.account)" role="button">
                 <div class="container p-0">
                     <div class="row g-0">
-                        <div class="col-8 mb-2">
+                        <div class="col-7 mb-2">
                             <h5>
                                 @item.account.Name
                             </h5>
                         </div>
-                        <div class="col-4 text-end balance text-secondary">@formatService.FormatBalance(item.account.Balance, item.account.Currency, item.account.IsLiability)</div>
+                        <div class="col-5 text-end balance text-secondary">@formatService.FormatBalance(item.account.Balance, item.account.Currency, item.account.IsLiability)</div>
                         @if (item.account.LiabilitiesBalance.HasValue)
                         {
-                            <div class="col-6 text-secondary">Liabilities: @formatService.FormatBalance(item.account.LiabilitiesBalance.Value, item.account.Currency, true)</div>
+                            <div class="col-6 text-secondary total-box"><span class="total-sub-label">Liabilities:</span> @formatService.FormatBalance(item.account.LiabilitiesBalance.Value, item.account.Currency, true)</div>
                         }
                         @if (item.account.AssetsBalance.HasValue)
                         {
-                            <div class="col-6 text-secondary text-end">Assets: @formatService.FormatBalance(item.account.AssetsBalance.Value, item.account.Currency, false)</div>
+                            <div class="col-6 text-secondary text-end total-box"><span class="total-sub-label">Assets:</span> @formatService.FormatBalance(item.account.AssetsBalance.Value, item.account.Currency, false)</div>
                         }
                     </div>
                 </div>
