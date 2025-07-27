@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace LMApp.Models.Categories
@@ -44,7 +45,17 @@ namespace LMApp.Models.Categories
             var lmClient = _httpClientFactory.CreateClient("LM");
             var monthEnd = monthStart.AddMonths(1).AddDays(-1);
 
-            var response = await lmClient.GetFromJsonAsync<BudgetCategory[]>($"budgets?start_date={monthStart:yyyy-MM-dd}&end_date={monthEnd:yyyy-MM-dd}");
+            BudgetCategory[] response = null;
+            try
+            {
+                response = await lmClient.GetFromJsonAsync<BudgetCategory[]>($"budgets?start_date={monthStart:yyyy-MM-dd}&end_date={monthEnd:yyyy-MM-dd}");
+            }
+            catch (JsonException x)
+            {
+                throw new HttpRequestException("Error response",
+                    x,
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
             if (response == null)
             {
                 throw new HttpRequestException("Empty response",
