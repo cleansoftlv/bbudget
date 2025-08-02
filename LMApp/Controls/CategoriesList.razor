@@ -93,7 +93,7 @@
             return formatService.FormatBalance(ShowSpent
                 ? category.ActualAmount :
                 category.ProgressAmount,
-                category.Currency,
+                category.BudgetedCurrency,
                 isAprox: !category.BudgetedInPrimary);
         }
         else
@@ -113,7 +113,7 @@
                 category.CategoryType == Models.Categories.BudgetCategoryType.Income
                 ? category.BudgetedAmount - category.ProgressAmount
                 : category.ActualAmount,
-                category.Currency,
+                category.BudgetedCurrency,
             isAprox: !category.BudgetedInPrimary);
         }
         else
