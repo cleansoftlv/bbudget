@@ -38,6 +38,12 @@
                     </Alert>
                 </div>
             </article>
+            @if (UpdatePending)
+            {
+                <div class="update-btn-container">
+                    <Button Icon="@(UpdateInProgress ? "fa-solid fa-hourglass-start" : "fa-solid fa-code-compare")" IsDisabled="UpdateInProgress" Color="Color.Warning" class="rounded-circle" OnClick="UpdateClick" title="Update avaliable" />
+                </div>
+            }
         </main>
     </ErrorContent>
 </ErrorBoundary>
