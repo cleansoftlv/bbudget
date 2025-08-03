@@ -42,6 +42,11 @@
                         <div class="header-text">
                             @CurrentAccount?.Name
                         </div>
+                        @if (Transactions != null && Transactions.Any())
+                        {
+                            <Button Icon="fab fa-google-drive" Color="Color.Primary" IsOutline="true" class="icon-btn ms-auto" 
+                                    OnClick="ShowGoogleDriveExportModal" title="Export to Google Drive" />
+                        }
                     </div>
                     <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
                         <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
@@ -94,7 +99,10 @@
         </div>
     }
 </LoadingPanel>
-    @code {
+
+
+<GoogleDriveExportModal @ref="googleDriveExportModal" Transactions="Transactions" />
+@code {
     [SupplyParameterFromQuery(Name = "aid")]
     public string UrlAccountUid { get; set; }
 
@@ -704,5 +712,16 @@
             return false;
         }
         return true;
+    }
+
+    // Google Drive Export functionality
+    private GoogleDriveExportModal googleDriveExportModal;
+
+    private async Task ShowGoogleDriveExportModal()
+    {
+        if (googleDriveExportModal != null)
+        {
+            await googleDriveExportModal.ShowModal();
+        }
     }
 }

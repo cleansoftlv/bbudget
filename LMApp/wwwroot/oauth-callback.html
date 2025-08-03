@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google OAuth Callback</title>
+    <meta charset="utf-8" />
+</head>
+<body>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <h2>Processing authentication...</h2>
+        <p>This window will close automatically.</p>
+    </div>
+
+    <script>
+        // Extract access token from URL fragment
+        function getAccessTokenFromHash() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            return params.get('access_token');
+        }
+
+        // Extract error from URL fragment or parameters
+        function getErrorFromUrl() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const hashError = params.get('error');
+            
+            if (hashError) {
+                return hashError;
+            }
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('error');
+        }
+
+        // Process the OAuth response
+        try {
+            const error = getErrorFromUrl();
+            
+            if (error) {
+                // Send error to parent window
+                window.opener.postMessage({
+                    type: 'GOOGLE_AUTH_ERROR',
+                    error: error
+                }, window.location.origin);
+            } else {
+                const accessToken = getAccessTokenFromHash();
+                
+                if (accessToken) {
+                    // Send success to parent window
+                    window.opener.postMessage({
+                        type: 'GOOGLE_AUTH_SUCCESS',
+                        accessToken: accessToken
+                    }, window.location.origin);
+                } else {
+                    // No access token found
+                    window.opener.postMessage({
+                        type: 'GOOGLE_AUTH_ERROR',
+                        error: 'No access token received'
+                    }, window.location.origin);
+                }
+            }
+        } catch (ex) {
+            // Send error to parent window
+            window.opener.postMessage({
+                type: 'GOOGLE_AUTH_ERROR',
+                error: 'Authentication processing failed: ' + ex.message
+            }, window.location.origin);
+        }
+        
+        // Close the popup after a short delay
+        setTimeout(() => {
+            window.close();
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -13,12 +13,12 @@ using LMApp.Models.Context;
 using Toolbelt.Blazor.Extensions.DependencyInjection;
 using LMApp.Models;
 using System.Reflection;
-using System;
 using LMApp.Models.Extensions;
 using Shared.Login;
 using LMApp.Models.Licenses;
 using LMApp.Models.Reports;
 using Shared.License;
+using LMApp.Models.UI.GoogleDrive;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -53,6 +53,7 @@ builder.Services.AddScoped<LicenseService>();
 builder.Services.AddScoped<ReportsService>();
 builder.Services.AddSingleton<LicenseCheckService>();
 builder.Services.AddScoped<Utils>();
+builder.Services.AddScoped<GoogleDriveExporter>();
 builder.Services.AddPWAUpdater();
 builder.Services.AddViewTransition();
 

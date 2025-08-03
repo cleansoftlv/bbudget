@@ -17,6 +17,8 @@ namespace LMApp.Models.Configuration
 
         public string ApplicationInsightsConnectionString { get; set; }
 
+        public string GoogleOAuthClientId { get; set; }
+
         public string CdnUrl
         {
             get
