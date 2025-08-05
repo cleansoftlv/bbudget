@@ -55,7 +55,7 @@
             else
             {
                 <p class="text-muted">
-                    This will export @TransactionCount transaction(s). Earlies date is @formatService.FormatDate(EarliestDate).
+                    This will export @TransactionCount transaction(s). Transactions are loaded till approximately @formatService.FormatDate(EarliestDate).
                     <LoadingPanel IsLoading="IsLoadingMore" ErrorMessage="@LoadMoreErrorMessage" OnRetry="LoadMore">
                         @if (HasMoreTransactions)
                         {
