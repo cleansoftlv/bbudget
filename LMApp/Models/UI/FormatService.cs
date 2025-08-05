@@ -1,4 +1,5 @@
 ﻿using BootstrapBlazor.Components;
+using LMApp.Models.Transactions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Shared;
@@ -181,6 +182,27 @@ namespace LMApp.Models.UI
                 _ => provider,
             };
         }
+
+        public string TranTypeToString(TransactionType type)
+            => type switch
+            {
+                TransactionType.Simple => "Simple",
+                TransactionType.Transfer => "Transfer",
+                TransactionType.Split => "Split",
+                TransactionType.Other => "Other",
+                TransactionType.CategoryTransfer => "Category Transfer",
+                TransactionType.SplitPart => "Split Part",
+                TransactionType.TransferPart => "Transfer Part",
+                _ => "Unknown"
+            };
+
+
+        /// <summary>
+        /// Converts TransactionDisplay to ExportTransaction format
+        /// </summary>
+        /// <param name="transaction">Transaction to convert</param>
+        /// <returns>ExportTransaction with properly formatted data</returns>
+        
 
         public DateTime ConvertFromUtcToLocal(DateTime date)
         {

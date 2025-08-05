@@ -1,6 +1,7 @@
 ﻿using LMApp.Models.Configuration;
+using LMApp.Models.Reports;
 using LMApp.Models.Transactions;
-using LMApp.Models.UI.GoogleDrive.Dto;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
 
@@ -8,14 +9,19 @@ namespace LMApp.Models.UI.GoogleDrive
 {
     public class GoogleDriveExporter(IJSRuntime js,
         IOptions<LocalOptions> options,
-        FormatService formatService) : IAsyncDisposable
+        ReportsService reportService,
+        NavigationManager navigationManager,
+        UserContextService userContextService
+        ) : IAsyncDisposable
     {
         readonly IJSRuntime JS = js;
 
         private IJSObjectReference module;
 
         readonly LocalOptions options = options.Value;
-        readonly FormatService formatService = formatService;
+        readonly ReportsService _reportService = reportService;
+        readonly NavigationManager _navigationManager = navigationManager;
+        readonly UserContextService _userContextService = userContextService;
 
 
         public async ValueTask Init()
@@ -44,22 +50,10 @@ namespace LMApp.Models.UI.GoogleDrive
 
         public IEnumerable<ExportTransaction> Convert(IEnumerable<TransactionDisplay> transactions)
         {
-            return transactions.Select(t => new ExportTransaction
-            {
-                Date = t.Date.ToString("yyyy-MM-dd"),
-                Account = t.AccountName,
-                Payee = t.Payee,
-                Amount = t.TranType == TransactionType.Transfer? 
-                    (t.TransferBalanceAmount ?? 0) : 
-                    t.Amount,
-                TransferAmount = t.TranType == TransactionType.Transfer ?
-                    t.Amount:
-                    null,
-                Category = t.CategoryName,
-                Currency = t.Currency?.ToUpper(),
-                Type = t.TranType.ToString(),
-                Cleared = t.IsCleared,
-            });
+            var lmAccountId = _userContextService.CurrentAccount.AccountId;
+            var origin = _navigationManager.BaseUri.TrimEnd('/');
+
+            return transactions.Select(x => _reportService.ConvertTranToExportFormat(x, lmAccountId, origin));
         }
 
         public async ValueTask EnsureInit()

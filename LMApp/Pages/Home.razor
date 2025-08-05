@@ -48,6 +48,11 @@
                         <div class="header-text">
                             @CurrentCategory?.Name
                         </div>
+                        @if (Transactions != null && Transactions.Any())
+                        {
+                            <Button Icon="fas fa-download" Color="Color.Secondary" IsOutline="true" class="icon-btn ms-auto" 
+                                    OnClick="ShowExportModal" title="Export Transactions" />
+                        }
                     </div>
                     <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
                         <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
@@ -114,6 +119,14 @@
         </div>
     }
 </LoadingPanel>
+
+<ExportModal @ref="exportModal" 
+    Transactions="Transactions"
+    HasMoreTransactions="HasMoreTrans"
+    LoadMoreErrorMessage="@LoadMoreTransactionsError"
+    IsLoadingMore="LoadingMoreTrans"
+    OnLoadMore="LoadMoreTransactions"
+    />
 
 @code {
     [SupplyParameterFromQuery(Name = "cid")]
@@ -838,5 +851,16 @@
             return false;
         }
         return true;
+    }
+
+    // Export functionality
+    private ExportModal exportModal;
+
+    private async Task ShowExportModal()
+    {
+        if (exportModal != null)
+        {
+            await exportModal.ShowModal();
+        }
     }
 }

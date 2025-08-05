@@ -768,6 +768,8 @@ namespace LMApp.Models.Transactions
             return splitforEdit;
         }
 
+
+
         public TransactionDisplay Convert(TransactionDto dto)
         {
             var tranType = GetTransactionType(dto);
@@ -815,7 +817,7 @@ namespace LMApp.Models.Transactions
                         tran.DestinationAccountName = destinationAccount?.Name ?? "<Unknown>";
                       
                         if (tran.From != null)
-                        {
+                        {   
                             tran.Amount = tran.From.amount;
                             tran.Currency = tran.From.currency;
                         }

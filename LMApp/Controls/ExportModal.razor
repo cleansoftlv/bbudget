@@ -1,10 +1,18 @@
+@using System.IO
+@using System.Text
 @using System.Text.Json
+@using LMApp.Models.Reports
 @using LMApp.Models.Transactions
+@using LMApp.Models.UI
 @using LMApp.Models.UI.GoogleDrive
+@using LMApp.Models.UI.Csv
 @inject GoogleDriveExporter googleDriveExporter
+@inject CsvExporter csvExporter
+@inject Utils utils
+@inject FormatService formatService
 
 <Modal @ref="_modal" IsKeyboard="true" IsFade="false">
-    <ModalDialog Title="Export to Google Drive" ShowCloseButton="true" Size="Size.Medium">
+    <ModalDialog Title="Export Transactions" ShowCloseButton="true" Size="Size.Medium">
         <BodyTemplate>
             @if (IsExporting)
             {
@@ -46,20 +54,27 @@
             }
             else
             {
-                <div class="mb-3">
-                    <label for="fileNameInput" class="form-label">File Name</label>
-                    <input type="text" class="form-control" id="fileNameInput" @bind="FileName"
-                           placeholder="BBudget_Transactions_@DateTime.Now.ToString("yyyy-MM-dd")">
-                </div>
                 <p class="text-muted">
-                    <i class="fas fa-info-circle me-2"></i>
-                    This will export @TransactionCount transaction(s) to a new Google Sheet.
-                    You'll be asked to sign in to Google and grant permission to create files in your Google Drive.
+                    This will export @TransactionCount transaction(s). Earlies date is @formatService.FormatDate(EarliestDate).
+                    <LoadingPanel IsLoading="IsLoadingMore" ErrorMessage="@LoadMoreErrorMessage" OnRetry="LoadMore">
+                        @if (HasMoreTransactions)
+                        {
+                            <div class="text-center"><a href="javascript:" @onclick="LoadMore">Load more</a></div>
+                        }
+                    </LoadingPanel>
                 </p>
-                <div class="text-center">
-                    <button type="button" class="btn btn-success" @onclick="StartExport">
+                <p class="text-muted">
+                    Choose your preferred export format:
+                </p>
+
+                <div class="d-flex justify-content-center gap-3 my-4">
+                    <button type="button" class="btn btn-success px-4" @onclick="StartGoogleDriveExport">
                         <i class="fab fa-google-drive me-2"></i>
                         Export to Google Drive
+                    </button>
+                    <button type="button" class="btn btn-primary px-4" @onclick="StartCsvExport">
+                        <i class="fas fa-download me-2"></i>
+                        Download CSV
                     </button>
                 </div>
             }
@@ -68,17 +83,27 @@
 </Modal>
 
 @code {
-
-
-
-
-
-
-
     private Modal _modal;
 
-    [Parameter] 
+    [Parameter]
     public List<TransactionDisplay> Transactions { get; set; }
+
+    [Parameter]
+    public EventCallback OnLoadMore { get; set; }
+
+    [Parameter]
+    public bool HasMoreTransactions { get; set; }
+
+    [Parameter]
+    public bool IsLoadingMore { get; set; }
+
+    [Parameter]
+    public string LoadMoreErrorMessage { get; set; }
+
+    private async Task LoadMore()
+    {
+        await OnLoadMore.InvokeAsync();
+    }
 
     private string FileName { get; set; } = string.Empty;
     private bool IsExporting { get; set; }
@@ -86,8 +111,10 @@
     private string ErrorMessage { get; set; } = string.Empty;
     private string SuccessMessage { get; set; } = string.Empty;
     private string WebViewLink { get; set; } = string.Empty;
+    private string LastExportType { get; set; } = string.Empty;
 
     private int TransactionCount => Transactions?.Count ?? 0;
+    private DateTime EarliestDate => Transactions?.Select(x => x.Date).Min() ?? DateTime.MinValue;
 
     protected override void OnParametersSet()
     {
@@ -103,17 +130,32 @@
         ErrorMessage = string.Empty;
         SuccessMessage = string.Empty;
         WebViewLink = string.Empty;
+        LastExportType = string.Empty;
     }
 
-    private async Task StartExport()
+    private async Task StartGoogleDriveExport()
     {
+        LastExportType = "Google Drive";
         await ExportToGoogleDrive();
+    }
+
+    private async Task StartCsvExport()
+    {
+        LastExportType = "CSV";
+        await ExportToCsv();
     }
 
     private async Task RetryExport()
     {
         ResetState();
-        await ExportToGoogleDrive();
+        if (LastExportType == "Google Drive")
+        {
+            await ExportToGoogleDrive();
+        }
+        else if (LastExportType == "CSV")
+        {
+            await ExportToCsv();
+        }
     }
 
     private async Task ExportToGoogleDrive()
@@ -139,7 +181,7 @@
 
             // Call JavaScript function to handle the export directly to Google Drive
             var result = await googleDriveExporter.ExportToGoogleDrive(
-                new Models.UI.GoogleDrive.Dto.ExportCsvRequest
+                new ExportCsvRequest
                 {
                     Transactions = googleDriveExporter.Convert(Transactions).ToArray(),
                     FileName = FileName
@@ -161,6 +203,43 @@
                     throw new Exception("Export failed with unknown error");
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsExporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportToCsv()
+    {
+        try
+        {
+            IsExporting = true;
+            ExportStatus = "Generating CSV file...";
+            StateHasChanged();
+
+            if (Transactions == null || Transactions.Count == 0)
+            {
+                throw new Exception("No transactions to export");
+            }
+
+            if (string.IsNullOrWhiteSpace(FileName))
+            {
+                FileName = $"BBudget_Transactions_{DateTime.Now:yyyy-MM-dd}";
+            }
+
+            ExportStatus = "Downloading file...";
+            StateHasChanged();
+
+            // Use the CSV exporter service
+            await csvExporter.ExportToCsvAsync(Transactions, FileName);
+
+            SuccessMessage = "CSV file downloaded successfully!";
         }
         catch (Exception ex)
         {

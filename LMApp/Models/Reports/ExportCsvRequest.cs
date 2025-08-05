@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LMApp.Models.UI.GoogleDrive.Dto
+namespace LMApp.Models.Reports
 {
     public class ExportCsvRequest
     {

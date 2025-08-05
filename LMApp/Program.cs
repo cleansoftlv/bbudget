@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components;
 using LMApp.Models.Categories;
 using LMApp.Models.Transactions;
 using LMApp.Models.UI;
+using LMApp.Models.UI.Csv;
 using BlazorApplicationInsights;
 using LMApp.Models.Configuration;
 using BlazorApplicationInsights.Models;
@@ -54,6 +55,7 @@ builder.Services.AddScoped<ReportsService>();
 builder.Services.AddSingleton<LicenseCheckService>();
 builder.Services.AddScoped<Utils>();
 builder.Services.AddScoped<GoogleDriveExporter>();
+builder.Services.AddScoped<CsvExporter>();
 builder.Services.AddPWAUpdater();
 builder.Services.AddViewTransition();
 

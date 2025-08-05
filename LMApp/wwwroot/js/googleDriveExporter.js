@@ -97,7 +97,7 @@ function getAccessToken(oauthClientId) {
 
 // Convert transactions to CSV format compatible with ExportTransaction class
 function convertTransactionsToCsv(transactions) {
-    const headers = 'Date,Payee,Amount,Transfer Amount,Currency,Account,Category,Type,Cleared\n';
+    const headers = 'Date,Payee,Account,Amount,Currency,Category,Type,Cleared,Account To,Amount From,Currency From,Amount To,Currency To,Notes,Id,Url\n';
     if (!transactions || transactions.length === 0) {
         return headers;
     }
@@ -106,14 +106,21 @@ function convertTransactionsToCsv(transactions) {
         const date = transaction.date || '';
         const payee = escapeCsvField(transaction.payee || '');
         const amount = transaction.amount ?? '';
+        const amountTo = transaction.amountTo ?? '';
+        const notes = escapeCsvField(transaction.notes || '');
         const transferAmount = transaction.transferAmount ?? '';
-        const currency = transaction.currency || '';
+        const transferCurrency = escapeCsvField(transaction.transferCurrency ?? '');
+        const currency = escapeCsvField(transaction.currency || '');
+        const currencyTo = escapeCsvField(transaction.currencyTo || '');
         const account = escapeCsvField(transaction.account || '');
+        const accountTo = escapeCsvField(transaction.accountTo || '');
         const category = escapeCsvField(transaction.category || '');
         const type = escapeCsvField(transaction.type || '');
         const cleared = transaction.cleared ? 'Yes' : 'No';
+        const id = escapeCsvField(transaction.id || '');
+        const url = escapeCsvField(transaction.url || '');
 
-        return `${date},${payee},${amount},${transferAmount},${currency},${account},${category},${type},${cleared}`;
+        return `${date},${payee},${account},${amount},${currency},${category},${type},${cleared},${accountTo},${transferAmount},${transferCurrency},${amountTo},${currencyTo},${notes},${id},${url}`;
     });
 
     return headers + csvRows.join('\n');

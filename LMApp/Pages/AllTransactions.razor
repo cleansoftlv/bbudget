@@ -19,11 +19,16 @@
         <div class="row g-0 gx-lg-1 gx-xl-2">
             <div class="@TransactionListClass()">
                 <div class="ui-panel" id="first-ui-panel">
-                    <div class="p-header xs">
+                    <div class="@($"{(Transactions != null && Transactions.Any() ? "with-button" : null)} p-header xs")">
                         <MobileTabNav />
                         <div class="@($"{(!ShowUnreviewed ? "sm" : null)} header-text")">
                             @(ShowUnreviewed ? "Unreviewed Transactions" : "Transactions")
                         </div>
+                        @if (Transactions != null && Transactions.Any())
+                        {
+                            <Button Icon="fas fa-download" Color="Color.Secondary" IsOutline="true" class="icon-btn ms-auto"
+                                    OnClick="ShowExportModal" title="Export Transactions" />
+                        }
                     </div>
                     <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
                         <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
@@ -76,6 +81,14 @@
         </div>
     }
 </LoadingPanel>
+
+<ExportModal @ref="exportModal"
+             Transactions="Transactions"
+             HasMoreTransactions="HasMoreTrans"
+             LoadMoreErrorMessage="@LoadMoreTransactionsError"
+             IsLoadingMore="LoadingMoreTrans"
+             OnLoadMore="LoadMoreTransactions" />
+
 @code {
 
     private bool ShowUnreviewed;
@@ -187,7 +200,7 @@
 
     private async Task LoadTransactions(bool force = false)
     {
-        if (DisplayingUnreviewed == ShowUnreviewed 
+        if (DisplayingUnreviewed == ShowUnreviewed
             && !force)
             return;
 
@@ -293,5 +306,16 @@
         }
 
         return true;
+    }
+
+    // Export functionality
+    private ExportModal exportModal;
+
+    private async Task ShowExportModal()
+    {
+        if (exportModal != null)
+        {
+            await exportModal.ShowModal();
+        }
     }
 }

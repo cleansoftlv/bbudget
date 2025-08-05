@@ -2,6 +2,7 @@
 using LMApp.Models.Categories;
 using LMApp.Models.Context;
 using LMApp.Models.Transactions;
+using LMApp.Models.UI;
 using System.Diagnostics;
 using System.Text;
 using System.Transactions;
@@ -13,16 +14,19 @@ namespace LMApp.Models.Reports
         private readonly TransactionsService _transactionsService;
         private readonly BudgetService _budgetService;
         private readonly SettingsService _settingsService;
+        private readonly FormatService _formatService;
 
         public ReportsService(
             TransactionsService transactionsService,
             BudgetService budgetService,
-            SettingsService settingsService)
+            SettingsService settingsService,
+            FormatService formatService
+            )
         {
             _transactionsService = transactionsService;
             _budgetService = budgetService;
             _settingsService = settingsService;
-
+            _formatService = formatService;
         }
 
         public async Task<ExpenseReportData> GenerateExpenseReportAsync(
@@ -442,7 +446,7 @@ namespace LMApp.Models.Reports
 
             reportData.FromMonth = currentMonthStart.AddMonths(-monthCount + 1);
             reportData.ToMonth = currentMonthStart.AddMonths(1).AddDays(-1);
-            reportData.Currency = _settingsService.PrimaryCurrency;    
+            reportData.Currency = _settingsService.PrimaryCurrency;
 
             // Process each month
             for (int i = 0; i < monthCount; i++)
@@ -515,6 +519,40 @@ namespace LMApp.Models.Reports
             }
 
             return csv.ToString();
+        }
+
+        public ExportTransaction ConvertTranToExportFormat(
+            TransactionDisplay transaction,
+            long lmAccountId,
+            string origin)
+        {
+            return new ExportTransaction
+            {
+                Id = transaction.Id,
+                Date = transaction.Date.ToString("yyyy-MM-dd"),
+                Payee = transaction.Payee ?? "",
+                Notes = transaction.Notes ?? "",
+                Amount = transaction.TranType == TransactionType.Transfer
+                    ? (-transaction.TransferBalanceAmount ?? 0)
+                    : -transaction.Amount,
+                Currency = transaction.TranType == TransactionType.Transfer
+                    ? transaction.TransferBalanceCurrency?.ToUpper()
+                    : transaction.Currency?.ToUpper() ?? "",
+                TransferAmount = transaction.TranType == TransactionType.Transfer
+                    ? transaction.Amount
+                    : null,
+                TransferCurrency = transaction.From?.currency?.ToUpper(),
+                CurrencyTo = transaction.To?.currency.ToUpper() ?? "",
+                Account = transaction.AccountName ?? "",
+                AccountTo = transaction.DestinationAccountName ?? "",
+                Category = transaction.CategoryName ?? "",
+                Type = _formatService.TranTypeToString(transaction.TranType),
+                Cleared = transaction.IsCleared,
+                AmountTo = transaction.TranType == TransactionType.Transfer
+                    ? (-transaction.To?.amount)
+                    : null,
+                Url = String.Concat(origin, "/transactions?bid=", lmAccountId, "&tid=", transaction.Id)
+            };
         }
     }
 }

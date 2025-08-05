@@ -44,8 +44,8 @@
                         </div>
                         @if (Transactions != null && Transactions.Any())
                         {
-                            <Button Icon="fab fa-google-drive" Color="Color.Primary" IsOutline="true" class="icon-btn ms-auto" 
-                                    OnClick="ShowGoogleDriveExportModal" title="Export to Google Drive" />
+                            <Button Icon="fas fa-download" Color="Color.Secondary" IsOutline="true" class="icon-btn ms-auto" 
+                                    OnClick="ShowExportModal" title="Export Transactions" />
                         }
                     </div>
                     <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
@@ -101,7 +101,14 @@
 </LoadingPanel>
 
 
-<GoogleDriveExportModal @ref="googleDriveExportModal" Transactions="Transactions" />
+<ExportModal @ref="exportModal" 
+    Transactions="Transactions"
+    HasMoreTransactions="HasMoreTrans"
+    LoadMoreErrorMessage="@LoadMoreTransactionsError"
+    IsLoadingMore="LoadingMoreTrans"
+    OnLoadMore="LoadMoreTransactions"
+    />
+
 @code {
     [SupplyParameterFromQuery(Name = "aid")]
     public string UrlAccountUid { get; set; }
@@ -714,14 +721,14 @@
         return true;
     }
 
-    // Google Drive Export functionality
-    private GoogleDriveExportModal googleDriveExportModal;
+    // Export functionality
+    private ExportModal exportModal;
 
-    private async Task ShowGoogleDriveExportModal()
+    private async Task ShowExportModal()
     {
-        if (googleDriveExportModal != null)
+        if (exportModal != null)
         {
-            await googleDriveExportModal.ShowModal();
+            await exportModal.ShowModal();
         }
     }
 }
