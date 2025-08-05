@@ -79,7 +79,7 @@ async function onFetch(event) {
         const shouldServeIndexHtml = event.request.mode === 'navigate'
             && !event.request.url.startsWith(`${self.origin}/.auth`)
             && !event.request.url.startsWith(`${self.origin}/oauth-callback.html`)
-            && !manifestUrlList.some(url => url === event.request.url));
+            && !manifestUrlList.some(url => url === event.request.url);
 
         const request = shouldServeIndexHtml ? 'index.html' : event.request;
         const cache = await caches.open(cacheName);
