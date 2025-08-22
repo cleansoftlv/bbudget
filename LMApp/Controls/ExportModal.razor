@@ -114,7 +114,7 @@
     private string LastExportType { get; set; } = string.Empty;
 
     private int TransactionCount => Transactions?.Count ?? 0;
-    private DateTime EarliestDate => Transactions?.Select(x => x.Date).Min() ?? DateTime.MinValue;
+    private DateTime EarliestDate => Transactions?.Select(x => (DateTime?)x.Date).Min() ?? DateTime.MinValue;
 
     protected override void OnParametersSet()
     {
