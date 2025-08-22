@@ -59,7 +59,7 @@
                     <LoadingPanel IsLoading="IsLoadingMore" ErrorMessage="@LoadMoreErrorMessage" OnRetry="LoadMore">
                         @if (HasMoreTransactions)
                         {
-                            <div class="text-center"><a href="javascript:" @oncliindex.htmck="LoadMore">Load more</a></div>
+                            <div class="text-center"><a href="javascript:" @onclick="LoadMore">Load more</a></div>
                         }
                     </LoadingPanel>
                 </p>
@@ -180,8 +180,8 @@
             StateHasChanged();
 
             // Call JavaScript function to handle the export directly to Google Drive
-            var result = await googleDriveExporter.ExportToGoogleDrive(
-                new ExportCsvRequest
+            var result = await googleDriveExporter.ExportTransactionsToGoogleDrive(
+                new ExportTransactionsCsvRequest
                 {
                     Transactions = googleDriveExporter.Convert(Transactions).ToArray(),
                     FileName = FileName

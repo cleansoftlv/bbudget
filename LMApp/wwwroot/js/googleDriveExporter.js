@@ -31,6 +31,34 @@ export async function exportToGoogleDrive(request) {
     }
 }
 
+// Export raw CSV to Google Drive
+export async function exportRawCsvToGoogleDrive(request) {
+    try {
+        // request: { csvContent, fileName, oauthClientId }
+        const accessToken = await getAccessToken(request.oauthClientId);
+
+        let fileName = request.fileName;
+        if (!fileName.endsWith('.csv')) {
+            fileName = fileName.replace(/\.[^/.]+$/, '') + '.csv';
+        }
+
+        const result = await uploadToGoogleDrive(accessToken, fileName, request.csvContent);
+
+        return {
+            success: true,
+            fileId: result.fileId,
+            webViewLink: result.webViewLink,
+            message: 'Successfully exported to Google Sheets!'
+        };
+    } catch (error) {
+        console.error('Google Drive export error:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+}
+
 
 // Open OAuth popup and get access token
 function getAccessToken(oauthClientId) {

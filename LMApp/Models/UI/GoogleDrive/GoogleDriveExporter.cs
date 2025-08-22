@@ -30,13 +30,38 @@ namespace LMApp.Models.UI.GoogleDrive
                 $"./js/googleDriveExporter.js");
         }
 
-        public async ValueTask<ExportCsvResult> ExportToGoogleDrive(ExportCsvRequest request)
+        public async ValueTask<ExportCsvResult> ExportTransactionsToGoogleDrive(ExportTransactionsCsvRequest request)
         {
             try
             {
                 request.OauthClientId = options.GoogleOAuthClientId;
                 await EnsureInit();
                 return await module.InvokeAsync<ExportCsvResult>("exportToGoogleDrive", request);
+            }
+            catch (JSException ex)
+            {
+                return new ExportCsvResult
+                {
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async ValueTask<ExportCsvResult> ExportRawCsvToGoogleDrive(string csvContent, string fileName)
+        {
+            try
+            {
+                await EnsureInit();
+                
+                var request = new
+                {
+                    CsvContent = csvContent,
+                    FileName = fileName,
+                    OauthClientId = options.GoogleOAuthClientId
+                };
+                
+                return await module.InvokeAsync<ExportCsvResult>("exportRawCsvToGoogleDrive", request);
             }
             catch (JSException ex)
             {

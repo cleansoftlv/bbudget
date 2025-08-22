@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LMApp.Models.Reports
 {
-    public class ExportCsvRequest
+    public class ExportTransactionsCsvRequest
     {
         public string OauthClientId { get; set; }
 

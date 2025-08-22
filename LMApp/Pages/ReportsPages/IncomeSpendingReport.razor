@@ -2,11 +2,13 @@
 @using LMApp.Models.Context
 @using LMApp.Models.Reports
 @using LMApp.Models.UI
+@using LMApp.Models.UI.GoogleDrive
 @layout MainLayout
 @inherits BasePage
 @inject ReportsService reportsService
 @inject FormatService formatService
 @inject SettingsService settingsService
+@inject GoogleDriveExporter googleDriveExporter
 
 
 <PageTitle>Income vs Spending Report</PageTitle>
@@ -104,12 +106,28 @@
                     </div>
                             
                     <div class="text-center">
-                        <Button Color="Color.Primary" 
+                        <Button Color="Color.Success" 
+                                Size="Size.Large"
+                                Icon="fab fa-google-drive"
+                                OnClick="ExportToGoogleDrive"
+                                IsDisabled="IsExportingToGoogleDrive"
+                                class="btn-lg ms-2 mb-4">
+                            @if (IsExportingToGoogleDrive)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Exporting...</span>
+                            }
+                            else
+                            {
+                                <span>Export to Google Drive</span>
+                            }
+                        </Button>
+                        <Button Color="Color.Primary"
                                 Size="Size.Large"
                                 Icon="fa-solid fa-download"
                                 OnClick="DownloadReport"
                                 class="btn-lg mb-4">
-                            Download Income vs Spending Report (CSV)
+                            Download CSV
                         </Button>
                         <Button Color="Color.Secondary" 
                                 Size="Size.Large"
@@ -141,6 +159,14 @@
                     </div>
                 }
 
+                @if (!string.IsNullOrEmpty(ExportError))
+                {
+                    <div class="alert alert-danger mt-4">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                        @ExportError
+                    </div>
+                }
+
                 <div class="mt-4">
                     <a href="javascript:" @onclick="BackToReports">
                        <i class="fa-solid fa-arrow-left"></i> Back to reports 
@@ -154,8 +180,11 @@
 
 @code {
     private IncomeSpendingReportData ReportData;
-    private bool IsGenerating = false;    private string ProgressMessage = "";
+    private bool IsGenerating = false;
+    private bool IsExportingToGoogleDrive = false;
+    private string ProgressMessage = "";
     private string GenerateError = "";
+    private string ExportError = "";
     private string ValidationError = "";
     private int NumberOfMonths = 3;
 
@@ -232,6 +261,7 @@
     {
         ReportData = null;
         GenerateError = "";
+        ExportError = "";
         ValidationError = "";
         ProgressMessage = "";
         StateHasChanged();
@@ -253,5 +283,58 @@
             GenerateError = $"Failed to download report: {ex.Message}";
             StateHasChanged();
         }
+    }
+
+    private async Task ExportToGoogleDrive()
+    {
+        if (ReportData == null)
+            return;
+
+        IsExportingToGoogleDrive = true;
+        ExportError = "";
+        StateHasChanged();
+
+        try
+        {
+            var csvContent = reportsService.GenerateIncomeSpendingReportCsv(ReportData);
+            var fileName = $"income-spending-report-{NumberOfMonths}months-{DateTime.Now:yyyy-MM-dd}";
+
+            var result = await googleDriveExporter.ExportRawCsvToGoogleDrive(csvContent, fileName);
+
+            if (result.Success)
+            {
+                await ShowExportSuccessModal(result.Message, result.WebViewLink);
+            }
+            else
+            {
+                ExportError = $"Failed to export to Google Drive: {result.Message}";
+            }
+        }
+        catch (Exception ex)
+        {
+            ExportError = $"Failed to export to Google Drive: {ex.Message}";
+        }
+        finally
+        {
+            IsExportingToGoogleDrive = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowExportSuccessModal(string message, string googleDriveLink)
+    {
+        await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
+        {
+            Title = "Export Successful",
+            Message = new MarkupString($"<div class='text-center'><i class='fa-solid fa-check-circle text-success fs-1 mb-3'></i><p>{message}</p></div>"),
+            ModalSize = Size.Medium,
+            AdditionalButtonText = "Open in Google Sheets",
+            AdditionalButtonColor = Color.Success,
+            AdditionalButtonCallback = async () =>
+            {
+                await ModalContainer.Modal.Hide();
+                await utils.OpenNewTab(googleDriveLink);
+            }
+        });
     }
 }
