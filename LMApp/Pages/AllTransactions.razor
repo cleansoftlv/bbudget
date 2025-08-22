@@ -19,7 +19,7 @@
         <div class="row g-0 gx-lg-1 gx-xl-2">
             <div class="@TransactionListClass()">
                 <div class="ui-panel" id="first-ui-panel">
-                    <div class="@($"{(Transactions != null && Transactions.Any() ? "with-button" : null)} p-header xs")">
+                    <div class="@($"{(Transactions != null && Transactions.Any() ? "with-button" : null)} p-header xs {(ShowUnreviewed ? "xs-with-nav" : null)}")">
                         <MobileTabNav />
                         <div class="@($"{(!ShowUnreviewed ? "sm" : null)} header-text")">
                             @(ShowUnreviewed ? "Unreviewed Transactions" : "Transactions")

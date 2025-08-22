@@ -2,10 +2,16 @@
 .account-row:not(:first-child) {
   border-top: lightgray 1px solid;
 }
+[data-bs-theme=dark] .account-row:not(:first-child) {
+  border-top: var(--bs-gray-600) 1px solid;
+}
 .account-row.total h5:before {
   content: "∑";
   color: var(--bs-primary);
   margin-right: 0.5rem;
+}
+[data-bs-theme=dark] .account-row.total h5:before {
+  color: var(--bs-link-color);
 }
 .account-row.active {
   background-color: var(--bs-primary-bg-subtle);
@@ -30,6 +36,9 @@
 .account-row:hover {
   background-color: #efefef;
 }
+[data-bs-theme=dark] .account-row:hover {
+  background-color: var(--bs-gray-800);
+}
 
 .balance {
   font-size: 1.25em;
@@ -52,6 +61,9 @@ div[tabindex]:focus {
   .account-row:not(:first-child) .account-row-inner {
     border-top: lightgray 1px solid;
   }
+  [data-bs-theme=dark] .account-row:not(:first-child) .account-row-inner {
+    border-top: var(--bs-gray-600) 1px solid;
+  }
   .account-row .account-row-inner {
     padding: 0.5rem 1rem;
   }
@@ -60,6 +72,9 @@ div[tabindex]:focus {
   }
   .account-row .account-row-inner:hover {
     background-color: #efefef;
+  }
+  [data-bs-theme=dark] .account-row .account-row-inner:hover {
+    background-color: var(--bs-gray-800);
   }
 }
 @media (min-width: 991px) {

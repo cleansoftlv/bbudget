@@ -12,15 +12,24 @@
 .budget-category-row:not(:first-child) {
   border-top: lightgray 1px solid;
 }
+[data-bs-theme=dark] .budget-category-row:not(:first-child) {
+  border-top: var(--bs-gray-600) 1px solid;
+}
 .budget-category-row.total h5:before {
   content: "∑";
   color: var(--bs-primary);
   margin-right: 0.5rem;
 }
+[data-bs-theme=dark] .budget-category-row.total h5:before {
+  color: var(--bs-link-color);
+}
 .budget-category-row.income h5:before {
   content: "+";
   color: var(--bs-primary);
   margin-right: 0.5rem;
+}
+[data-bs-theme=dark] .budget-category-row.income h5:before {
+  color: var(--bs-link-color);
 }
 .budget-category-row.active {
   background-color: var(--bs-primary-bg-subtle);
@@ -45,6 +54,9 @@
 .budget-category-row:hover {
   background-color: #efefef;
 }
+[data-bs-theme=dark] .budget-category-row:hover {
+  background-color: var(--bs-gray-800);
+}
 
 div:focus-within .budget-category-row.keyboard-selected {
   outline: 2px solid var(--bs-primary);
@@ -62,6 +74,9 @@ div[tabindex]:focus {
   }
   .budget-category-row:not(:first-child) .budget-category-row-inner {
     border-top: lightgray 1px solid;
+  }
+  [data-bs-theme=dark] .budget-category-row:not(:first-child) .budget-category-row-inner {
+    border-top: var(--bs-gray-600) 1px solid;
   }
   .budget-category-row .budget-category-row-inner {
     padding: 0.5rem 1rem;

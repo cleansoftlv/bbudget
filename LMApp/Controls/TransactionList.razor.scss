@@ -11,22 +11,42 @@
 
     &:not(:first-child) {
         border-top: lightgray 1px solid;
+
+        [data-bs-theme="dark"] & {
+            border-top: var(--bs-gray-600) 1px solid;
+        }
     }
 
     &.active {
         background-color: var(--bs-primary-bg-subtle);
+
+        [data-bs-theme="dark"] & {
+            background-color: var(--bs-primary-border-subtle);
+        }
     }
 
     &:hover {
         background-color: #efefef;
+
+        [data-bs-theme="dark"] & {
+            background-color: var(--bs-gray-800);
+        }
     }
 
     &.active:hover {
         background-color: var(--bs-primary-border-subtle);
+
+        [data-bs-theme="dark"] & {
+            background-color: #0a4caf;
+        }
     }
 
     &.next-month-open:not(:first-child) {
         border-top: #efefef 10px solid;
+
+        [data-bs-theme="dark"] & {
+            border-top: var(--bs-gray-700) 10px solid;
+        }
     }
 }
 

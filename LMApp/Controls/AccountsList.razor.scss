@@ -2,12 +2,20 @@
 .account-row {
     &:not(:first-child) {
         border-top: lightgray 1px solid;
+
+        [data-bs-theme="dark"] & {
+            border-top: var(--bs-gray-600) 1px solid;
+        }
     }
 
     &.total h5:before {
         content: "∑";
         color: var(--bs-primary);
         margin-right: .5rem;
+
+        [data-bs-theme="dark"] & {
+            color: var(--bs-link-color);
+        }
     }
 
     &.active {
@@ -34,6 +42,10 @@
 
 .account-row:hover {
     background-color: #efefef;
+    
+    [data-bs-theme="dark"] & {
+        background-color: var(--bs-gray-800);
+    }
 }
 
 .balance {
@@ -59,6 +71,10 @@ div[tabindex]:focus {
 
     .account-row:not(:first-child) .account-row-inner {
         border-top: lightgray 1px solid;
+        
+        [data-bs-theme="dark"] & {
+            border-top: var(--bs-gray-600) 1px solid;
+        }
     }
 
     .account-row .account-row-inner {
@@ -71,6 +87,10 @@ div[tabindex]:focus {
 
     .account-row .account-row-inner:hover {
         background-color: #efefef;
+        
+        [data-bs-theme="dark"] & {
+            background-color: var(--bs-gray-800);
+        }
     }
 }
 

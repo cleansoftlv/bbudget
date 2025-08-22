@@ -1,0 +1,14 @@
+﻿main {
+    flex: 1;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/*no horizontal scroll on mobile*/
+@media (max-width: 768px) {
+    main {
+        max-width: 100%;
+    }
+}
+
+

@@ -1,0 +1,14 @@
+﻿main {
+    flex: 1;
+}
+
+@media (min-width: 991px) {
+    main {
+        background-color: #fafafa;
+        max-width: 100%;
+        
+        [data-bs-theme="dark"] & {
+            background-color: var(--bs-gray-900);
+        }
+    }
+}

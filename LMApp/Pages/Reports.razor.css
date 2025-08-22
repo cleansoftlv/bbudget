@@ -1,45 +1,44 @@
-.report-progress {
-    min-height: 200px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+﻿.report-progress {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .report-description {
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
 }
 
 .report-status {
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .download-section {
-    padding: 2rem 0;
+  padding: 2rem 0;
 }
 
 .btn-lg {
-    padding: 0.75rem 2rem;
-    font-size: 1.1rem;
-    font-weight: 600;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .spinner-border {
-    width: 3rem;
-    height: 3rem;
+  width: 3rem;
+  height: 3rem;
 }
 
 @media (max-width: 768px) {
-    .btn-lg {
-        width: 100%;
-        margin-bottom: 1rem;
-    }
-    
-    .download-section {
-        padding: 1rem 0;
-    }
+  .btn-lg {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  .download-section {
+    padding: 1rem 0;
+  }
 }
