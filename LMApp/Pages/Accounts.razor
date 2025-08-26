@@ -754,6 +754,8 @@
         return true;
     }
 
+    protected override string CurrentAccountUid => CurrentAccount?.Uid;
+
     // Export functionality
     private ExportModal exportModal;
 

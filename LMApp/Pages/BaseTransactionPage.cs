@@ -4,9 +4,7 @@ using LMApp.Models.Extensions;
 using LMApp.Models.Transactions;
 using LMApp.Models.UI;
 using Microsoft.AspNetCore.Components;
-using Shared.License;
 using System.Net;
-using System.Runtime.CompilerServices;
 
 namespace LMApp.Pages
 {
@@ -599,32 +597,26 @@ namespace LMApp.Pages
                     if (group != null)
                     {
                         long groupId = await transactionsService.CreateGroup(group);
-                        var newTran = await transactionsService.GetTransactionAsync(groupId);
-                        AddNewTransaction(newTran, tran);
-                        tran.Id = groupId;
-                        tran.SavedTransaction = newTran.Transaction;
-                        if (tran is AccountTransferTransactionForEdit transfer)
+                        var tranToAddId = groupId;
+                        if (CurrentAccountUid != null)
                         {
-                            transfer.SavedFrom = newTran.From;
-                            transfer.SavedTo = newTran.To;
+                            for (int i = 0; i < inserts.Length; i++)
+                            {
+                                if (CurrentAccountUid == TransactionsService.GetAccountUid(inserts[i].asset_id, inserts[i].plaid_account_id))
+                                {
+                                    tranToAddId = ids[i];
+                                    break;
+                                }
+                            }
                         }
+                        await HandleNewTranCreated(tran, tranToAddId);
                     }
                     else
                     {
                         foreach (var id in ids)
                         {
                             var newTran = await transactionsService.GetTransactionAsync(id);
-                            AddNewTransaction(newTran, tran);
-                            if (tran.Transaction == null)
-                            {
-                                tran.Id = id;
-                                tran.SavedTransaction = newTran.Transaction;
-                                if (tran is AccountTransferTransactionForEdit transfer)
-                                {
-                                    transfer.SavedFrom = newTran.From;
-                                    transfer.SavedTo = newTran.To;
-                                  }
-                            }
+                            await HandleNewTranCreated(tran, id);
                         }
                     }
                 }
@@ -636,6 +628,19 @@ namespace LMApp.Pages
             }
             IsSaving = false;
             return true;
+        }
+
+        private async Task HandleNewTranCreated(BaseTransactionForEdit tran, long newTranId)
+        {
+            var newTran = await transactionsService.GetTransactionAsync(newTranId);
+            AddNewTransaction(newTran, tran);
+            tran.Id = newTranId;
+            tran.SavedTransaction = newTran.Transaction;
+            if (tran is AccountTransferTransactionForEdit transfer)
+            {
+                transfer.SavedFrom = newTran.From;
+                transfer.SavedTo = newTran.To;
+            }
         }
 
         private async Task TranUpdated(ForEditPair pair)
@@ -876,7 +881,20 @@ namespace LMApp.Pages
                 var group = transfer.GetGroupDto(settingsService, [original.Id, secondId]);
                 var newTransferId = await transactionsService.CreateGroup(group);
 
-                var tranDisplay = await TryRefreshDisplayTransaction(original.Id, tran, newTransferId);
+                var idToRefresh = newTransferId;
+                if (CurrentAccountUid != null)
+                {
+                    if (CurrentAccountUid == TransactionsService.GetAccountUid(update.asset_id, update.plaid_account_id))
+                    {
+                        idToRefresh = original.Id;
+                    }
+                    else if (CurrentAccountUid == TransactionsService.GetAccountUid(secondInsert.asset_id, secondInsert.plaid_account_id))
+                    {
+                        idToRefresh = secondId;
+                    }
+                }
+
+                var tranDisplay = await TryRefreshDisplayTransaction(original.Id, tran, idToRefresh);
                 if (tranDisplay != null)
                 {
                     transfer.SavedTransaction = tranDisplay.Transaction;
@@ -890,7 +908,7 @@ namespace LMApp.Pages
                 if (tranDisplay == null && pair.ConfirmedMatchingTransferTransaction != null)
                 {
                     tranDisplay = await TryRefreshDisplayTransaction(
-                        pair.ConfirmedMatchingTransferTransaction.Id, tran);
+                        pair.ConfirmedMatchingTransferTransaction.Id, tran, idToRefresh);
 
                     if (tranDisplay != null)
                     {
@@ -904,10 +922,12 @@ namespace LMApp.Pages
                     //If split transaction was not found, maybe we started edit via one of it's children
                     foreach (var child in split.Children)
                     {
-                        tranDisplay = await TryRefreshDisplayTransaction(child.Id, tran, newTransferId);
+                        tranDisplay = await TryRefreshDisplayTransaction(child.Id, tran, idToRefresh);
                         if (tranDisplay != null)
                         {
-                            tran.SavedTransaction = tranDisplay.Transaction;
+                            transfer.SavedTransaction = tranDisplay.Transaction;
+                            transfer.SavedFrom = tranDisplay.From;
+                            transfer.SavedTo = tranDisplay.To;
                             break;
                         }
                     }
@@ -967,6 +987,8 @@ namespace LMApp.Pages
 
             return true;
         }
+
+        protected virtual string CurrentAccountUid => null;
 
         private async Task UpdateTranSameType(BaseTransactionForEdit tran)
         {
