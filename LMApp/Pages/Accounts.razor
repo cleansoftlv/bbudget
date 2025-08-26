@@ -28,9 +28,9 @@
                     <div class="p-body p-0">
                         <LoadingPanel IsLoading="@(accounts == null)">
                             <AccountsList @ref="accountsListRef" Accounts="accounts"
-                            OnNavidateRight="AccountListNavigateRight"
-                            ActiveAccountUid="@CurrentAccount?.Uid"
-                            AccountSelected="e => NavigateToAccount(e)" />
+                                          OnNavidateRight="AccountListNavigateRight"
+                                          ActiveAccountUid="@CurrentAccount?.Uid"
+                                          AccountSelected="e => NavigateToAccount(e)" />
                         </LoadingPanel>
                     </div>
                 </div>
@@ -44,22 +44,22 @@
                         </div>
                         @if (Transactions != null && Transactions.Any())
                         {
-                            <Button Icon="fas fa-download" Color="Color.Secondary" IsOutline="true" class="icon-btn ms-auto" 
+                            <Button Icon="fas fa-download" Color="Color.Secondary" IsOutline="true" class="icon-btn ms-auto"
                                     OnClick="ShowExportModal" title="Export Transactions" />
                         }
                     </div>
                     <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
                         <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
                             <TransactionList @ref="transactionListRef" Transactions="@Transactions"
-                            HasMore="HasMoreTrans"
-                            ShowTransactionsNotSupported="CurrentAccount?.AccountType == AccountType.Crypto"
-                            LoadMoreLoadError="@LoadMoreTransactionsError"
-                            ListContext="transactionListContext"
-                            LoadingMore="LoadingMoreTrans"
-                            OnNavidateLeft="FocusAccountList"
-                            ActiveTransactionId="SelectedTransaction?.Id"
-                            TransactionSelected="NavigateToTransaction"
-                            OnLoadMore="LoadMoreTransactions" />
+                                             HasMore="HasMoreTrans"
+                                             ShowTransactionsNotSupported="CurrentAccount?.AccountType == AccountType.Crypto"
+                                             LoadMoreLoadError="@LoadMoreTransactionsError"
+                                             ListContext="transactionListContext"
+                                             LoadingMore="LoadingMoreTrans"
+                                             OnNavidateLeft="FocusAccountList"
+                                             ActiveTransactionId="SelectedTransaction?.Id"
+                                             TransactionSelected="NavigateToTransaction"
+                                             OnLoadMore="LoadMoreTransactions" />
                         </InfiniteScroll>
                     </LoadingPanel>
                 </div>
@@ -74,18 +74,18 @@
                     </div>
                     <div class="p-body">
                         <LoadingPanel IsLoading="@(TransactionInEdit == null)"
-                        ErrorMessage="@LoadSingleTransactionError"
-                        OnRetry="RetryShowTransaction">
+                                      ErrorMessage="@LoadSingleTransactionError"
+                                      OnRetry="RetryShowTransaction">
                             <TransactionForm Transaction="@TransactionInEdit"
-                            SaveTransaction="t => SaveTransaction(t)"
-                            SaveError="@SaveTransactionError"
-                            SaveTransactionAndNext="SaveTransactionAndNext"
-                            CreateTransfer="CreateTransfer"
-                            Ungroup="UngroupWithConfirm"
-                            Copy="CopyTransaction"
-                            Delete="DeleteTransaction"
-                            IsSaving="IsSaving"
-                            Cancel="CloseTranForm" />
+                                             SaveTransaction="t => SaveTransaction(t)"
+                                             SaveError="@SaveTransactionError"
+                                             SaveTransactionAndNext="SaveTransactionAndNext"
+                                             CreateTransfer="CreateTransfer"
+                                             Ungroup="UngroupWithConfirm"
+                                             Copy="CopyTransaction"
+                                             Delete="DeleteTransaction"
+                                             IsSaving="IsSaving"
+                                             Cancel="CloseTranForm" />
                         </LoadingPanel>
                     </div>
                 </div>
@@ -101,13 +101,12 @@
 </LoadingPanel>
 
 
-<ExportModal @ref="exportModal" 
-    Transactions="Transactions"
-    HasMoreTransactions="HasMoreTrans"
-    LoadMoreErrorMessage="@LoadMoreTransactionsError"
-    IsLoadingMore="LoadingMoreTrans"
-    OnLoadMore="LoadMoreTransactions"
-    />
+<ExportModal @ref="exportModal"
+             Transactions="Transactions"
+             HasMoreTransactions="HasMoreTrans"
+             LoadMoreErrorMessage="@LoadMoreTransactionsError"
+             IsLoadingMore="LoadingMoreTrans"
+             OnLoadMore="LoadMoreTransactions" />
 
 @code {
     [SupplyParameterFromQuery(Name = "aid")]
@@ -394,7 +393,7 @@
 
     protected override void PrepareNewTransaction(SimpleTransactionForEdit tran)
     {
-        if (transactionListContext == TransactionListContext.Account 
+        if (transactionListContext == TransactionListContext.Account
             && TransactionsService.AccountTypeCanBeUsedInTransaction(CurrentAccount?.AccountType))
         {
             tran.AccountUid = CurrentAccount.Uid;
@@ -495,65 +494,65 @@
     private (SimpleTransactionForEdit from, SimpleTransactionForEdit to) GetTransferDetails(AccountTransferTransactionForEdit transfer)
     {
         var from = new SimpleTransactionForEdit();
-        from.UpdateWith(transfer,settingsService);
+        from.UpdateWith(transfer, settingsService);
         from.Amount = transfer.AmountFrom;
         from.AccountUid = transfer.AccountUidFrom;
         from.Currency = transfer.CurrencyFrom;
         from.IsCredit = false;
         from.Transaction = transfer.From == null ? null : new TransactionDto()
-            {
-                asset_id = transfer.From.asset_id,
-                plaid_account_id = transfer.From.plaid_account_id,
-                amount = transfer.From.amount,
-                to_base = transfer.From.to_base,
-                currency = transfer.From.currency,
-            };
+        {
+            asset_id = transfer.From.asset_id,
+            plaid_account_id = transfer.From.plaid_account_id,
+            amount = transfer.From.amount,
+            to_base = transfer.From.to_base,
+            currency = transfer.From.currency,
+        };
 
         from.SavedTransaction = transfer.SavedFrom == null ? null : new TransactionDto()
-            {
-                asset_id = transfer.SavedFrom.asset_id,
-                plaid_account_id = transfer.SavedFrom.plaid_account_id,
-                amount = transfer.SavedFrom.amount,
-                to_base = transfer.SavedFrom.to_base,
-                currency = transfer.SavedFrom.currency,
-            };
+        {
+            asset_id = transfer.SavedFrom.asset_id,
+            plaid_account_id = transfer.SavedFrom.plaid_account_id,
+            amount = transfer.SavedFrom.amount,
+            to_base = transfer.SavedFrom.to_base,
+            currency = transfer.SavedFrom.currency,
+        };
 
         var to = new SimpleTransactionForEdit();
-        to.UpdateWith(transfer,settingsService);
+        to.UpdateWith(transfer, settingsService);
         to.Amount = transfer.AmountTo;
         to.AccountUid = transfer.AccountUidTo;
         to.Currency = transfer.CurrencyTo;
         to.IsCredit = true;
         to.Transaction = transfer.To == null ? null : new TransactionDto()
-            {
-                asset_id = transfer.To.asset_id,
-                plaid_account_id = transfer.To.plaid_account_id,
-                amount = transfer.To.amount,
-                to_base = transfer.To.to_base,
-                currency = transfer.To.currency,
-            };
+        {
+            asset_id = transfer.To.asset_id,
+            plaid_account_id = transfer.To.plaid_account_id,
+            amount = transfer.To.amount,
+            to_base = transfer.To.to_base,
+            currency = transfer.To.currency,
+        };
 
         to.SavedTransaction = transfer.SavedTo == null ? null : new TransactionDto()
-            {
-                asset_id = transfer.SavedTo.asset_id,
-                plaid_account_id = transfer.SavedTo.plaid_account_id,
-                amount = transfer.SavedTo.amount,
-                to_base = transfer.SavedTo.to_base,
-                currency = transfer.SavedTo.currency,
-            };
+        {
+            asset_id = transfer.SavedTo.asset_id,
+            plaid_account_id = transfer.SavedTo.plaid_account_id,
+            amount = transfer.SavedTo.amount,
+            to_base = transfer.SavedTo.to_base,
+            currency = transfer.SavedTo.currency,
+        };
 
         return (from, to);
     }
 
     private bool SimpleTransactionDeleted(SimpleTransactionForEdit simple)
     {
-        if (simple.Transaction.amount == 0 
+        if (simple.Transaction.amount == 0
             || TransactionsService.GetAccountTypeByUid(simple.AccountUid) != AccountType.Default)
             return true;
 
         var assetId = simple.AssetId;
 
-        var account = accounts.FirstOrDefault(x => x.AccountType == AccountType.Default 
+        var account = accounts.FirstOrDefault(x => x.AccountType == AccountType.Default
             && x.IdForType == assetId);
 
         if (account == null)
@@ -574,10 +573,11 @@
         if (totalAccount == null)
             return true;
 
-        return TryAddAmount(totalAccount,
+        return TryAddAmountToTotal(totalAccount,
             simple.Currency,
             simple.Transaction.amount,
-            simple.Transaction.to_base);
+            simple.Transaction.to_base,
+            account.IsLiability);
     }
 
     private bool SimpleTransactionAdded(SimpleTransactionForEdit simple)
@@ -588,7 +588,7 @@
 
         var assetId = simple.AssetId;
 
-        var account = accounts.FirstOrDefault(x => x.AccountType == AccountType.Default 
+        var account = accounts.FirstOrDefault(x => x.AccountType == AccountType.Default
             && x.IdForType == assetId);
 
         if (account == null)
@@ -606,10 +606,11 @@
         if (totalAccount == null)
             return true;
 
-        return TryAddAmount(totalAccount,
+        return TryAddAmountToTotal(totalAccount,
             simple.Currency,
             -simple.AmountWithSign ?? 0,
-            -simple.SavedTransaction?.to_base);
+            -simple.SavedTransaction?.to_base,
+            account.IsLiability);
     }
 
     protected bool TryAddAmount(
@@ -631,6 +632,38 @@
             && primaryCurrencyAmount != null)
         {
             account.AddAmount(primaryCurrencyAmount.Value);
+            if (CurrentAccount?.Uid == account.Uid)
+            {
+                TryRefreshRunningBalances();
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    protected bool TryAddAmountToTotal(
+     AccountDisplay account,
+     string currency,
+     decimal amount,
+     decimal? primaryCurrencyAmount,
+     bool isLiability)
+    {
+        if (String.Equals(account.Currency, currency, StringComparison.InvariantCultureIgnoreCase))
+        {
+            account.AddAmountToTotalAccount(amount, isLiability);
+            if (CurrentAccount?.Uid == account.Uid)
+            {
+                TryRefreshRunningBalances();
+            }
+            return true;
+        }
+        else if (string.Equals(account.Currency, settingsService.PrimaryCurrency, StringComparison.InvariantCultureIgnoreCase)
+            && primaryCurrencyAmount != null)
+        {
+            account.AddAmountToTotalAccount(primaryCurrencyAmount.Value, isLiability);
             if (CurrentAccount?.Uid == account.Uid)
             {
                 TryRefreshRunningBalances();

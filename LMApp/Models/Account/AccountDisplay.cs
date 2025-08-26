@@ -68,6 +68,27 @@ namespace LMApp.Models.Account
         public void AddAmount(decimal amount)
         {
             Balance += amount;
+            if (IsLiability && LiabilitiesBalance.HasValue)
+            {
+                LiabilitiesBalance += amount;
+            }
+            if (!IsLiability && AssetsBalance.HasValue)
+            {
+                AssetsBalance += amount;
+            }
+        }
+
+        public void AddAmountToTotalAccount(decimal amount, bool addedToLiabilityAccount)
+        {
+            Balance += amount;
+            if (addedToLiabilityAccount && LiabilitiesBalance.HasValue)
+            {
+                LiabilitiesBalance += amount;
+            }
+            if (!addedToLiabilityAccount && AssetsBalance.HasValue)
+            {
+                AssetsBalance += amount;
+            }
         }
     }
 }
