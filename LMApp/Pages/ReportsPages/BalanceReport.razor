@@ -17,9 +17,9 @@
             <div class="col-12">
                 <div class="mb-4">
                     <p class="text-muted">
-                        This report shows the closing balance for each account over the specified number of months. 
-                        The balances are calculated by starting from the current account balance and 
-                        working backwards through transaction history. The report is exported as a pivot table 
+                        This report shows the closing balance for each account over the specified number of months.
+                        The balances are calculated by starting from the current account balance and
+                        working backwards through transaction history. The report is exported as a pivot table
                         with accounts as rows and months as columns for easy analysis. Crypto accounts are not supported in this report.
                     </p>
                 </div>
@@ -31,12 +31,12 @@
                             <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <BootstrapInputNumber @bind-Value="NumberOfMonths"
-                                                DisplayText="Number of Months"
-                                                ShowLabel="true"
-                                                Id="monthsInput"
-                                                Min="1" 
-                                                Max="24"
-                                                PlaceHolder="Enter number of months" />
+                                                          DisplayText="Number of Months"
+                                                          ShowLabel="true"
+                                                          Id="monthsInput"
+                                                          Min="1"
+                                                          Max="24"
+                                                          PlaceHolder="Enter number of months" />
                                     @if (!string.IsNullOrEmpty(ValidationError))
                                     {
                                         <div class="text-danger small mt-1">@ValidationError</div>
@@ -62,15 +62,15 @@
                 {
                     <div class="alert alert-success mb-4">
                         <i class="fa-solid fa-check-circle me-2"></i>
-                        Report generated successfully! The report includes data from 
-                        @formatService.FormatMonth(ReportData.FromMonth) to @formatService.FormatMonth(ReportData.ToMonth) 
+                        Report generated successfully! The report includes data from
+                        @formatService.FormatMonth(ReportData.FromMonth) to @formatService.FormatMonth(ReportData.ToMonth)
                         (@NumberOfMonths month@(NumberOfMonths == 1 ? "" : "s")).
                         The CSV will be formatted as a pivot table with accounts as rows and months as columns.
                     </div>
-                            
+
                     <div class="text-center">
-                        
-                        <Button Color="Color.Success" 
+
+                        <Button Color="Color.Success"
                                 Size="Size.Large"
                                 Icon="fab fa-google-drive"
                                 OnClick="ExportToGoogleDrive"
@@ -78,7 +78,7 @@
                                 class="btn-lg ms-2 mb-4">
                             @if (IsExportingToGoogleDrive)
                             {
-                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <Spinner Size="Size.Small" class="mx-2" />
                                 <span>Exporting...</span>
                             }
                             else
@@ -93,7 +93,7 @@
                                 class="btn-lg mb-4">
                             Download CSV
                         </Button>
-                        <Button Color="Color.Secondary" 
+                        <Button Color="Color.Secondary"
                                 Size="Size.Large"
                                 Icon="fa-solid fa-arrow-left"
                                 OnClick="ResetReport"
@@ -105,7 +105,7 @@
                 else
                 {
                     <div class="text-center text-sm-start">
-                        <Button Color="Color.Primary" 
+                        <Button Color="Color.Primary"
                                 Size="Size.Large"
                                 Icon="fa-solid fa-chart-line"
                                 OnClick="GenerateReport"
@@ -134,7 +134,7 @@
 
                 <div class="mt-4">
                     <a href="javascript:" @onclick="BackToReports">
-                       <i class="fa-solid fa-arrow-left"></i> Back to reports 
+                        <i class="fa-solid fa-arrow-left"></i> Back to reports
                     </a>
                 </div>
             </div>
