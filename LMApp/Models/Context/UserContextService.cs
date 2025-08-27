@@ -253,6 +253,19 @@ public class UserContextService(
         return calcSign == newSignature.Signature;
     }
 
+    public void UpdateCachedAccount(AccountDto account)
+    {
+        for (int i = 0; i < Accounts.Length; i++)
+        {
+            if (Accounts[i].id == account.id)
+            {
+                Accounts[i] = account;
+                return;
+            }
+        }
+        Accounts = Accounts.Append(account).ToArray();
+    }
+
     public async Task RefreshAccounts()
     {
         if (CurrentAccount == null)

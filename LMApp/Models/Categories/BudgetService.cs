@@ -290,5 +290,151 @@ namespace LMApp.Models.Categories
                 _ => throw new ArgumentOutOfRangeException(nameof(accountType), accountType, null)
             };
         }
+
+        /// <summary>
+        /// Creates a new asset in Lunch Money
+        /// </summary>
+        /// <param name="request">The asset creation request</param>
+        /// <returns>The created asset as AccountDto</returns>
+        /// <exception cref="HttpRequestException">Thrown when the API request fails</exception>
+        public async Task<AccountDto> CreateAssetAsync(CreateAssetRequest request)
+        {
+            var lmClient = _httpClientFactory.CreateClient("LM");
+
+            try
+            {
+                var response = await lmClient.PostAsJsonAsync("assets", request);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new HttpRequestException(
+                        $"Failed to create asset. Status: {response.StatusCode}, Content: {errorContent}",
+                        null,
+                        response.StatusCode);
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<AccountDto>();
+                if (result == null || result.id == default)
+                {
+                    throw new HttpRequestException("Empty response from create asset API", 
+                        null, 
+                        System.Net.HttpStatusCode.ExpectationFailed);
+                }
+                // Clear account cache since we added a new asset
+                _userContextService.UpdateCachedAccount(result);
+                return result;
+            }
+            catch (JsonException ex)
+            {
+                throw new HttpRequestException("Error parsing create asset response", 
+                    ex, 
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
+        }
+
+        /// <summary>
+        /// Updates an existing asset in Lunch Money
+        /// </summary>
+        /// <param name="assetId">The ID of the asset to update</param>
+        /// <param name="request">The asset update request</param>
+        /// <returns>The updated asset as AccountDto</returns>
+        /// <exception cref="HttpRequestException">Thrown when the API request fails</exception>
+        public async Task<AccountDto> UpdateAssetAsync(long assetId, UpdateAssetRequest request)
+        {
+            var lmClient = _httpClientFactory.CreateClient("LM");
+
+            try
+            {
+                var response = await lmClient.PutAsJsonAsync($"assets/{assetId}", request);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new HttpRequestException(
+                        $"Failed to update asset {assetId}. Status: {response.StatusCode}, Content: {errorContent}",
+                        null,
+                        response.StatusCode);
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<AccountDto>();
+                if (result == null || result.id == default)
+                {
+                    throw new HttpRequestException("Empty response from update asset API", 
+                        null, 
+                        System.Net.HttpStatusCode.ExpectationFailed);
+                }
+
+                // Clear account cache since we updated an asset
+                _userContextService.UpdateCachedAccount(result);
+                return result;
+            }
+            catch (JsonException ex)
+            {
+                throw new HttpRequestException("Error parsing update asset response", 
+                    ex, 
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
+        }
+
+        /// <summary>
+        /// Helper method to convert AccountDisplay to CreateAssetRequest
+        /// </summary>
+        /// <param name="account">The account display object to convert</param>
+        /// <returns>A CreateAssetRequest object ready for API submission</returns>
+        public static CreateAssetRequest ConvertToCreateAssetRequest(AccountDisplay account)
+        {
+            return new CreateAssetRequest
+            {
+                type_name = ConvertToLMApiTypeName(account.LMAccountType),
+                name = account.Name,
+                display_name = account.Name,
+                balance = account.Balance.ToString("F4"),
+                currency = account.Currency?.ToLowerInvariant() ?? "usd",
+                balance_as_of = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                exclude_transactions = false
+            };
+        }
+
+        /// <summary>
+        /// Helper method to convert AccountDisplay to UpdateAssetRequest
+        /// </summary>
+        /// <param name="account">The account display object to convert</param>
+        /// <returns>An UpdateAssetRequest object ready for API submission</returns>
+        public static UpdateAssetRequest ConvertToUpdateAssetRequest(AccountDisplay account)
+        {
+            return new UpdateAssetRequest
+            {
+                type_name = ConvertToLMApiTypeName(account.LMAccountType),
+                name = account.Name,
+                display_name = account.Name,
+                balance = account.Balance.ToString("F4"),
+                currency = account.Currency?.ToLowerInvariant() ?? "usd",
+                balance_as_of = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                exclude_transactions = false
+            };
+        }
+
+        /// <summary>
+        /// Converts LMAccountType enum to Lunch Money API type name string
+        /// </summary>
+        /// <param name="accountType">The LMAccountType enum value</param>
+        /// <returns>The corresponding API type name string</returns>
+        private static string ConvertToLMApiTypeName(LMAccountType accountType)
+        {
+            return accountType switch
+            {
+                LMAccountType.Cash => "cash",
+                LMAccountType.Credit => "credit",
+                LMAccountType.Investment => "investment",
+                LMAccountType.RealEstate => "real estate",
+                LMAccountType.Loan => "loan",
+                LMAccountType.Vehicle => "vehicle",
+                LMAccountType.Cryptocurrency => "cryptocurrency",
+                LMAccountType.EmployeeCompensation => "employee compensation",
+                LMAccountType.OtherLiability => "other liability",
+                LMAccountType.OtherAsset => "other asset",
+                _ => "other asset"
+            };
+        }
     }
-}
