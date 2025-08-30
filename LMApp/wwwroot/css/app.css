@@ -412,3 +412,11 @@ html[data-bs-theme=dark] .btn-outline-primary {
 html[data-bs-theme=dark] .bg-danger {
   background-color: darkred !important;
 }
+
+.info-modal .modal-footer button:not(:first-child) {
+  margin-inline-start: 0.5rem;
+}
+.info-modal .modal-footer button {
+  margin-inline-end: 0;
+  margin-bottom: 0.5rem;
+}

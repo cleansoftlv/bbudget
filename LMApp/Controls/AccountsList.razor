@@ -46,9 +46,9 @@
         @* Account edit mode - show all accounts in read-only with edit buttons for editable ones *@
         @foreach (var item in Accounts.Where(a => a.AccountType != AccountType.Total).Select((account, index) => (account: account, index: index)))
         {
-            <div class="account-row default mb-3 p-3 border rounded @(item.account.AccountType == AccountType.Default ? "editable" : "readonly") @(item.account.AccountType == AccountType.Default && !HasUnsavedChanges && EditingAccountId != item.account.IdForType ? "account-row-clickable" : "") @(HasUnsavedChanges && item.account.AccountType == AccountType.Default ? "disabled" : "")"
+            <div class="account-row default mb-3 p-3 border rounded @(item.account.AccountType == AccountType.Default ? "editable" : "readonly") @(item.account.AccountType == AccountType.Default && !HasUnsavedChanges && !HasNewAccountChanges && EditingAccountId != item.account.IdForType ? "account-row-clickable" : "") @(HasUnsavedChanges && item.account.AccountType == AccountType.Default ? "disabled" : "")"
                  @onclick="() => StartEditAccount(item.account)"
-                 style="cursor: @((item.account.AccountType == AccountType.Default && EditingAccountId != item.account.IdForType) ? (HasUnsavedChanges ? "not-allowed" : "pointer") : "default")">
+                 style="cursor: @((item.account.AccountType == AccountType.Default && EditingAccountId != item.account.IdForType) ? (HasUnsavedChanges || HasNewAccountChanges ? "not-allowed" : "pointer") : "default")">
                 @if (EditingAccountId == item.account.IdForType && item.account.AccountType == AccountType.Default)
                 {
                     @* Currently editing this account *@
@@ -90,22 +90,28 @@
                             <LoadingPanel IsLoading="IsSaving" ErrorMessage="@AccountSaveErrorMessage" OnRetry="() => SaveAccountEdit()">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <Button Color="Color.Danger"
-                                                IsOutline="true"
-                                                Size="Size.Small"
-                                                StopPropagation
-                                                Icon="fa-solid fa-trash"
-                                                OnClick="() => ShowDeleteAccountModal(EditingAccount)"
-                                                title="Delete Account" />
-                                    </div>
-                                    <div class="d-flex gap-2">
                                         <Button Color="Color.Secondary"
                                                 IsOutline="true"
                                                 Text="Cancel"
+                                                Size="Size.Large"
                                                 StopPropagation="true"
                                                 OnClick="CancelAccountEdit"/>
+
+                                        <Button Color="Color.Danger"
+                                                class="ms-4"
+                                                IsOutline="true"
+                                                Size="Size.Large"
+                                                StopPropagation
+                                                Icon="fa-solid fa-trash"
+                                                Text="Delete"
+                                                OnClick="() => ShowDeleteAccountModal(EditingAccount)"
+                                                title="Delete Account" />
+                                    </div>
+                                    <div>
+                                        
                                         <Button Color="Color.Primary"
                                                 Text="Save"
+                                                Size="Size.Large"
                                                 StopPropagation="true"
                                                 OnClick="SaveAccountEdit"
                                                 IsDisabled="!HasAccountChanges" />
@@ -136,9 +142,9 @@
                                             Color="Color.Primary"
                                             IsOutline="true"
                                             Size="Size.Small"
+                                            StopPropagation="true"
                                             OnClick="(e) => OnEditButtonClick(e, item.account)"
-                                            OnClick:stopPropagation="true"
-                                            IsDisabled="HasUnsavedChanges || IsSaving"
+                                            IsDisabled="HasUnsavedChanges || HasNewAccountChanges || IsSaving"
                                             title="Edit Account" />
                                 </div>
                                 @if (item.account.LiabilitiesBalance.HasValue)
@@ -195,6 +201,7 @@
                             <div class="col-12">
                                 <BootstrapInput ShowLabel="true"
                                                 DisplayText="Name"
+                                                UseInputEvent="true"
                                                 Id="NewAccountName"
                                                 @bind-Value="NewAccount.Name" />
                                 <ValidationMessage For="@(() => NewAccount.Name)" />
@@ -213,6 +220,7 @@
                                 <BootstrapInputGroup>
                                     <BootstrapInputNumber Id="NewAccountBalance"
                                                           @bind-Value="NewAccount.Balance"
+                                                          UseInputEvent="true"
                                                           FormatString="0.##"
                                                           Step="0.01" />
                                     <Dropdown @bind-Value="NewAccount.Currency"
@@ -222,14 +230,16 @@
                             </div>
                         </div>
                         <LoadingPanel IsLoading="IsSaving" ErrorMessage="@AccountSaveErrorMessage" OnRetry="() => SaveNewAccount()">
-                            <div class="d-flex justify-content-end gap-2">
+                            <div class="d-flex justify-content-between gap-2">
                                 <Button Color="Color.Secondary"
                                         IsOutline="true"
                                         Text="Cancel"
+                                        Size="Size.Large"
                                         OnClick="CancelNewAccount"
                                         IsDisabled="IsSaving" />
                                 <Button Color="Color.Primary"
                                         Text="Save"
+                                        Size="Size.Large"
                                         OnClick="SaveNewAccount"
                                         IsDisabled="IsSaving" />
                             </div>
@@ -245,6 +255,7 @@
                 <Button class="me-2"
                         Icon="fa-solid fa-plus"
                         Color="Color.Primary"
+                        Size="Size.Large"
                         IsOutline="true"
                         Text="Add New Account"
                         OnClick="StartAddNewAccount"
@@ -324,6 +335,7 @@
     private bool HasAccountChanges => EditingAccount?.HasChanges() ?? false;
     private bool HasNewAccountChanges => NewAccount != null && (!string.IsNullOrWhiteSpace(NewAccount.Name) || NewAccount.Balance != 0);
     private bool HasUnsavedChanges => HasAccountChanges || HasNewAccountChanges;
+    private bool AllowStartEdit => !HasUnsavedChanges && !IsSaving;
 
     [Parameter]
     public AccountDisplay[] Accounts { get; set; }
@@ -343,13 +355,17 @@
     [Parameter]
     public EventCallback<AccountDisplay> AccountSelected { get; set; }
 
+    [Parameter]
+    public EventCallback StartAccountsEdit { get; set; }
+
     private Task OnClick(AccountDisplay account)
     {
         return AccountSelected.InvokeAsync(account);
     }
 
-    private void EnterAccountEditMode()
+    private async Task EnterAccountEditMode()
     {
+        await StartAccountsEdit.InvokeAsync();
         IsAccountEditMode = true;
         StateHasChanged();
     }
@@ -368,6 +384,8 @@
             || account.AccountType != AccountType.Default
             || EditingAccountId == account.IdForType)
             return;
+
+        CancelNewAccount();
 
         EditingAccountId = account.IdForType;
         EditingAccount = AccountDisplayForEdit.FromAccountDisplay(account);
@@ -453,10 +471,11 @@
         if (HasUnsavedChanges)
             return;
 
+        CancelAccountEdit();
+
         NewAccount = AccountDisplayForEdit.CreateNewAccount(settingsService.PrimaryCurrency);
         EditContext = new EditContext(NewAccount);
         IsAddingNewAccount = true;
-        StateHasChanged();
     }
 
     private void CancelNewAccount()
@@ -466,7 +485,6 @@
         IsAddingNewAccount = false;
         NewAccount = null;
         EditContext = null;
-        StateHasChanged();
     }
 
     private async Task SaveNewAccount()

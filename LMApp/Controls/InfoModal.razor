@@ -4,6 +4,7 @@
     <Modal @ref="_modal" IsKeyboard="true" IsFade="false">
         <ModalDialog Title="@_vm.Title"
                      ShowCloseButton="!_vm.HideCloseButton"
+                     Class="info-modal"
                      Size="Size.Medium">
             <BodyTemplate>
                 <div>@_vm.Message</div>

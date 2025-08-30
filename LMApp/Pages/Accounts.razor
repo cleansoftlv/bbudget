@@ -28,6 +28,7 @@
                     <div class="p-body p-0">
                         <LoadingPanel IsLoading="@(accounts == null)">
                             <AccountsList @ref="accountsListRef" Accounts="accounts"
+                                          StartAccountsEdit="StartAccountsEdit"
                                           OnNavidateRight="AccountListNavigateRight"
                                           AccountsChanged="AccountsChanged"
                                           ActiveAccountUid="@CurrentAccount?.Uid"
@@ -772,5 +773,10 @@
         {
             await exportModal.ShowModal();
         }
+    }
+    private async Task StartAccountsEdit()
+    {
+        await CloseTranForm();
+        await CloseTranList();   
     }
 }
