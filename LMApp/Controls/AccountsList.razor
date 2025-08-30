@@ -594,7 +594,7 @@
             {
                 Text = formatService.LMAccountTypeName(at),
                 Value = at.ToString()
-            });
+            }).OrderBy(x=>x.Text).ToArray();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
