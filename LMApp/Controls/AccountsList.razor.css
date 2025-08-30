@@ -150,21 +150,4 @@ div[tabindex]:focus {
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
   }
-  .account-row .d-flex.justify-content-between {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  .account-row .d-flex.justify-content-between > div:first-child {
-    align-self: flex-start;
-  }
-  .account-row .d-flex.justify-content-between > div:last-child {
-    align-self: flex-end;
-  }
-}
-.account-row .d-flex.justify-content-between .btn-danger {
-  border-color: #dc3545;
-}
-.account-row .d-flex.justify-content-between .btn-danger:hover {
-  background-color: #dc3545;
-  color: white;
 }

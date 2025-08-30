@@ -38,7 +38,6 @@ namespace LMApp.Models.Account
         public decimal Balance { get; set; }
         public string Currency { get; set; }
         public AccountType AccountType { get; set; }
-
         public bool IsLiability { get; set; }
 
         public LMAccountType LMAccountType { get; set; }

@@ -58,6 +58,7 @@
     private Task OnBreakpointChanged(BreakPoint size)
     {
         breakPoint = size;
+        StateHasChanged();
         return Task.CompletedTask;
     }
 

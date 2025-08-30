@@ -31,7 +31,7 @@
     </div>
 </div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+<div class="@NavMenuCssClass nav-scrollable" @onclick="CollapseNavMenu">
     <nav class="flex-column">
         @if (Context != null)
         {
@@ -111,6 +111,9 @@
     [CascadingParameter] public UserContext Context { get; set; }
     [CascadingParameter] public AuthUserInfo AuthInfo { get; set; }
 
+    [CascadingParameter]
+    public BreakPoint CurrentBreakPoint { get; set; }
+
     private bool collapseNavMenu = true;
 
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
@@ -118,6 +121,11 @@
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void CollapseNavMenu()
+    {
+        collapseNavMenu = true;
     }
 
     protected override void OnInitialized()
@@ -131,5 +139,14 @@
         {
             await contextService.OnActivePageBack.Value.InvokeAsync();
         }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!collapseNavMenu && CurrentBreakPoint > BreakPoint.ExtraSmall)
+        {
+            collapseNavMenu = true;
+        }
+        base.OnParametersSet();
     }
 }

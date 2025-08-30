@@ -1,18 +1,11 @@
 ﻿using BootstrapBlazor.Components;
+using LMApp.Models.Categories;
 using LMApp.Models.Transactions;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Rendering;
 using Shared;
 using Shared.Helpers;
 using Shared.License;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Threading.Tasks;
-using System.Web;
 
 namespace LMApp.Models.UI
 {
@@ -196,13 +189,29 @@ namespace LMApp.Models.UI
                 _ => "Unknown"
             };
 
+        public string LMAccountTypeName(LMAccountType type)
+            => type switch
+            {
+                LMAccountType.Cash => "Cash",
+                LMAccountType.Loan => "Loan",
+                LMAccountType.Investment => "Investment",
+                LMAccountType.OtherAsset => "Other Asset",
+                LMAccountType.OtherLiability => "Other Liability",
+                LMAccountType.RealEstate => "Real Estate",
+                LMAccountType.Vehicle => "Vehicle",
+                LMAccountType.Credit => "Credit Card",
+                LMAccountType.Cryptocurrency => "Crypto",
+                LMAccountType.EmployeeCompensation => "Salary",
+                _ => "Unknown"
+            };
+
 
         /// <summary>
         /// Converts TransactionDisplay to ExportTransaction format
         /// </summary>
         /// <param name="transaction">Transaction to convert</param>
         /// <returns>ExportTransaction with properly formatted data</returns>
-        
+
 
         public DateTime ConvertFromUtcToLocal(DateTime date)
         {

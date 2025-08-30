@@ -65,13 +65,13 @@
                                     <ValidationMessage For="@(() => EditingAccount.Name)" />
                                 </div>
                                 <div class="col-6">
-                                    <Toggle OffText="Asset"
-                                            Id="@($"Type_{item.index}")"
-                                            ShowLabel="true"
-                                            @bind-Value="EditingAccount.IsLiabilityEdit"
-                                            DisplayText="Type"
-                                            Color="Color.Secondary"
-                                            OnText="Liability" />
+                                    <Select @bind-Value="EditingAccount.LMAccountType"
+                                              TValue="LMAccountType"
+                                              Color="Color.Secondary"
+                                              ShowLabel="true"
+                                              DisplayText="Type"
+                                              Id="@($"AccountType_{item.index}")"
+                                              Items="@AccountTypes"/>
                                 </div>
                                 <div class="col-6">
                                     <BootstrapLabel Value="Balance" for="@($"Balance_{item.index}")" />
@@ -88,7 +88,7 @@
                                 </div>
                             </div>
                             <LoadingPanel IsLoading="IsSaving" ErrorMessage="@AccountSaveErrorMessage" OnRetry="() => SaveAccountEdit()">
-                                <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex justify-content-between">
                                     <div>
                                         <Button Color="Color.Secondary"
                                                 IsOutline="true"
@@ -207,13 +207,12 @@
                                 <ValidationMessage For="@(() => NewAccount.Name)" />
                             </div>
                             <div class="col-6">
-                                <Toggle OffText="Asset"
-                                        Id="NewAccountType"
-                                        ShowLabel="true"
-                                        @bind-Value="NewAccount.IsLiabilityEdit"
-                                        DisplayText="Type"
-                                        Color="Color.Secondary"
-                                        OnText="Liability" />
+                                <Select @bind-Value="NewAccount.LMAccountType"
+                                    TValue="LMAccountType"
+                                    ShowLabel="true"
+                                    DisplayText="Type"
+                                    Id="@($"NewAccountType")"
+                                    Items="@AccountTypes"/>
                             </div>
                             <div class="col-6">
                                 <BootstrapLabel Value="Balance" for="NewAccountBalance" />
@@ -230,7 +229,7 @@
                             </div>
                         </div>
                         <LoadingPanel IsLoading="IsSaving" ErrorMessage="@AccountSaveErrorMessage" OnRetry="() => SaveNewAccount()">
-                            <div class="d-flex justify-content-between gap-2">
+                            <div class="d-flex justify-content-between">
                                 <Button Color="Color.Secondary"
                                         IsOutline="true"
                                         Text="Cancel"
@@ -248,7 +247,7 @@
                 </EditForm>
             </div>
         }
-        else if (EditingAccountId == null)
+        else 
         {
             @* Show add new account button only when not editing any account *@
             <div class="text-center mb-3">
@@ -316,6 +315,7 @@
     private AccountDisplayForEdit NewAccount = null;
 
     private IEnumerable<SelectedItem> CurrencyItems;
+    private IEnumerable<SelectedItem> AccountTypes;
 
     private string GetRowClass(AccountDisplay account, int index)
     {
@@ -333,7 +333,7 @@
     }
 
     private bool HasAccountChanges => EditingAccount?.HasChanges() ?? false;
-    private bool HasNewAccountChanges => NewAccount != null && (!string.IsNullOrWhiteSpace(NewAccount.Name) || NewAccount.Balance != 0);
+    private bool HasNewAccountChanges => NewAccount?.HasChanges() ?? false;
     private bool HasUnsavedChanges => HasAccountChanges || HasNewAccountChanges;
     private bool AllowStartEdit => !HasUnsavedChanges && !IsSaving;
 
@@ -587,6 +587,13 @@
             {
                 Text = formatService.CurrencyToSymbol(x),
                 Value = x
+            });
+
+        AccountTypes = Enum.GetValues<LMAccountType>()
+            .Select(at => new SelectedItem
+            {
+                Text = formatService.LMAccountTypeName(at),
+                Value = at.ToString()
             });
     }
 

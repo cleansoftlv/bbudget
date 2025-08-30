@@ -46,6 +46,7 @@ a, .btn-link {
 
 .validation-message {
   color: red;
+  margin-top: 0.25em;
 }
 [data-bs-theme=dark] .validation-message {
   color: pink;

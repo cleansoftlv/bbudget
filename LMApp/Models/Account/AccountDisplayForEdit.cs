@@ -16,31 +16,6 @@ namespace LMApp.Models.Account
         public bool IsNewAccount { get; set; }
         public decimal OriginalBalance { get; set; }
         public string OriginalName { get; set; }
-
-        public bool IsLiabilityEdit
-        {
-            get => BudgetService.IsLiability(LMAccountType);
-            set
-            {
-                var currentValue = BudgetService.IsLiability(LMAccountType);
-                if (currentValue == value)
-                {
-                    return;
-                }
-
-                bool originalIsLiability = BudgetService.IsLiability(OriginalType);
-                if (originalIsLiability == value)
-                {
-                    LMAccountType = OriginalType;
-                    return;
-                }
-
-                LMAccountType = value ?
-                     LMAccountType.OtherLiability :
-                     LMAccountType.Cash;
-            }
-        }
-
         public LMAccountType OriginalType { get; set; }
         public string OriginalCurrency { get; set; }
 
@@ -79,11 +54,10 @@ namespace LMApp.Models.Account
         public static AccountDisplayForEdit CreateNewAccount(string primaryCurrency) => new AccountDisplayForEdit
         {
             IdForType = 0, // Will be set by API
-            Name = null,
+            Name = "",
             Balance = 0,
             Currency = primaryCurrency,
             AccountType = AccountType.Default,
-            IsLiability = false,
             LMAccountType = Categories.LMAccountType.Cash,
 
             // Edit-specific properties
@@ -99,8 +73,6 @@ namespace LMApp.Models.Account
         /// </summary>
         public bool HasChanges()
         {
-            if (IsNewAccount) return true;
-
             return Name != OriginalName ||
                    LMAccountType != OriginalType ||
                    !string.Equals(Currency, OriginalCurrency, StringComparison.InvariantCultureIgnoreCase) ||

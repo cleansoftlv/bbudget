@@ -467,7 +467,7 @@ namespace LMApp.Models.Categories
                 exclude_transactions = false
             };
 
-            if (account.IsLiabilityEdit)
+            if (BudgetService.IsLiability(account.LMAccountType))
             {
                 createRequest.balance *= -1;
             }
@@ -499,12 +499,12 @@ namespace LMApp.Models.Categories
 
             if (account.Balance != account.OriginalBalance
                 || !string.Equals(account.Currency, account.OriginalCurrency)
-                || account.IsLiability != account.IsLiabilityEdit)
+                || account.LMAccountType != account.OriginalType)
             {
                 updateRequest.currency = account.Currency.ToLowerInvariant();
                 updateRequest.balance = account.Balance;
                 updateRequest.balance_as_of = DateTime.UtcNow;
-                if (account.IsLiabilityEdit)
+                if (BudgetService.IsLiability(account.LMAccountType))
                 {
                     updateRequest.balance *= -1;
                 }
