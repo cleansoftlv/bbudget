@@ -29,6 +29,7 @@
                         <LoadingPanel IsLoading="@(accounts == null)">
                             <AccountsList @ref="accountsListRef" Accounts="accounts"
                                           OnNavidateRight="AccountListNavigateRight"
+                                          AccountsChanged="AccountsChanged"
                                           ActiveAccountUid="@CurrentAccount?.Uid"
                                           AccountSelected="e => NavigateToAccount(e)" />
                         </LoadingPanel>
@@ -733,6 +734,12 @@
         {
             await transactionListRef.FocusAsync();
         }
+    }
+
+    private async Task AccountsChanged()
+    {
+        accounts = budgetService.GetCachedAccounts();
+        TryRefreshRunningBalances();
     }
 
     protected override bool ShouldAddTransactionToList(TransactionDisplay tran, BaseTransactionForEdit forEdit)

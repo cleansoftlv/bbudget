@@ -3,7 +3,7 @@
     &:not(:first-child) {
         border-top: lightgray 1px solid;
 
-        [data-bs-theme="dark"] & {
+        [data-bs-theme="dark"] & { 
             border-top: var(--bs-gray-600) 1px solid;
         }
     }
@@ -25,6 +25,23 @@
     &.active:hover {
         background-color: var(--bs-primary-border-subtle);
     }
+    
+    // Edit mode styles
+    &.editable {
+        transition: all 0.2s ease;
+        
+        &:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+    }
+    
+    &.readonly {
+        background-color: rgba(108, 117, 125, 0.1);
+        
+        .text-muted {
+            opacity: 0.8;
+        }
+    }
 }
 
 .account-row .account-row-inner {
@@ -45,6 +62,63 @@
     
     [data-bs-theme="dark"] & {
         background-color: var(--bs-gray-800);
+    }
+}
+
+// Clickable account row styling for edit mode
+.account-row.account-row-clickable {
+    transition: all 0.2s ease;
+    
+    &:not(.disabled) {
+        cursor: pointer !important;
+        
+        &:hover {
+            background-color: rgba(13, 110, 253, 0.08);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            
+            [data-bs-theme="dark"] & {
+                background-color: rgba(13, 110, 253, 0.15);
+            }
+        }
+        
+        &:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        // Visual feedback border on focus/hover
+        position: relative;
+        
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 0.375rem;
+            border: 2px solid transparent;
+            transition: border-color 0.2s ease;
+            pointer-events: none;
+        }
+        
+        &:hover::after {
+            border-color: rgba(13, 110, 253, 0.3);
+        }
+        
+        &:focus-within::after {
+            border-color: #0d6efd;
+        }
+    }
+    
+    &.disabled {
+        opacity: 0.6;
+        cursor: not-allowed !important;
+         
+        * {
+            pointer-events: none;
+        }
     }
 }
 
@@ -104,5 +178,44 @@ div[tabindex]:focus {
 @media (min-width: 991px) and (max-width: 1050px), (min-width: 1401px) and (max-width: 1450px) {
     .total-sub-label {
         display: block;
+    }
+}
+
+// Mobile responsive improvements for edit mode
+@media (max-width: 576px) {
+    .account-row {
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        // Stack delete button and save/cancel buttons on mobile
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            gap: 1rem;
+            
+            > div:first-child {
+                align-self: flex-start;
+            }
+            
+            > div:last-child {
+                align-self: flex-end;
+            }
+        }
+    }
+}
+
+// Edit form button layout
+.account-row {
+    .d-flex.justify-content-between {
+        .btn-danger {
+            // Add some visual separation for the delete button
+            border-color: #dc3545;
+            
+            &:hover {
+                background-color: #dc3545;
+                color: white;
+            }
+        }
     }
 }

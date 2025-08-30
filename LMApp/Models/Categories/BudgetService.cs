@@ -273,7 +273,7 @@ namespace LMApp.Models.Categories
             };
         }
 
-        public bool IsLiability(LMAccountType accountType)
+        public static bool IsLiability(LMAccountType accountType)
         {
             return accountType switch
             {
@@ -304,7 +304,7 @@ namespace LMApp.Models.Categories
             try
             {
                 var response = await lmClient.PostAsJsonAsync("assets", request);
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
@@ -317,18 +317,20 @@ namespace LMApp.Models.Categories
                 var result = await response.Content.ReadFromJsonAsync<AccountDto>();
                 if (result == null || result.id == default)
                 {
-                    throw new HttpRequestException("Empty response from create asset API", 
-                        null, 
+                    throw new HttpRequestException("Empty response from create asset API",
+                        null,
                         System.Net.HttpStatusCode.ExpectationFailed);
                 }
+                //Work around for wrond type returned by create
+                result.type_name = request.type_name;
                 // Clear account cache since we added a new asset
                 _userContextService.UpdateCachedAccount(result);
                 return result;
             }
             catch (JsonException ex)
             {
-                throw new HttpRequestException("Error parsing create asset response", 
-                    ex, 
+                throw new HttpRequestException("Error parsing create asset response",
+                    ex,
                     System.Net.HttpStatusCode.ExpectationFailed);
             }
         }
@@ -347,7 +349,7 @@ namespace LMApp.Models.Categories
             try
             {
                 var response = await lmClient.PutAsJsonAsync($"assets/{assetId}", request);
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
@@ -360,19 +362,21 @@ namespace LMApp.Models.Categories
                 var result = await response.Content.ReadFromJsonAsync<AccountDto>();
                 if (result == null || result.id == default)
                 {
-                    throw new HttpRequestException("Empty response from update asset API", 
-                        null, 
+                    throw new HttpRequestException("Empty response from update asset API",
+                        null,
                         System.Net.HttpStatusCode.ExpectationFailed);
                 }
-
+                //Work around for wrond type returned by update
+                if (request.type_name != null)
+                    result.type_name = request.type_name;
                 // Clear account cache since we updated an asset
                 _userContextService.UpdateCachedAccount(result);
                 return result;
             }
             catch (JsonException ex)
             {
-                throw new HttpRequestException("Error parsing update asset response", 
-                    ex, 
+                throw new HttpRequestException("Error parsing update asset response",
+                    ex,
                     System.Net.HttpStatusCode.ExpectationFailed);
             }
         }
@@ -389,9 +393,9 @@ namespace LMApp.Models.Categories
                 type_name = ConvertToLMApiTypeName(account.LMAccountType),
                 name = account.Name,
                 display_name = account.Name,
-                balance = account.Balance.ToString("F4"),
-                currency = account.Currency?.ToLowerInvariant() ?? "usd",
-                balance_as_of = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                balance = account.Balance,
+                currency = account.Currency.ToLowerInvariant(),
+                balance_as_of = DateTime.UtcNow,
                 exclude_transactions = false
             };
         }
@@ -408,11 +412,110 @@ namespace LMApp.Models.Categories
                 type_name = ConvertToLMApiTypeName(account.LMAccountType),
                 name = account.Name,
                 display_name = account.Name,
-                balance = account.Balance.ToString("F4"),
-                currency = account.Currency?.ToLowerInvariant() ?? "usd",
-                balance_as_of = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                balance = account.Balance,
+                currency = account.Currency.ToLowerInvariant(),
+                balance_as_of = DateTime.UtcNow,
                 exclude_transactions = false
             };
+        }
+
+        /// <summary>
+        /// Saves a list of edited accounts, creating new ones and updating changed ones
+        /// </summary>
+        /// <param name="editedAccounts">List of accounts to save</param>
+        /// <returns>Task representing the save operation</returns>
+        /// <exception cref="HttpRequestException">Thrown when any API request fails</exception>
+        public async Task<bool> SaveEditedAccountsAsync(IEnumerable<AccountDisplayForEdit> editedAccounts)
+        {
+            // Process only accounts that have changes
+            var accountsToSave = editedAccounts.Where(a => a.HasChanges()).ToList();
+            if (!accountsToSave.Any())
+            {
+                return false; // No changes to save
+            }
+
+            foreach (var account in accountsToSave)
+            {
+                if (account.IsNewAccount)
+                {
+                    await CreateAccountFromEditAsync(account);
+                }
+                else
+                {
+                    await UpdateAccountFromEditAsync(account);
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Creates a new account from AccountDisplayForEdit
+        /// </summary>
+        /// <param name="account">The account to create</param>
+        /// <returns>The created account as AccountDto</returns>
+        /// <exception cref="HttpRequestException">Thrown when the API request fails</exception>
+        public async Task<AccountDto> CreateAccountFromEditAsync(AccountDisplayForEdit account)
+        {
+            var createRequest = new CreateAssetRequest
+            {
+                type_name = ConvertToLMApiTypeName(account.LMAccountType),
+                name = account.Name,
+                display_name = account.Name,
+                balance = account.Balance,
+                currency = account.Currency?.ToLowerInvariant() ?? "usd",
+                balance_as_of = DateTime.UtcNow,
+                exclude_transactions = false
+            };
+
+            if (account.IsLiabilityEdit)
+            {
+                createRequest.balance *= -1;
+            }
+
+            return await CreateAssetAsync(createRequest);
+        }
+
+        /// <summary>
+        /// Updates an existing account from AccountDisplayForEdit with selective field updates
+        /// </summary>
+        /// <param name="account">The account to update</param>
+        /// <returns>The updated account as AccountDto</returns>
+        /// <exception cref="HttpRequestException">Thrown when the API request fails</exception>
+        public async Task<AccountDto> UpdateAccountFromEditAsync(AccountDisplayForEdit account)
+        {
+            if (!account.HasChanges())
+            {
+                throw new InvalidOperationException($"No changes detected for account {account.Name}");
+            }
+
+            // Create update request with only changed fields
+            var updateRequest = new UpdateAssetRequest();
+
+            if (account.OriginalName != account.Name)
+            {
+                updateRequest.name = account.Name;
+                updateRequest.display_name = account.Name;
+            }
+
+            if (account.Balance != account.OriginalBalance
+                || !string.Equals(account.Currency, account.OriginalCurrency)
+                || account.IsLiability != account.IsLiabilityEdit)
+            {
+                updateRequest.currency = account.Currency.ToLowerInvariant();
+                updateRequest.balance = account.Balance;
+                updateRequest.balance_as_of = DateTime.UtcNow;
+                if (account.IsLiabilityEdit)
+                {
+                    updateRequest.balance *= -1;
+                }
+            }
+
+            if (account.LMAccountType != account.OriginalType)
+            {
+                updateRequest.type_name = ConvertToLMApiTypeName(account.LMAccountType);
+            }
+
+            return await UpdateAssetAsync(account.IdForType, updateRequest);
         }
 
         /// <summary>
@@ -420,7 +523,7 @@ namespace LMApp.Models.Categories
         /// </summary>
         /// <param name="accountType">The LMAccountType enum value</param>
         /// <returns>The corresponding API type name string</returns>
-        private static string ConvertToLMApiTypeName(LMAccountType accountType)
+        public static string ConvertToLMApiTypeName(LMAccountType accountType)
         {
             return accountType switch
             {
@@ -438,3 +541,4 @@ namespace LMApp.Models.Categories
             };
         }
     }
+}

@@ -19,6 +19,18 @@
 .account-row.active:hover {
   background-color: var(--bs-primary-border-subtle);
 }
+.account-row.editable {
+  transition: all 0.2s ease;
+}
+.account-row.editable:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+.account-row.readonly {
+  background-color: rgba(108, 117, 125, 0.1);
+}
+.account-row.readonly .text-muted {
+  opacity: 0.8;
+}
 
 .account-row .account-row-inner {
   padding: 0.5rem;
@@ -38,6 +50,51 @@
 }
 [data-bs-theme=dark] .account-row:hover {
   background-color: var(--bs-gray-800);
+}
+
+.account-row.account-row-clickable {
+  transition: all 0.2s ease;
+}
+.account-row.account-row-clickable:not(.disabled) {
+  cursor: pointer !important;
+  position: relative;
+}
+.account-row.account-row-clickable:not(.disabled):hover {
+  background-color: rgba(13, 110, 253, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+[data-bs-theme=dark] .account-row.account-row-clickable:not(.disabled):hover {
+  background-color: rgba(13, 110, 253, 0.15);
+}
+.account-row.account-row-clickable:not(.disabled):active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.account-row.account-row-clickable:not(.disabled)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0.375rem;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+  pointer-events: none;
+}
+.account-row.account-row-clickable:not(.disabled):hover::after {
+  border-color: rgba(13, 110, 253, 0.3);
+}
+.account-row.account-row-clickable:not(.disabled):focus-within::after {
+  border-color: #0d6efd;
+}
+.account-row.account-row-clickable.disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+}
+.account-row.account-row-clickable.disabled * {
+  pointer-events: none;
 }
 
 .balance {
@@ -87,4 +144,27 @@ div[tabindex]:focus {
   .total-sub-label {
     display: block;
   }
+}
+@media (max-width: 576px) {
+  .account-row .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .account-row .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .account-row .d-flex.justify-content-between > div:first-child {
+    align-self: flex-start;
+  }
+  .account-row .d-flex.justify-content-between > div:last-child {
+    align-self: flex-end;
+  }
+}
+.account-row .d-flex.justify-content-between .btn-danger {
+  border-color: #dc3545;
+}
+.account-row .d-flex.justify-content-between .btn-danger:hover {
+  background-color: #dc3545;
+  color: white;
 }
