@@ -91,19 +91,10 @@
                 <div class="mb-4">
                     <div class="d-flex align-items-center gap-2">
                         <div class="flex-grow-1">
-                            <label class="form-label">Exchange Rate</label>
-                            <div class="form-control bg-light d-flex align-items-center justify-content-between" style="min-height: 38px;">
-                                <span class="text-muted">
-                                    @if (showFromToCurrencyRate)
-                                    {
-                                        @:@GetCurrencyRateDisplay() @formatService.CurrencyToSymbol(Transaction.CurrencyTo)
-                                    }
-                                    else
-                                    {
-                                        @:@GetCurrencyRateDisplay() @formatService.CurrencyToSymbol(Transaction.CurrencyFrom)
-                                    }
-                                </span>
-                            </div>
+                            <BootstrapInput 
+                                ShowLabel="true"
+                                DisplayText="Exchange Rate"
+                                Value="@($"{GetCurrencyRateDisplay()} {formatService.CurrencyToSymbol(showFromToCurrencyRate?Transaction.CurrencyTo: Transaction.CurrencyFrom)}")" />
                         </div>
                         <button type="button"
                                 class="btn btn-outline-secondary form-control w-auto"
