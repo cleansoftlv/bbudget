@@ -93,6 +93,7 @@
                         <div class="flex-grow-1">
                             <BootstrapInput 
                                 ShowLabel="true"
+                                Readonly="true"
                                 DisplayText="Exchange Rate"
                                 Value="@($"{GetCurrencyRateDisplay()} {formatService.CurrencyToSymbol(showFromToCurrencyRate?Transaction.CurrencyTo: Transaction.CurrencyFrom)}")" />
                         </div>
