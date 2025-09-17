@@ -38,7 +38,7 @@
                 </div>
             </div>
             <div class="@TransactionListClass()">
-                <div class="ui-panel" id="second-ui-panel">
+                <div class="ui-panel @(TranListClosing? "closing": null)" id="second-ui-panel">
                     <div class="p-header with-button">
                         <Button Icon="fa-solid fa-xmark" Color="Color.Secondary" IsOutline="true" class="icon-btn" OnClick="CloseTranList" />
                         <div class="header-text">
@@ -67,7 +67,7 @@
                 </div>
             </div>
             <div class="@TransactionFormClass()">
-                <div class="ui-panel" id="third-ui-panel">
+                <div class="ui-panel @(TranFormClosing? "closing": null)" id="third-ui-panel">
                     <div class="p-header with-button">
                         <Button Icon="fa-solid fa-xmark" Color="Color.Secondary" IsOutline="true" class="icon-btn" OnClick="CloseTranForm" />
                         <div class="header-text">
@@ -270,14 +270,10 @@
         return res;
     }
 
-    private async Task CloseTranList()
+    protected override async Task<bool> CloseTranList()
     {
-        if (!ShowTranList)
-            return;
-
-        await StartTransition(BreakPoint.Large);
-        DoCloseTranList();
-        await EndTransition();
+        if (!await base.CloseTranList())
+            return false;
 
         await ResponsiveNavigate(
             navigationManager.GetUriWithQueryParameter("aid", (long?)null),
@@ -289,6 +285,8 @@
             await Task.Yield(); // Let Blazor render the changes
             await accountsListRef.FocusAsync();
         }
+
+        return true;
     }
 
     private async Task FocusAccountList()
@@ -300,18 +298,7 @@
     }
 
 
-    private void DoCloseTranList()
-    {
-        if (!ShowTranList)
-            return;
-
-        HasMoreTrans = false;
-        LoadingMoreTrans = false;
-        Transactions = null;
-        transactionListContext = TransactionListContext.None;
-        ShowTranList = false;
-        RefreshActivePage();
-    }
+   
 
 
 

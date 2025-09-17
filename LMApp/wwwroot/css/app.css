@@ -157,7 +157,21 @@ code {
 .update-btn-container .btn:hover, .update-btn-container .btn:focus {
   opacity: 1;
 }
+[data-bs-theme=dark] .update-btn-container .btn {
+  animation: pulse-glow 3s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+}
 
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+  }
+  50% {
+    opacity: 0.9;
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+  }
+}
 .btn-holder .icon-btn {
   color: #fff;
 }
@@ -323,11 +337,20 @@ code {
   #first-ui-panel {
     view-transition-name: first-ui-panel;
   }
+  #first-ui-panel.closing {
+    view-transition-name: first-ui-panel-closing;
+  }
   #second-ui-panel {
     view-transition-name: second-ui-panel;
   }
+  #second-ui-panel.closing {
+    view-transition-name: second-ui-panel-closing;
+  }
   #third-ui-panel {
     view-transition-name: third-ui-panel;
+  }
+  #third-ui-panel.closing {
+    view-transition-name: third-ui-panel-closing;
   }
 }
 @keyframes trans-fade-out {
@@ -348,9 +371,42 @@ code {
     mix-blend-mode: plus-lighter;
   }
 }
+::view-transition-group(first-ui-panel) {
+  z-index: 4;
+}
+
+::view-transition-group(second-ui-panel) {
+  z-index: 5;
+}
+
+::view-transition-group(third-ui-panel) {
+  z-index: 6;
+}
+
+::view-transition-group(first-ui-panel-closing) {
+  z-index: 1;
+}
+
+::view-transition-group(second-ui-panel-closing) {
+  z-index: 2;
+}
+
+::view-transition-group(third-ui-panel-closing) {
+  z-index: 3;
+}
+
+[data-bs-theme=dark]::view-transition-old(first-ui-panel),
+[data-bs-theme=dark]::view-transition-old(second-ui-panel),
+[data-bs-theme=dark]::view-transition-old(third-ui-panel),
 ::view-transition-old(first-ui-panel),
 ::view-transition-old(second-ui-panel),
-::view-transition-old(third-ui-panel) {
+::view-transition-old(third-ui-panel),
+[data-bs-theme=dark]::view-transition-old(first-ui-panel-closing),
+[data-bs-theme=dark]::view-transition-old(second-ui-panel-closing),
+[data-bs-theme=dark]::view-transition-old(third-ui-panel-closing),
+::view-transition-old(first-ui-panel-closing),
+::view-transition-old(second-ui-panel-closing),
+::view-transition-old(third-ui-panel-closing) {
   animation: initial;
   mix-blend-mode: inherit;
   animation-name: trans-fade-out, trans-mix-blend-mode-plus-lighter;
@@ -360,9 +416,18 @@ code {
   z-index: 1;
 }
 
+[data-bs-theme=dark]::view-transition-new(first-ui-panel),
+[data-bs-theme=dark]::view-transition-new(second-ui-panel),
+[data-bs-theme=dark]::view-transition-new(third-ui-panel),
 ::view-transition-new(first-ui-panel),
 ::view-transition-new(second-ui-panel),
-::view-transition-new(third-ui-panel) {
+::view-transition-new(third-ui-panel),
+[data-bs-theme=dark]::view-transition-new(first-ui-panel-closing),
+[data-bs-theme=dark]::view-transition-new(second-ui-panel-closing),
+[data-bs-theme=dark]::view-transition-new(third-ui-panel-closing),
+::view-transition-new(first-ui-panel-closing),
+::view-transition-new(second-ui-panel-closing),
+::view-transition-new(third-ui-panel-closing) {
   animation: initial;
   mix-blend-mode: inherit;
   animation-name: trans-fade-in, trans-mix-blend-mode-plus-lighter;

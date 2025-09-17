@@ -45,7 +45,7 @@
                 </div>
             </div>
             <div class="@TransactionFormClass()">
-                <div class="ui-panel" id="second-ui-panel">
+                <div class="ui-panel @(TranFormClosing ? "closing" : null)" id="second-ui-panel">
                     <div class="p-header with-button">
                         <Button Icon="fa-solid fa-xmark" Color="Color.Secondary" IsOutline="true" class="icon-btn" OnClick="CloseTranForm" />
                         <div class="header-text">

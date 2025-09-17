@@ -1,11 +1,5 @@
-﻿using LMApp.Models.UI;
-using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Toolbelt.Blazor.ViewTransition;
+﻿using BootstrapBlazor.Components;
+using LMApp.Models.UI;
 
 namespace LMApp.Pages
 {
@@ -17,6 +11,8 @@ namespace LMApp.Pages
 
         protected bool ShowTranList;
         protected bool LoadingTransactions = false;
+        protected bool TranListClosing;
+
 
         protected string PrimaryPanelClass()
         {
@@ -85,6 +81,34 @@ namespace LMApp.Pages
             }
         }
 
+        protected virtual async Task<bool> CloseTranList()
+        {
+            if (!ShowTranList)
+                return false;
 
+            TranListClosing = true;
+            await Task.Yield();
+
+            await StartTransition(BreakPoint.Large);
+            DoCloseTranList();
+            await EndTransition();
+
+            TranListClosing = false;
+
+            return true;
+        }
+
+        protected void DoCloseTranList()
+        {
+            if (!ShowTranList)
+                return;
+
+            HasMoreTrans = false;
+            LoadingMoreTrans = false;
+            Transactions = null;
+            transactionListContext = TransactionListContext.None;
+            ShowTranList = false;
+            RefreshActivePage();
+        }
     }
 }

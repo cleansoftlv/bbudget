@@ -39,6 +39,7 @@ namespace LMApp.Pages
         protected TransactionDisplay SelectedTransaction;
         protected bool IsSaving;
         protected bool ShowTranForm;
+        protected bool TranFormClosing;
         protected abstract void RefreshActivePage();
         protected abstract Task LoadMoreTransactions();
 
@@ -275,6 +276,8 @@ namespace LMApp.Pages
 
         protected virtual async Task CloseTranForm()
         {
+            TranFormClosing = true;
+            await Task.Yield();
             bool startTransition = ShowTranForm;
 
             if (startTransition)
@@ -282,6 +285,7 @@ namespace LMApp.Pages
             DoCloseTranForm();
             if (startTransition)
                 await EndTransition();
+            TranFormClosing = false;
 
             await ResponsiveNavigate(navigationManager.GetUriWithQueryParameter("tid", (long?)null),
                 NavDirection.Back);
