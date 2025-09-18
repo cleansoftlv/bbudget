@@ -67,7 +67,9 @@ namespace LMApp.Models.Categories
                 .Where(x => x.ShowInBudget)
                 .Select(x => x.GetDisplayItem(_settingsService.PrimaryCurrency));
 
-            var withoutIncome = categories.Where(x => x.CategoryType == BudgetCategoryType.Expense);
+            var withoutIncome = categories.Where(x => 
+                x.CategoryType == BudgetCategoryType.Expense
+                && !x.ExcludeFromTotals);
 
             var total = new BudgetCategoryDisplay
             {

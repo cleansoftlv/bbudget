@@ -692,7 +692,8 @@
             return false;
         }
 
-        if (category.CategoryType != BudgetCategoryType.Expense)
+        if (category.CategoryType != BudgetCategoryType.Expense
+              || category.ExcludeFromTotals)
         {
             return true;
         }
@@ -728,7 +729,8 @@
             return false;
         }
 
-        if (category.CategoryType != BudgetCategoryType.Expense)
+        if (category.CategoryType != BudgetCategoryType.Expense
+            || category.ExcludeFromTotals)
         {
             return true;
         }

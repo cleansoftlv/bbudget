@@ -173,7 +173,7 @@ namespace LMApp.Models.Transactions
             {
                 if (sb.Length > 0)
                     sb.Append("&");
-                sb.Append($"category_id={categoryId.Value}");
+                    sb.Append($"category_id={categoryId.Value}");
             }
             if (assetId.HasValue)
             {

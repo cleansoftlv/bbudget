@@ -153,13 +153,11 @@ code {
   height: 2em;
   opacity: 0.6;
   color: #fff;
+  animation: pulse-glow 3s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
 }
 .update-btn-container .btn:hover, .update-btn-container .btn:focus {
   opacity: 1;
-}
-[data-bs-theme=dark] .update-btn-container .btn {
-  animation: pulse-glow 3s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
 }
 
 @keyframes pulse-glow {

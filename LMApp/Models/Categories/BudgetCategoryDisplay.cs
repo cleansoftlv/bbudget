@@ -14,6 +14,8 @@ public class BudgetCategoryDisplay
     public decimal BudgetedAmount { get; set; }
     public string Currency { get; set; }
 
+    public bool ExcludeFromTotals { get; set; }
+
     public string BudgetedCurrency => BudgetedInPrimary ? PrimaryCurrency : Currency;
 
     public bool BudgetedInPrimary => BudgetedAmountPrimary == 0 || string.Equals(Currency, PrimaryCurrency, StringComparison.OrdinalIgnoreCase);

@@ -2,8 +2,6 @@ namespace LMApp.Models.Categories
 {
     public class BudgetCategory
     {
-        public long id { get; set; }
-
         public string category_name { get; set; }
 
         public long? category_id { get; set; }
@@ -38,7 +36,9 @@ namespace LMApp.Models.Categories
             && is_group != true
             && category_id.HasValue 
             && data != null
-            && data.Any(x => x.Value.budget_amount != 0 || x.Value.spending_to_base != 0);
+            && data.Any(x => x.Value.budget_amount != 0 
+                || x.Value.spending_to_base != 0
+            || x.Value.num_transactions > 0);
 
         public BudgetCategoryDisplay GetDisplayItem(string primaryCurrency)
         {
@@ -57,7 +57,8 @@ namespace LMApp.Models.Categories
                     : data.budget_to_base - data.spending_to_base,
                 PrimaryCurrency = primaryCurrency,
                 Currency = data.budget_currency,
-                BudgetedAmount = data.budget_amount
+                BudgetedAmount = data.budget_amount,
+                ExcludeFromTotals = exclude_from_totals
             };
         }
     }
