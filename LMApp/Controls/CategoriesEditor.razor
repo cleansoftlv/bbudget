@@ -1,0 +1,250 @@
+@using LMApp.Models.Categories
+@using LMApp.Models.UI
+@using LMApp.Models.Context
+@using LMApp.Models.Account
+@using Shared.LMApi
+@inject BudgetService budgetService
+@inject SettingsService settingsService
+@inject ToastService toastService
+@inherits ComponentBase
+
+<LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Categories</h4>
+        <button class="btn btn-primary" @onclick="AddNewCategory">
+            <i class="fa-solid fa-plus"></i> Add Category
+        </button>
+    </div>
+
+    @if (Categories != null && Categories.Any())
+    {
+        var activeCategories = Categories.Where(c => !c.IsArchived).OrderBy(c => c.Name).ToList();
+        var archivedCategories = Categories.Where(c => c.IsArchived).OrderBy(c => c.Name).ToList();
+
+        @if (activeCategories.Any())
+        {
+            @foreach (var category in activeCategories)
+            {
+                <CategoryItemEditor Category="@category"
+                              OnEdit="() => EditCategory(category)"
+                              OnCancel="() => CancelEdit(category)"
+                              OnSave="() => SaveCategory(category)"
+                              IsEditDisabled="@HasUnsavedChanges" />
+            }
+        }
+
+        @* Archived Categories Section *@
+        @if (archivedCategories.Any())
+        {
+            <hr class="my-4" />
+            <h5 class="text-muted mb-3">Archived</h5>
+
+            @foreach (var category in archivedCategories)
+            {
+                <CategoryItemEditor Category="@category"
+                              OnEdit="() => EditCategory(category)"
+                              OnCancel="() => CancelEdit(category)"
+                              OnSave="() => SaveCategory(category)"
+                              IsEditDisabled="@HasUnsavedChanges" />
+            }
+        }
+    }
+    else
+    {
+        <Alert Color="Color.Info">
+            <i class="fa-solid fa-info-circle"></i> No categories found.
+        </Alert>
+    }
+</LoadingPanel>
+
+@code {
+    private bool IsLoading = true;
+    private string LoadError;
+    private List<CategoryDisplayForEdit> Categories = new();
+
+    private bool HasUnsavedChanges => Categories.Any(c => c.IsEditing);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        IsLoading = true;
+        LoadError = null;
+        Categories.Clear();
+
+        try
+        {
+            var categories = settingsService.GetCachedCategories();
+            Categories = categories.Select(c => new CategoryDisplayForEdit
+            {
+                Id = c.id,
+                Name = c.name,
+                Description = c.description,
+                IsArchived = c.archived == true,
+                ExcludeFromBudget = c.exclude_from_budget,
+                ExcludeFromTotals = c.exclude_from_totals,
+                IsIncome = c.is_income
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            LoadError = "Failed to load categories: " + ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ReloadOnError()
+    {
+        await LoadCategories();
+    }
+
+    private void AddNewCategory()
+    {
+        var newCategory = new CategoryDisplayForEdit
+        {
+            Id = 0,
+            Name = "",
+            Description = "",
+            IsArchived = false,
+            ExcludeFromBudget = false,
+            ExcludeFromTotals = false,
+            IsIncome = false,
+            IsEditing = true,
+            IsNew = true
+        };
+
+        Categories.Insert(0, newCategory);
+        StateHasChanged();
+    }
+
+    private void EditCategory(CategoryDisplayForEdit category)
+    {
+        if (HasUnsavedChanges && !category.IsEditing)
+            return;
+
+        category.OriginalName = category.Name;
+        category.OriginalDescription = category.Description;
+        category.OriginalIsArchived = category.IsArchived;
+        category.OriginalExcludeFromBudget = category.ExcludeFromBudget;
+        category.OriginalExcludeFromTotals = category.ExcludeFromTotals;
+        category.OriginalIsIncome = category.IsIncome;
+        category.IsEditing = true;
+        StateHasChanged();
+    }
+
+    private void CancelEdit(CategoryDisplayForEdit category)
+    {
+        if (category.IsNew)
+        {
+            Categories.Remove(category);
+        }
+        else
+        {
+            category.Name = category.OriginalName;
+            category.Description = category.OriginalDescription;
+            category.IsArchived = category.OriginalIsArchived;
+            category.ExcludeFromBudget = category.OriginalExcludeFromBudget;
+            category.ExcludeFromTotals = category.OriginalExcludeFromTotals;
+            category.IsIncome = category.OriginalIsIncome;
+            category.IsEditing = false;
+        }
+        category.SaveError = null;
+        StateHasChanged();
+    }
+
+    private async Task SaveCategory(CategoryDisplayForEdit category)
+    {
+        if (!IsValidName(category.Name))
+            return;
+
+        category.IsSaving = true;
+        category.SaveError = null;
+        StateHasChanged();
+
+        try
+        {
+            var request = new UpsertCategoryRequest
+            {
+                name = category.Name?.Trim(),
+                description = string.IsNullOrWhiteSpace(category.Description) ? null : category.Description.Trim(),
+                archived = category.IsArchived,
+                is_income = category.IsIncome,
+                exclude_from_budget = category.ExcludeFromBudget,
+                exclude_from_totals = category.ExcludeFromTotals,
+                group_id = null // Default to no group
+            };
+
+            if (category.IsNew)
+            {
+                var response = await budgetService.CreateCategoryAsync(request);
+                if (response != null)
+                {
+                    category.Id = response.id;
+                    category.IsNew = false;
+                    category.IsEditing = false;
+
+                    await ShowSuccessToast("Category created successfully");
+                }
+                else
+                {
+                    category.SaveError = "Failed to create category";
+                }
+            }
+            else
+            {
+                await budgetService.UpdateCategoryAsync(new CategoryItem
+                {
+                    id = category.Id,
+                    name = request.name,
+                    description = request.description,
+                    archived = request.archived,
+                    is_income = request.is_income,
+                    exclude_from_budget = request.exclude_from_budget,
+                    exclude_from_totals = request.exclude_from_totals
+                });
+                category.IsEditing = false;
+
+                await ShowSuccessToast("Category updated successfully");
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            category.SaveError = ex.GetDescriptionForUser();
+        }
+        catch (Exception ex)
+        {
+            category.SaveError = ex.Message;
+        }
+        finally
+        {
+            category.IsSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool IsValidName(string name)
+    {
+        return !string.IsNullOrWhiteSpace(name) && name.Trim().Length >= 1;
+    }
+
+    private async Task ShowSuccessToast(string message)
+    {
+        await toastService.Show(new ToastOption
+        {
+            Content = message,
+            Delay = 2000,
+            PreventDuplicates = true,
+            Category = ToastCategory.Success,
+            ShowHeader = false,
+            IsAutoHide = true,
+            ShowClose = false
+        });
+    }
+}

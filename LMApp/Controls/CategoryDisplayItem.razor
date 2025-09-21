@@ -1,0 +1,50 @@
+@using LMApp.Models.Categories
+
+<div class="container p-0">
+    <div class="row g-0 align-items-center">
+        <div class="col-10">
+            <h5 class="mb-1">@Category.Name</h5>
+            @if (!string.IsNullOrEmpty(Category.Description))
+            {
+                <div class="text-secondary small text-truncate">@Category.Description</div>
+            }
+            @if (Category.ExcludeFromBudget || Category.ExcludeFromTotals || Category.IsIncome)
+            {
+                <div class="mt-1">
+                    @if (Category.IsIncome)
+                    {
+                        <span class="badge bg-success me-1">Income</span>
+                    }
+                    @if (Category.ExcludeFromBudget)
+                    {
+                        <span class="badge bg-secondary me-1">Exclude Budget</span>
+                    }
+                    @if (Category.ExcludeFromTotals)
+                    {
+                        <span class="badge bg-secondary">Exclude Totals</span>
+                    }
+                </div>
+            }
+        </div>
+        <div class="col-2 text-end">
+            <Button Icon="fa-solid fa-edit"
+                    Color="Color.Primary"
+                    IsOutline="true"
+                    Size="Size.Small"
+                    OnClick="OnEdit"
+                    IsDisabled="IsEditDisabled"
+                    title="Edit Category" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public CategoryDisplayForEdit Category { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public bool IsEditDisabled { get; set; }
+}

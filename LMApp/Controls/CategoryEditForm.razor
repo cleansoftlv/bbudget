@@ -1,0 +1,97 @@
+@using LMApp.Models.Categories
+
+<div class="container p-0">
+    <EditForm EditContext="EditContext" FormName="CategoryEditForm" OnSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="row g-2 mb-3">
+            <div class="col-12">
+                <BootstrapInput ShowLabel="true"
+                                DisplayText="Name"
+                                UseInputEvent="true"
+                                @bind-Value="Category.Name" />
+                <ValidationMessage For="@(() => Category.Name)" />
+            </div>
+            <div class="col-12">
+                <BootstrapInput ShowLabel="true"
+                                DisplayText="Description"
+                                UseInputEvent="true"
+                                @bind-Value="Category.Description" />
+                <ValidationMessage For="@(() => Category.Description)" />
+            </div>
+            <div class="col-12 col-sm-6">
+                <Checkbox @bind-Value="Category.ExcludeFromBudget"
+                          DisplayText="Exclude from budget"
+                          ShowAfterLabel="true"
+                          ShowLabel="false" />
+            </div>
+            <div class="col-12 col-sm-6">
+                <Checkbox @bind-Value="Category.ExcludeFromTotals"
+                          DisplayText="Exclude from totals"
+                          ShowAfterLabel="true"
+                          ShowLabel="false" />
+            </div>
+            <div class="col-12 col-sm-6">
+                <Checkbox @bind-Value="Category.IsIncome"
+                          DisplayText="Mark as Income"
+                          ShowAfterLabel="true"
+                          ShowLabel="false" />
+            </div>
+            @if (!Category.IsNew)
+            {
+                <div class="col-12 col-sm-6">
+                    <Checkbox @bind-Value="Category.IsArchived"
+                              DisplayText="Archive Category"
+                              ShowAfterLabel="true"
+                              ShowLabel="false" />
+                </div>
+            }
+        </div>
+
+        <LoadingPanel IsLoading="Category.IsSaving" ErrorMessage="@Category.SaveError" OnRetry="OnSave">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <Button Color="Color.Secondary"
+                            IsOutline="true"
+                            Text="Cancel"
+                            Size="Size.Large"
+                            OnClick="OnCancel"
+                            IsDisabled="Category.IsSaving" />
+                </div>
+                <div>
+                    <Button Color="Color.Primary"
+                            Text="Save"
+                            Size="Size.Large"
+                            OnClick="OnSave"
+                            IsDisabled="Category.IsSaving || !EditContext.Validate()" />
+                </div>
+            </div>
+        </LoadingPanel>
+    </EditForm>
+</div>
+
+@code {
+    private EditContext EditContext;
+
+    [Parameter, EditorRequired]
+    public CategoryDisplayForEdit Category { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        EditContext = new EditContext(Category);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (EditContext.Validate())
+        {
+            await OnSave.InvokeAsync();
+        }
+    }
+}

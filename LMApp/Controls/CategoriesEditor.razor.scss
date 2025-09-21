@@ -1,0 +1,60 @@
+﻿
+
+/* Category row styles matching account row pattern */
+.category-row {
+    transition: all 0.2s ease-in-out;
+    cursor: default;
+
+    &:hover:not(.editing) {
+        background-color: var(--bs-light);
+
+        [data-bs-theme="dark"] & {
+            background-color: var(--bs-gray-800);
+        }
+    }
+
+    &.editing {
+        border-color: var(--bs-primary) !important;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+
+        [data-bs-theme="dark"] & {
+            border-color: var(--bs-link-color) !important;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+    }
+
+    h5 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .text-truncate {
+        max-width: 100%;
+    }
+
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.25em 0.4em;
+    }
+}
+
+/* Mobile responsive text handling */
+@media (max-width: 640px) {
+    .category-row {
+        .text-truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        h5 {
+            font-size: 1rem;
+        }
+
+        .badge {
+            font-size: 0.6rem;
+            padding: 0.2em 0.35em;
+        }
+    }
+}

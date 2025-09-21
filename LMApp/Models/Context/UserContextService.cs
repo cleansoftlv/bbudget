@@ -136,6 +136,8 @@ public class UserContextService(
         return res.categories;
     }
 
+
+
     public async Task<AccountDto[]> LoadAccounts(string token)
     {
         var client = _httpFactory.CreateClient("LMAuth");
@@ -264,6 +266,24 @@ public class UserContextService(
             }
         }
         Accounts = Accounts.Append(account).ToArray();
+    }
+
+    public void UpdateCachedCategory(CategoryItem category)
+    {
+        for (int i = 0; i < Categories.Length; i++)
+        {
+            if (Categories[i].id == category.id)
+            {
+                Categories[i] = category;
+                return;
+            }
+        }
+        Categories = Categories.Append(category).ToArray();
+    }
+
+    public void DeleteCachedCategory(long id)
+    {
+        Categories = Categories.Where(x => x.id != id).ToArray();
     }
 
     public async Task RefreshAccounts()

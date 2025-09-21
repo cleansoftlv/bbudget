@@ -1,0 +1,50 @@
+@using LMApp.Models.Categories
+
+<div class="category-row mb-3 p-3 border rounded @GetCssClasses()">
+    @if (Category.IsEditing)
+    {
+        <CategoryEditForm Category="@Category"
+                          OnCancel="OnCancel"
+                          OnSave="OnSave" />
+    }
+    else
+    {
+        <CategoryDisplayItem Category="@Category"
+                             OnEdit="OnEdit"
+                             IsEditDisabled="@IsEditDisabled" />
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public CategoryDisplayForEdit Category { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    [Parameter]
+    public bool IsEditDisabled { get; set; }
+
+    private string GetCssClasses()
+    {
+        var classes = new List<string>();
+        
+        if (Category.IsEditing)
+        {
+            classes.Add("editing");
+        }
+        
+        if (Category.IsArchived)
+        {
+            classes.Add("text-muted");
+        }
+        
+        return string.Join(" ", classes);
+    }
+}

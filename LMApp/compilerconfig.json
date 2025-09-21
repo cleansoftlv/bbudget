@@ -66,5 +66,21 @@
   {
     "outputFile": "Pages/Reports.razor.css",
     "inputFile": "Pages/Reports.razor.scss"
+  },
+  {
+    "outputFile": "Controls/CategoriesEditor.razor.css",
+    "inputFile": "Controls/CategoriesEditor.razor.scss"
+  },
+  {
+    "outputFile": "Controls/CategoryEditForm.razor.css",
+    "inputFile": "Controls/CategoryEditForm.razor.scss"
+  },
+  {
+    "outputFile": "Controls/CategoryDisplayItem.razor.css",
+    "inputFile": "Controls/CategoryDisplayItem.razor.scss"
+  },
+  {
+    "outputFile": "Controls/CategoryItemEditor.razor.css",
+    "inputFile": "Controls/CategoryItemEditor.razor.scss"
   }
 ]

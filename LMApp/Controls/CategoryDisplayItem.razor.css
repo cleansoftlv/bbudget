@@ -1,0 +1,36 @@
+﻿/* CategoryDisplayItem component styles */
+/* Inherits layout styles from parent components */
+.container {
+  /* Bootstrap container styling is sufficient */
+}
+
+h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.text-truncate {
+  max-width: 100%;
+}
+
+.badge {
+  font-size: 0.65rem;
+  padding: 0.25em 0.4em;
+}
+
+/* Mobile responsive text handling */
+@media (max-width: 640px) {
+  .text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  h5 {
+    font-size: 1rem;
+  }
+  .badge {
+    font-size: 0.6rem;
+    padding: 0.2em 0.35em;
+  }
+}

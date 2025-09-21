@@ -1,0 +1,5 @@
+﻿/* CategoryItem component inherits styles from parent CategoriesEditor.razor.scss */
+/* Additional component-specific styles can be added here if needed */
+.category-row {
+  /* Styles are defined in CategoriesEditor.razor.scss and inherited here */
+}

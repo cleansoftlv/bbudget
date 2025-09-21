@@ -337,6 +337,131 @@ namespace LMApp.Models.Categories
             }
         }
 
+        public async Task<CategoryItem> CreateCategoryAsync(UpsertCategoryRequest request)
+        {
+            var lmClient = _httpClientFactory.CreateClient("LM");
+
+            try
+            {
+                var response = await lmClient.PostAsJsonAsync("categories", request);
+
+                var responseStr = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        $"Failed to create asset. Status: {response.StatusCode}, Content: {responseStr}",
+                        null,
+                        response.StatusCode);
+                }
+
+                if (responseStr.Contains("\"error\""))
+                {
+                    var errorObj = JsonSerializer.Deserialize<ResponseWithSingleError>(responseStr);
+                    throw new HttpRequestException($"Lunch money API error - {errorObj.error}",
+                            null,
+                            System.Net.HttpStatusCode.ExpectationFailed);
+                }
+
+                var result = JsonSerializer.Deserialize<CreateCategoryResponse>(responseStr);
+                var item = request.ToCategoryItem(result.category_id);
+                _userContextService.UpdateCachedCategory(item);
+                return item;
+            }
+            catch (JsonException ex)
+            {
+                throw new HttpRequestException("Error parsing create asset response",
+                    ex,
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
+        }
+
+        public async Task UpdateCategoryAsync(CategoryItem item)
+        {
+            var lmClient = _httpClientFactory.CreateClient("LM");
+
+            var request = item.ToUpsertCategoryRequest();
+
+            try
+            {
+                var response = await lmClient.PutAsJsonAsync($"categories/{item.id}", request);
+
+                var responseStr = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        $"Failed to create asset. Status: {response.StatusCode}, Content: {responseStr}",
+                        null,
+                        response.StatusCode);
+                }
+
+                if (responseStr.Contains("\"error\""))
+                {
+                    var errorObj = JsonSerializer.Deserialize<ResponseWithSingleError>(responseStr);
+                    throw new HttpRequestException($"Lunch money API error - {errorObj.error}",
+                            null,
+                            System.Net.HttpStatusCode.ExpectationFailed);
+                }
+
+                if (responseStr != "true")
+                {
+                    throw new HttpRequestException(
+                        $"Unexpected response from update category API: {responseStr}",
+                        null,
+                        System.Net.HttpStatusCode.ExpectationFailed);
+                }
+                _userContextService.UpdateCachedCategory(item);
+            }
+            catch (JsonException ex)
+            {
+                throw new HttpRequestException("Error parsing create asset response",
+                    ex,
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
+        }
+
+        public async Task<(bool success, DeleteCategoryResponse dependencies)> TryDeleteCategoryAsync(long id, bool force = false)
+        {
+            var lmClient = _httpClientFactory.CreateClient("LM");
+            try
+            {
+                var forstStr = force ? "/force" : "";
+
+                var response = await lmClient.DeleteAsync($"categories/{id}{forstStr}");
+
+                var responseStr = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        $"Failed to create asset. Status: {response.StatusCode}, Content: {responseStr}",
+                        null,
+                        response.StatusCode);
+                }
+
+                if (responseStr.Contains("\"error\""))
+                {
+                    var errorObj = JsonSerializer.Deserialize<ResponseWithSingleError>(responseStr);
+                    throw new HttpRequestException($"Lunch money API error - {errorObj.error}",
+                            null,
+                            System.Net.HttpStatusCode.ExpectationFailed);
+                }
+
+                if (responseStr != "true")
+                {
+                    var deps = JsonSerializer.Deserialize<DeleteCategoryResponse>(responseStr);
+                    return (false, deps);
+                }
+                _userContextService.DeleteCachedCategory(id);
+                return (true, null);
+            }
+            catch (JsonException ex)
+            {
+                throw new HttpRequestException("Error parsing create asset response",
+                    ex,
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
+        }
+
+
         /// <summary>
         /// Updates an existing asset in Lunch Money
         /// </summary>
