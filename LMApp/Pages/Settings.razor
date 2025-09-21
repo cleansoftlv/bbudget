@@ -53,88 +53,78 @@
         </NavLinkExt>
     </nav>
 
-    <div class="container-fluid mt-4 g-0">
-        <div class="row">
-            <div class="col-12">
-
-                @if (IsMainSettingsTab)
-                {
-                    <div class="mb-4">
-                        <label for="PrimaryCurrency">Primary Currency</label>
-                        <BootstrapInput Id="PrimaryCurrency" Value="@settingsService.PrimaryCurrency" IsDisabled="true" />
-                        <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The primary currency can be configured in Lunch Money settings.</Alert>
-                    </div>
-                    <div class="mb-4">
-                        <label for="AdditionalCurrencies">Additional Currencies</label>
-                        <MultiSelect id="AdditionalCurrencies"
-                                     Items="AllCurrencies"
-                                     ShowSearch="true"
-                                     OnValueChanged="x => Save()"
-                                     @bind-Value="SelectedCurrencies" />
-                        <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return the additional currencies set in your account. Please select all additional currencies you use in your account.</Alert>
-                    </div>
-                    <div class="mb-4">
-                        <SearchEntitySelect id="TransferCategory"
-                                            DisplayText="Account transfer category"
-                                            Items="Categories"
-                                            OnValueChanged="x=> Save()"
-                                            @bind-Value="TransferCategoryId" />
-                        <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">BBudget uses a single category from your LM account for transfers between accounts. Please select your account transfer category.</Alert>
-                    </div>
-                    <div class="mb-4">
-                        <SearchEntitySelect id="CrossCurrencyTransferCategory"
-                                            DisplayText="Cross-currency transfer category (optional)"
-                                            Items="Categories"
-                                            OnValueChanged="x=> Save()"
-                                            @bind-Value="CrossCurrencyTransferCategoryId" />
-                        <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">
-                            Optionally, specify a different category for transfers between accounts in different currencies.
-                            If not set, the default transfer category will be used. You can use a separate category to track expenses related to currency conversion.
-                        </Alert>
-                    </div>
-                    <div class="mb-4">
-                        <Toggle ShowLabel="true" DisplayText="Sort transaction list after loading the next transaction page" OnText="Sort after load" OffText="Don't sort" Id="SortOnLoadMore" @bind-Value="SortTransactionsOnLoadMore" OnValueChanged="x => Save()" />
-                        <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return transactions sorted by date. When you scroll to the end of the transaction list, more transactions will be loaded. By default, loaded transactions will be added to the end of the list. If you turn on this setting, transactions will be added and the entire list will be sorted.</Alert>
-                    </div>
-                }
-
-                @if (IsCategoriesTab)
-                {
-
-                    <CategoriesEditor />
-
-                }
-                else if (IsAccountsTab)
-                {
-                    <Alert class="mb-4" Color="Color.Info">
-                        <p class="mb-2">
-                            You can add or update accounts on the Accounts page. Scroll down in the accounts list and click "Edit accounts".
-                        </p>
-                        <a class="btn btn-primary" href="accounts">Open</a>
-                    </Alert>
-                }
-                else if (IsBudgetsTab)
-                {
-                    <Alert class="mb-4" Color="Color.Info">
-                        <p class="mb-2">
-                            Budgets can be configured in the Lunch Money settings.
-                        </p>
-                        <p>
-                            <a href="https://my.lunchmoney.app/budget" target="_blank" class="btn btn-primary">
-                                Open Lunch Money Settings
-                            </a>
-                        </p>
-                        <p class="mb-2">
-                            After updating settings in Lunch Money (categories, accounts, or budgets), you need to reload BBudget for the changes to take effect.
-                        </p>
-                        <button class="btn btn-warning" @onclick="ReloadBBudget">
-                            <i class="fa-solid fa-refresh"></i> Reload BBudget
-                        </button>
-                    </Alert>
-                }
-            </div>
+    @if (IsMainSettingsTab)
+    {
+        <div class="mb-4">
+            <label for="PrimaryCurrency">Primary Currency</label>
+            <BootstrapInput Id="PrimaryCurrency" Value="@settingsService.PrimaryCurrency" IsDisabled="true" />
+            <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The primary currency can be configured in Lunch Money settings.</Alert>
         </div>
-    </div>
+        <div class="mb-4">
+            <label for="AdditionalCurrencies">Additional Currencies</label>
+            <MultiSelect id="AdditionalCurrencies"
+                         Items="AllCurrencies"
+                         ShowSearch="true"
+                         OnValueChanged="x => Save()"
+                         @bind-Value="SelectedCurrencies" />
+            <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return the additional currencies set in your account. Please select all additional currencies you use in your account.</Alert>
+        </div>
+        <div class="mb-4">
+            <SearchEntitySelect id="TransferCategory"
+                                DisplayText="Account transfer category"
+                                Items="Categories"
+                                OnValueChanged="x=> Save()"
+                                @bind-Value="TransferCategoryId" />
+            <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">BBudget uses a single category from your LM account for transfers between accounts. Please select your account transfer category.</Alert>
+        </div>
+        <div class="mb-4">
+            <SearchEntitySelect id="CrossCurrencyTransferCategory"
+                                DisplayText="Cross-currency transfer category (optional)"
+                                Items="Categories"
+                                OnValueChanged="x=> Save()"
+                                @bind-Value="CrossCurrencyTransferCategoryId" />
+            <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">
+                Optionally, specify a different category for transfers between accounts in different currencies.
+                If not set, the default transfer category will be used. You can use a separate category to track expenses related to currency conversion.
+            </Alert>
+        </div>
+        <div class="mb-4">
+            <Toggle ShowLabel="true" DisplayText="Sort transaction list after loading the next transaction page" OnText="Sort after load" OffText="Don't sort" Id="SortOnLoadMore" @bind-Value="SortTransactionsOnLoadMore" OnValueChanged="x => Save()" />
+            <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return transactions sorted by date. When you scroll to the end of the transaction list, more transactions will be loaded. By default, loaded transactions will be added to the end of the list. If you turn on this setting, transactions will be added and the entire list will be sorted.</Alert>
+        </div>
+    }
+    else if (IsCategoriesTab)
+    {
+        <CategoriesEditor />
+    }
+    else if (IsBudgetsTab)
+    {
+        <Alert class="mb-4" Color="Color.Info">
+            <p class="mb-2">
+                Budgets can be configured in the Lunch Money settings.
+            </p>
+            <p>
+                <a href="https://my.lunchmoney.app/budget" target="_blank" class="btn btn-primary">
+                    Open Lunch Money Settings
+                </a>
+            </p>
+            <p class="mb-2">
+                After updating settings in Lunch Money (categories, accounts, or budgets), you need to reload BBudget for the changes to take effect.
+            </p>
+            <button class="btn btn-warning" @onclick="ReloadBBudget">
+                <i class="fa-solid fa-refresh"></i> Reload BBudget
+            </button>
+        </Alert>
+    }
+    else if (IsAccountsTab)
+    {
+        <Alert class="mb-4" Color="Color.Info">
+            <p class="mb-2">
+                You can add or update accounts on the Accounts page. Scroll down in the accounts list and click "Edit accounts".
+            </p>
+            <a class="btn btn-primary" href="accounts">Open</a>
+        </Alert>
+    }
 </LoadingPanel>
 
 

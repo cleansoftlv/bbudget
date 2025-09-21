@@ -9,11 +9,9 @@
 @inherits ComponentBase
 
 <LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Categories</h4>
-        <button class="btn btn-primary" @onclick="AddNewCategory">
-            <i class="fa-solid fa-plus"></i> Add Category
-        </button>
+    <div class="mb-3 mt-2 text-center text-sm-end">
+        <Button Color="Color.Primary" IsDisabled="HasUnsavedChanges" Icon="fa-solid fa-plus" Size="Size.Large" Text="Add Category" @onclick="AddNewCategory">
+        </Button>
     </div>
 
     @if (Categories != null && Categories.Any())

@@ -1,20 +1,19 @@
 @using LMApp.Models.Categories
 
 <div class="container p-0">
-    <EditForm EditContext="EditContext" FormName="CategoryEditForm" OnSubmit="HandleValidSubmit">
+    <EditForm Model="Category" FormName="CategoryEditForm" OnSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
         <div class="row g-2 mb-3">
             <div class="col-12">
                 <BootstrapInput ShowLabel="true"
                                 DisplayText="Name"
-                                UseInputEvent="true"
+                                IsAutoFocus="true"
                                 @bind-Value="Category.Name" />
                 <ValidationMessage For="@(() => Category.Name)" />
             </div>
             <div class="col-12">
                 <BootstrapInput ShowLabel="true"
                                 DisplayText="Description"
-                                UseInputEvent="true"
                                 @bind-Value="Category.Description" />
                 <ValidationMessage For="@(() => Category.Description)" />
             </div>
@@ -54,15 +53,13 @@
                             IsOutline="true"
                             Text="Cancel"
                             Size="Size.Large"
-                            OnClick="OnCancel"
-                            IsDisabled="Category.IsSaving" />
+                            OnClick="OnCancel" />
                 </div>
                 <div>
                     <Button Color="Color.Primary"
                             Text="Save"
                             Size="Size.Large"
-                            OnClick="OnSave"
-                            IsDisabled="Category.IsSaving || !EditContext.Validate()" />
+                            OnClick="OnSave" />
                 </div>
             </div>
         </LoadingPanel>
@@ -70,10 +67,8 @@
 </div>
 
 @code {
-    private EditContext EditContext;
-
     [Parameter, EditorRequired]
-    public CategoryDisplayForEdit Category { get; set; } = default!;
+    public CategoryDisplayForEdit Category { get; set; }
 
     [Parameter]
     public EventCallback OnCancel { get; set; }
@@ -84,14 +79,10 @@
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
-        EditContext = new EditContext(Category);
     }
 
     private async Task HandleValidSubmit()
     {
-        if (EditContext.Validate())
-        {
-            await OnSave.InvokeAsync();
-        }
+        await OnSave.InvokeAsync();
     }
 }

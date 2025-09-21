@@ -7,10 +7,11 @@ public class CategoryDisplayForEdit
     public long Id { get; set; }
     
     [Required(ErrorMessage = "Category name is required")]
-    [StringLength(40, MinimumLength = 1, ErrorMessage = "Category name must be between 1 and 100 characters")]
+    [StringLength(40,
+        ErrorMessage = "Category name must be between 1 and 40 characters")]
     public string Name { get; set; }
     
-    [StringLength(140, ErrorMessage = "Description cannot exceed 500 characters")]
+    [StringLength(140, ErrorMessage = "Description cannot exceed 140 characters")]
     public string Description { get; set; }
     
     public bool IsArchived { get; set; }
