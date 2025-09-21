@@ -57,19 +57,22 @@
     }
 </LoadingPanel>
 
-@code {
+    @code {
+
+
+
     private bool IsLoading = true;
     private string LoadError;
     private List<CategoryDisplayForEdit> Categories = new();
 
     private bool HasUnsavedChanges => Categories.Any(c => c.IsEditing);
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        await LoadCategories();
+        LoadCategories();
     }
 
-    private async Task LoadCategories()
+    private void LoadCategories()
     {
         IsLoading = true;
         LoadError = null;
@@ -100,9 +103,10 @@
         }
     }
 
-    private async Task ReloadOnError()
+    private Task ReloadOnError()
     {
-        await LoadCategories();
+        LoadCategories();
+        return Task.CompletedTask;
     }
 
     private void AddNewCategory()
@@ -161,6 +165,8 @@
 
     private async Task SaveCategory(CategoryDisplayForEdit category)
     {
+        category.TrimAll();
+
         if (!IsValidName(category.Name))
             return;
 
@@ -225,13 +231,13 @@
         finally
         {
             category.IsSaving = false;
-            StateHasChanged();
         }
     }
 
     private bool IsValidName(string name)
     {
-        return !string.IsNullOrWhiteSpace(name) && name.Trim().Length >= 1;
+        return !string.IsNullOrWhiteSpace(name) 
+            && name.Trim().Length >= 1;
     }
 
     private async Task ShowSuccessToast(string message)

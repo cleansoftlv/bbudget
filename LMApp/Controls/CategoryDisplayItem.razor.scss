@@ -1,11 +1,4 @@
-﻿/* CategoryDisplayItem component styles */
-/* Inherits layout styles from parent components */
-
-.container {
-    /* Bootstrap container styling is sufficient */
-}
-
-h5 {
+﻿h5 {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 600;
@@ -33,7 +26,7 @@ h5 {
     }
 
     .badge {
-        font-size: 0.6rem;
+        font-size: 0.75rem;
         padding: 0.2em 0.35em;
     }
 }

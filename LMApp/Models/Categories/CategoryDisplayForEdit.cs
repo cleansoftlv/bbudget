@@ -7,10 +7,10 @@ public class CategoryDisplayForEdit
     public long Id { get; set; }
     
     [Required(ErrorMessage = "Category name is required")]
-    [StringLength(100, MinimumLength = 1, ErrorMessage = "Category name must be between 1 and 100 characters")]
+    [StringLength(40, MinimumLength = 1, ErrorMessage = "Category name must be between 1 and 100 characters")]
     public string Name { get; set; }
     
-    [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+    [StringLength(140, ErrorMessage = "Description cannot exceed 500 characters")]
     public string Description { get; set; }
     
     public bool IsArchived { get; set; }
@@ -31,4 +31,10 @@ public class CategoryDisplayForEdit
     public bool OriginalExcludeFromBudget { get; set; }
     public bool OriginalExcludeFromTotals { get; set; }
     public bool OriginalIsIncome { get; set; }
+
+    public void TrimAll()
+    {
+        if (Name != null) Name = Name.Trim();
+        if (Description != null) Description = Description.Trim();
+    }
 }
