@@ -667,5 +667,137 @@ namespace LMApp.Models.Categories
                 _ => "other asset"
             };
         }
+
+        /// <summary>
+        /// Updates an existing budget or inserts a new budget for a particular category and date
+        /// </summary>
+        /// <param name="request">The budget upsert request</param>
+        /// <returns>The upsert response containing category group information if it's a sub-category</returns>
+        /// <exception cref="HttpRequestException">Thrown when the API request fails</exception>
+        public async Task<UpsertBudgetResponse> UpsertBudgetAsync(UpsertBudgetRequest request)
+        {
+            var lmClient = _httpClientFactory.CreateClient("LM");
+
+            try
+            {
+                var response = await lmClient.PutAsJsonAsync("budgets", request);
+
+                var responseStr = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        $"Failed to upsert budget. Status: {response.StatusCode}, Content: {responseStr}",
+                        null,
+                        response.StatusCode);
+                }
+
+                if (responseStr.Contains("\"error\""))
+                {
+                    var errorObj = JsonSerializer.Deserialize<ResponseWithSingleError>(responseStr);
+                    throw new HttpRequestException($"Lunch money API error - {errorObj.error}",
+                            null,
+                            System.Net.HttpStatusCode.ExpectationFailed);
+                }
+
+                // Clear budget cache since we updated a budget
+                _budgetCache.Clear();
+
+                var result = JsonSerializer.Deserialize<UpsertBudgetResponse>(responseStr);
+                return result;
+            }
+            catch (JsonException ex)
+            {
+                throw new HttpRequestException("Error parsing upsert budget response",
+                    ex,
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
+        }
+
+        /// <summary>
+        /// Removes an existing budget for a particular category in a particular month
+        /// </summary>
+        /// <param name="categoryId">Unique identifier for the category</param>
+        /// <param name="startDate">Start date for the budget period (must be start of month, e.g. 2021-04-01)</param>
+        /// <returns>True if the budget was successfully removed</returns>
+        /// <exception cref="HttpRequestException">Thrown when the API request fails</exception>
+        public async Task<bool> RemoveBudgetAsync(long categoryId, DateTime startDate)
+        {
+            var lmClient = _httpClientFactory.CreateClient("LM");
+
+            try
+            {
+                var startDateStr = startDate.ToString("yyyy-MM-dd");
+                var response = await lmClient.DeleteAsync($"budgets?start_date={startDateStr}&category_id={categoryId}");
+
+                var responseStr = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        $"Failed to remove budget. Status: {response.StatusCode}, Content: {responseStr}",
+                        null,
+                        response.StatusCode);
+                }
+
+                if (responseStr.Contains("\"error\""))
+                {
+                    var errorObj = JsonSerializer.Deserialize<ResponseWithSingleError>(responseStr);
+                    throw new HttpRequestException($"Lunch money API error - {errorObj.error}",
+                            null,
+                            System.Net.HttpStatusCode.ExpectationFailed);
+                }
+
+                // Clear budget cache since we removed a budget
+                _budgetCache.Clear();
+
+                return responseStr == "true";
+            }
+            catch (JsonException ex)
+            {
+                throw new HttpRequestException("Error parsing remove budget response",
+                    ex,
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
+        }
+
+        /// <summary>
+        /// Convenience method to upsert a budget using the primary currency
+        /// </summary>
+        /// <param name="categoryId">Unique identifier for the category</param>
+        /// <param name="startDate">Start date for the budget period (must be start of month)</param>
+        /// <param name="amount">Budget amount in primary currency</param>
+        /// <returns>The upsert response containing category group information if it's a sub-category</returns>
+        public async Task<UpsertBudgetResponse> UpsertBudgetAsync(long categoryId, DateTime startDate, decimal amount)
+        {
+            var request = new UpsertBudgetRequest
+            {
+                category_id = categoryId,
+                start_date = startDate.ToString("yyyy-MM-dd"),
+                amount = amount,
+                currency = _settingsService.PrimaryCurrency?.ToLowerInvariant()
+            };
+
+            return await UpsertBudgetAsync(request);
+        }
+
+        /// <summary>
+        /// Convenience method to upsert a budget with a specific currency
+        /// </summary>
+        /// <param name="categoryId">Unique identifier for the category</param>
+        /// <param name="startDate">Start date for the budget period (must be start of month)</param>
+        /// <param name="amount">Budget amount</param>
+        /// <param name="currency">Currency for the budget amount</param>
+        /// <returns>The upsert response containing category group information if it's a sub-category</returns>
+        public async Task<UpsertBudgetResponse> UpsertBudgetAsync(long categoryId, DateTime startDate, decimal amount, string currency)
+        {
+            var request = new UpsertBudgetRequest
+            {
+                category_id = categoryId,
+                start_date = startDate.ToString("yyyy-MM-dd"),
+                amount = amount,
+                currency = currency?.ToLowerInvariant()
+            };
+
+            return await UpsertBudgetAsync(request);
+        }
     }
 }
