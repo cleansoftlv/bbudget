@@ -1,0 +1,116 @@
+@using LMApp.Models.Account
+@using LMApp.Models.Context
+@using LMApp.Models.Categories
+
+<div class="container p-0 account-edit-form">
+    <EditForm Model="Account" FormName="AccountEditForm" OnSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="row g-2 mb-3">
+            <div class="col-12">
+                <BootstrapInput ShowLabel="true"
+                                DisplayText="Name"
+                                UseInputEvent="true"
+                                IsAutoFocus="true"
+                                @bind-Value="Account.Name" />
+                <ValidationMessage For="@(() => Account.Name)" />
+            </div>
+            <div class="col-6">
+                <Select @bind-Value="Account.LMAccountType"
+                        TValue="LMAccountType"
+                        Color="Color.Secondary"
+                        ShowLabel="true"
+                        DisplayText="Type"
+                        Items="@AccountTypes"/>
+            </div>
+            <div class="col-6">
+                <BootstrapLabel Value="Balance" />
+                <BootstrapInputGroup>
+                    <BootstrapInputNumber @bind-Value="Account.Balance"
+                                          FormatString="0.##"
+                                          UseInputEvent="true"
+                                          Step="0.01" />
+                    <Dropdown @bind-Value="Account.Currency"
+                              Items="@CurrencyItems"
+                              Color="@GetCurrencyColor()" />
+                </BootstrapInputGroup>
+            </div>
+        </div>
+        
+        <LoadingPanel IsLoading="IsSaving" ErrorMessage="@SaveErrorMessage" OnRetry="OnSave">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <Button Color="Color.Secondary"
+                            IsOutline="true"
+                            Text="Cancel"
+                            Size="Size.Large"
+                            StopPropagation="true"
+                            OnClick="OnCancel"/>
+
+                    <Button Color="Color.Danger"
+                            class="ms-4"
+                            IsOutline="true"
+                            Size="Size.Large"
+                            StopPropagation="true"
+                            Icon="fa-solid fa-trash"
+                            Text="Delete"
+                            OnClick="HandleDelete"
+                            title="Delete Account" />
+                </div>
+                <div>
+                    <Button Color="Color.Primary"
+                            Text="Save"
+                            Size="Size.Large"
+                            StopPropagation="true"
+                            OnClick="OnSave"
+                            IsDisabled="!HasChanges" />
+                </div>
+            </div>
+        </LoadingPanel>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public AccountDisplayForEdit Account { get; set; } = default!;
+
+    [Parameter]
+    public IEnumerable<SelectedItem> AccountTypes { get; set; }
+
+    [Parameter]
+    public IEnumerable<SelectedItem> CurrencyItems { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback<AccountDisplayForEdit> OnDelete { get; set; }
+
+    [Parameter]
+    public bool IsSaving { get; set; }
+
+    [Parameter]
+    public string SaveErrorMessage { get; set; }
+
+    [Inject]
+    public SettingsService settingsService { get; set; }
+
+    private bool HasChanges => Account?.HasChanges() ?? false;
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync();
+    }
+
+    private async Task HandleDelete()
+    {
+        await OnDelete.InvokeAsync(Account);
+    }
+
+    private Color GetCurrencyColor()
+    {
+        return settingsService.GetCurrencyColor(Account.Currency);
+    }
+}

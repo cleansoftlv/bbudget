@@ -1,0 +1,94 @@
+@using LMApp.Models.Account
+@using LMApp.Models.Context
+@using LMApp.Models.Categories
+
+<div class="account-row default mb-3 p-3 border rounded new-account-form">
+    <EditForm Model="NewAccount" FormName="NewAccountForm" OnSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="container p-0">
+            <div class="row g-2 mb-3">
+                <div class="col-12">
+                    <h6 class="mb-2">Add New Account</h6>
+                </div>
+                <div class="col-12">
+                    <BootstrapInput ShowLabel="true"
+                                    DisplayText="Name"
+                                    UseInputEvent="true"
+                                    IsAutoFocus="true"
+                                    @bind-Value="NewAccount.Name" />
+                    <ValidationMessage For="@(() => NewAccount.Name)" />
+                </div>
+                <div class="col-6">
+                    <Select @bind-Value="NewAccount.LMAccountType"
+                        TValue="LMAccountType"
+                        ShowLabel="true"
+                        DisplayText="Type"
+                        Items="@AccountTypes"/>
+                </div>
+                <div class="col-6">
+                    <BootstrapLabel Value="Balance" />
+                    <BootstrapInputGroup>
+                        <BootstrapInputNumber @bind-Value="NewAccount.Balance"
+                                              UseInputEvent="true"
+                                              FormatString="0.##"
+                                              Step="0.01" />
+                        <Dropdown @bind-Value="NewAccount.Currency"
+                                  Items="@CurrencyItems"
+                                  Color="@GetCurrencyColor()" />
+                    </BootstrapInputGroup>
+                </div>
+            </div>
+            <LoadingPanel IsLoading="IsSaving" ErrorMessage="@SaveErrorMessage" OnRetry="OnSave">
+                <div class="d-flex justify-content-between">
+                    <Button Color="Color.Secondary"
+                            IsOutline="true"
+                            Text="Cancel"
+                            Size="Size.Large"
+                            OnClick="OnCancel"
+                            IsDisabled="IsSaving" />
+                    <Button Color="Color.Primary"
+                            Text="Save"
+                            Size="Size.Large"
+                            OnClick="OnSave"
+                            IsDisabled="IsSaving" />
+                </div>
+            </LoadingPanel>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public AccountDisplayForEdit NewAccount { get; set; } = default!;
+
+    [Parameter]
+    public IEnumerable<SelectedItem> AccountTypes { get; set; }
+
+    [Parameter]
+    public IEnumerable<SelectedItem> CurrencyItems { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    [Parameter]
+    public bool IsSaving { get; set; }
+
+    [Parameter]
+    public string SaveErrorMessage { get; set; }
+
+    [Inject]
+    public SettingsService settingsService { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync();
+    }
+
+    private Color GetCurrencyColor()
+    {
+        return settingsService.GetCurrencyColor(NewAccount.Currency);
+    }
+}

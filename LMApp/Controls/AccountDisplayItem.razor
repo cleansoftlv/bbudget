@@ -1,0 +1,67 @@
+@using LMApp.Models.Account
+@using LMApp.Models.UI
+@inject FormatService formatService
+
+<div class="container p-0">
+    <div class="row g-0 align-items-center">
+        <div class="col-7">
+            <h5 class="@(Account.AccountType != AccountType.Default ? "text-muted" : "")">
+                @Account.Name
+                @if (Account.AccountType != AccountType.Default)
+                {
+                    <small class="badge bg-secondary ms-2">@Account.AccountType.ToString()</small>
+                }
+            </h5>
+        </div>
+        <div class="col-3 text-end balance text-secondary">
+            @formatService.FormatBalance(Account.Balance, Account.Currency, Account.IsLiability)
+        </div>
+        @if (Account.AccountType == AccountType.Default)
+        {
+            <div class="col-2 text-end">
+                <Button Icon="fa-solid fa-edit"
+                        Color="Color.Primary"
+                        IsOutline="true"
+                        Size="Size.Small"
+                        StopPropagation="true"
+                        OnClick="HandleEditButtonClick"
+                        IsDisabled="IsEditDisabled"
+                        title="Edit Account" />
+            </div>
+        }
+        else
+        {
+            <div class="col-2"></div>
+        }
+        @if (Account.LiabilitiesBalance.HasValue)
+        {
+            <div class="col-6 text-secondary total-box">
+                <span class="total-sub-label">Liabilities:</span> 
+                @formatService.FormatBalance(Account.LiabilitiesBalance.Value, Account.Currency, true)
+            </div>
+        }
+        @if (Account.AssetsBalance.HasValue)
+        {
+            <div class="col-6 text-secondary text-end total-box">
+                <span class="total-sub-label">Assets:</span> 
+                @formatService.FormatBalance(Account.AssetsBalance.Value, Account.Currency, false)
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public AccountDisplay Account { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public bool IsEditDisabled { get; set; }
+
+    private async Task HandleEditButtonClick(MouseEventArgs e)
+    {
+        await OnEdit.InvokeAsync();
+    }
+}

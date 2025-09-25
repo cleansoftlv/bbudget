@@ -1,0 +1,28 @@
+﻿.account-edit-form .form-group {
+  margin-bottom: 1rem;
+}
+.account-edit-form .validation-message {
+  color: var(--bs-danger);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+.account-edit-form .form-control:focus,
+.account-edit-form .form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+.account-edit-form .btn + .btn {
+  margin-left: 0.5rem;
+}
+[data-bs-theme=dark] .account-edit-form .form-control,
+[data-bs-theme=dark] .account-edit-form .form-select {
+  background-color: var(--bs-gray-900);
+  border-color: var(--bs-gray-600);
+  color: var(--bs-gray-100);
+}
+[data-bs-theme=dark] .account-edit-form .form-control:focus,
+[data-bs-theme=dark] .account-edit-form .form-select:focus {
+  background-color: var(--bs-gray-800);
+  border-color: var(--bs-primary);
+  color: var(--bs-gray-100);
+}

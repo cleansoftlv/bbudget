@@ -82,5 +82,21 @@
   {
     "outputFile": "Controls/CategoryItemEditor.razor.css",
     "inputFile": "Controls/CategoryItemEditor.razor.scss"
+  },
+  {
+    "outputFile": "Controls/AccountDisplayItem.razor.css",
+    "inputFile": "Controls/AccountDisplayItem.razor.scss"
+  },
+  {
+    "outputFile": "Controls/AccountEditForm.razor.css",
+    "inputFile": "Controls/AccountEditForm.razor.scss"
+  },
+  {
+    "outputFile": "Controls/AccountItemEditor.razor.css",
+    "inputFile": "Controls/AccountItemEditor.razor.scss"
+  },
+  {
+    "outputFile": "Controls/NewAccountForm.razor.css",
+    "inputFile": "Controls/NewAccountForm.razor.scss"
   }
 ]

@@ -10,7 +10,6 @@
 @inject BudgetService budgetService
 @inject NavigationManager navigationManager
 
-
 <div @ref="containerRef" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="preventKeyDownDefault" tabindex="0">
     @if (!IsAccountEditMode)
     {
@@ -43,209 +42,32 @@
     }
     else
     {
-        @* Account edit mode - show all accounts in read-only with edit buttons for editable ones *@
+        @* Account edit mode - use the new components *@
         @foreach (var item in Accounts.Where(a => a.AccountType != AccountType.Total).Select((account, index) => (account: account, index: index)))
-        {
-            <div class="account-row default mb-3 p-3 border rounded @(item.account.AccountType == AccountType.Default ? "editable" : "readonly") @(item.account.AccountType == AccountType.Default && !HasUnsavedChanges && !HasNewAccountChanges && EditingAccountId != item.account.IdForType ? "account-row-clickable" : "") @(HasUnsavedChanges && item.account.AccountType == AccountType.Default ? "disabled" : "")"
-                 @onclick="() => StartEditAccount(item.account)"
-                 style="cursor: @((item.account.AccountType == AccountType.Default && EditingAccountId != item.account.IdForType) ? (HasUnsavedChanges || HasNewAccountChanges ? "not-allowed" : "pointer") : "default")">
-                @if (EditingAccountId == item.account.IdForType && item.account.AccountType == AccountType.Default)
-                {
-                    @* Currently editing this account *@
-                    <EditForm EditContext="EditContext" FormName="AccountEditForm" OnSubmit="SaveAccountEdit">
-                        <DataAnnotationsValidator />
-                        <div class="container p-0">
-                            <div class="row g-2 mb-3">
-                                <div class="col-12">
-                                    <BootstrapInput ShowLabel="true"
-                                                    DisplayText="Name"
-                                                    UseInputEvent="true"
-                                                    Id="@($"Name_{item.index}")"
-                                                    @bind-Value="EditingAccount.Name" />
-                                    <ValidationMessage For="@(() => EditingAccount.Name)" />
-                                </div>
-                                <div class="col-6">
-                                    <Select @bind-Value="EditingAccount.LMAccountType"
-                                              TValue="LMAccountType"
-                                              Color="Color.Secondary"
-                                              ShowLabel="true"
-                                              DisplayText="Type"
-                                              Id="@($"AccountType_{item.index}")"
-                                              Items="@AccountTypes"/>
-                                </div>
-                                <div class="col-6">
-                                    <BootstrapLabel Value="Balance" for="@($"Balance_{item.index}")" />
-                                    <BootstrapInputGroup>
-                                        <BootstrapInputNumber Id="@($"Balance_{item.index}")"
-                                                              @bind-Value="EditingAccount.Balance"
-                                                              FormatString="0.##"
-                                                              UseInputEvent="true"
-                                                              Step="0.01" />
-                                        <Dropdown @bind-Value="EditingAccount.Currency"
-                                                  Items="@CurrencyItems"
-                                                  Color="settingsService.GetCurrencyColor(EditingAccount.Currency)" />
-                                    </BootstrapInputGroup>
-                                </div>
-                            </div>
-                            <LoadingPanel IsLoading="IsSaving" ErrorMessage="@AccountSaveErrorMessage" OnRetry="() => SaveAccountEdit()">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <Button Color="Color.Secondary"
-                                                IsOutline="true"
-                                                Text="Cancel"
-                                                Size="Size.Large"
-                                                StopPropagation="true"
-                                                OnClick="CancelAccountEdit"/>
-
-                                        <Button Color="Color.Danger"
-                                                class="ms-4"
-                                                IsOutline="true"
-                                                Size="Size.Large"
-                                                StopPropagation
-                                                Icon="fa-solid fa-trash"
-                                                Text="Delete"
-                                                OnClick="() => ShowDeleteAccountModal(EditingAccount)"
-                                                title="Delete Account" />
-                                    </div>
-                                    <div>
-                                        
-                                        <Button Color="Color.Primary"
-                                                Text="Save"
-                                                Size="Size.Large"
-                                                StopPropagation="true"
-                                                OnClick="SaveAccountEdit"
-                                                IsDisabled="!HasAccountChanges" />
-                                    </div>
-                                </div>
-                            </LoadingPanel>
-                        </div>
-                    </EditForm>
-                }
-                else
-                {
-                    @* Read-only display with edit button for editable accounts *@
-                    @if (item.account.AccountType == AccountType.Default)
-                    {
-                        @* Clickable row for editable accounts *@
-                        <div class="container p-0">
-                            <div class="row g-0 align-items-center">
-                                <div class="col-7">
-                                    <h5>
-                                        @item.account.Name
-                                    </h5>
-                                </div>
-                                <div class="col-3 text-end balance text-secondary">
-                                    @formatService.FormatBalance(item.account.Balance, item.account.Currency, item.account.IsLiability)
-                                </div>
-                                <div class="col-2 text-end">
-                                    <Button Icon="fa-solid fa-edit"
-                                            Color="Color.Primary"
-                                            IsOutline="true"
-                                            Size="Size.Small"
-                                            StopPropagation="true"
-                                            OnClick="(e) => OnEditButtonClick(e, item.account)"
-                                            IsDisabled="HasUnsavedChanges || HasNewAccountChanges || IsSaving"
-                                            title="Edit Account" />
-                                </div>
-                                @if (item.account.LiabilitiesBalance.HasValue)
-                                {
-                                    <div class="col-6 text-secondary total-box"><span class="total-sub-label">Liabilities:</span> @formatService.FormatBalance(item.account.LiabilitiesBalance.Value, item.account.Currency, true)</div>
-                                }
-                                @if (item.account.AssetsBalance.HasValue)
-                                {
-                                    <div class="col-6 text-secondary text-end total-box"><span class="total-sub-label">Assets:</span> @formatService.FormatBalance(item.account.AssetsBalance.Value, item.account.Currency, false)</div>
-                                }
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        @* Non-editable accounts (read-only) *@
-                        <div class="container p-0">
-                            <div class="row g-0 align-items-center">
-                                <div class="col-10">
-                                    <h5 class="text-muted">
-                                        @item.account.Name
-                                        <small class="badge bg-secondary ms-2">@item.account.AccountType.ToString()</small>
-                                    </h5>
-                                </div>
-                                <div class="col-2 text-end balance text-secondary">
-                                    @formatService.FormatBalance(item.account.Balance, item.account.Currency, item.account.IsLiability)
-                                </div>
-                                @if (item.account.LiabilitiesBalance.HasValue)
-                                {
-                                    <div class="col-6 text-secondary total-box"><span class="total-sub-label">Liabilities:</span> @formatService.FormatBalance(item.account.LiabilitiesBalance.Value, item.account.Currency, true)</div>
-                                }
-                                @if (item.account.AssetsBalance.HasValue)
-                                {
-                                    <div class="col-6 text-secondary text-end total-box"><span class="total-sub-label">Assets:</span> @formatService.FormatBalance(item.account.AssetsBalance.Value, item.account.Currency, false)</div>
-                                }
-                            </div>
-                        </div>
-                    }
-                }
-            </div>
+        {            <AccountItemEditor Account="@item.account"
+                               EditingAccount="@EditingAccount"
+                               IsEditing="@(EditingAccountId == item.account.IdForType)"
+                               AccountTypes="@AccountTypes"
+                               CurrencyItems="@CurrencyItems"
+                               OnEdit="() => StartEditAccount(item.account)"
+                               OnCancel="CancelAccountEdit"
+                               OnSave="SaveAccountEdit"
+                               OnDelete="ShowDeleteAccountModal"
+                               IsEditDisabled="@HasUnsavedChanges"
+                               IsSaving="@IsSaving"
+                               SaveErrorMessage="@AccountSaveErrorMessage" />
         }
 
         @* Add new account section *@
         @if (IsAddingNewAccount)
         {
-            <div class="account-row default mb-3 p-3 border rounded">
-                <EditForm EditContext="EditContext" FormName="NewAccountForm" OnSubmit="SaveNewAccount">
-                    <DataAnnotationsValidator />
-                    <div class="container p-0">
-                        <div class="row g-2 mb-3">
-                            <div class="col-12">
-                                <h6 class="mb-2">Add New Account</h6>
-                            </div>
-                            <div class="col-12">
-                                <BootstrapInput ShowLabel="true"
-                                                DisplayText="Name"
-                                                UseInputEvent="true"
-                                                Id="NewAccountName"
-                                                @bind-Value="NewAccount.Name" />
-                                <ValidationMessage For="@(() => NewAccount.Name)" />
-                            </div>
-                            <div class="col-6">
-                                <Select @bind-Value="NewAccount.LMAccountType"
-                                    TValue="LMAccountType"
-                                    ShowLabel="true"
-                                    DisplayText="Type"
-                                    Id="@($"NewAccountType")"
-                                    Items="@AccountTypes"/>
-                            </div>
-                            <div class="col-6">
-                                <BootstrapLabel Value="Balance" for="NewAccountBalance" />
-                                <BootstrapInputGroup>
-                                    <BootstrapInputNumber Id="NewAccountBalance"
-                                                          @bind-Value="NewAccount.Balance"
-                                                          UseInputEvent="true"
-                                                          FormatString="0.##"
-                                                          Step="0.01" />
-                                    <Dropdown @bind-Value="NewAccount.Currency"
-                                              Items="@CurrencyItems"
-                                              Color="settingsService.GetCurrencyColor(NewAccount.Currency)" />
-                                </BootstrapInputGroup>
-                            </div>
-                        </div>
-                        <LoadingPanel IsLoading="IsSaving" ErrorMessage="@AccountSaveErrorMessage" OnRetry="() => SaveNewAccount()">
-                            <div class="d-flex justify-content-between">
-                                <Button Color="Color.Secondary"
-                                        IsOutline="true"
-                                        Text="Cancel"
-                                        Size="Size.Large"
-                                        OnClick="CancelNewAccount"
-                                        IsDisabled="IsSaving" />
-                                <Button Color="Color.Primary"
-                                        Text="Save"
-                                        Size="Size.Large"
-                                        OnClick="SaveNewAccount"
-                                        IsDisabled="IsSaving" />
-                            </div>
-                        </LoadingPanel>
-                    </div>
-                </EditForm>
-            </div>
+            <NewAccountForm NewAccount="@NewAccount"
+                            AccountTypes="@AccountTypes"
+                            CurrencyItems="@CurrencyItems"
+                            OnCancel="CancelNewAccount"
+                            OnSave="SaveNewAccount"
+                            IsSaving="@IsSaving"
+                            SaveErrorMessage="@AccountSaveErrorMessage" />
         }
         else 
         {
@@ -283,16 +105,7 @@
     </div>
 </div>
 
-
-
 @code {
-
-
-
-
-
-
-
     private ElementReference containerRef;
     private int selectedIndex = -1;
     private bool preventKeyDownDefault;
@@ -346,8 +159,8 @@
     [Parameter]
     public EventCallback AccountsChanged { get; set; }
 
-    [CascadingParameter] public IModalContainer ModalContainer { get; set; }
-
+    [CascadingParameter] 
+    public IModalContainer ModalContainer { get; set; }
 
     [Parameter]
     public string ActiveAccountUid { get; set; }
@@ -391,14 +204,6 @@
         EditingAccount = AccountDisplayForEdit.FromAccountDisplay(account);
         EditContext = new EditContext(EditingAccount);
         StateHasChanged();
-    }
-
-    private async Task OnEditButtonClick(MouseEventArgs e, AccountDisplay account)
-    {
-        // This method handles the edit button click and prevents row click propagation
-        // The OnClick:stopPropagation="true" attribute handles the event stopping
-        StartEditAccount(account);
-        await Task.CompletedTask;
     }
 
     private async Task ShowDeleteAccountModal(AccountDisplayForEdit account)
@@ -502,7 +307,6 @@
         {
             var accountsToSave = new List<AccountDisplayForEdit> { NewAccount };
             var madeChanges = await budgetService.SaveEditedAccountsAsync(accountsToSave);
-
 
             if (madeChanges)
             {

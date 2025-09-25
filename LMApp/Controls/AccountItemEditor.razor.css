@@ -1,0 +1,20 @@
+﻿.account-row.editing {
+  background-color: var(--bs-primary-bg-subtle);
+  border-color: var(--bs-primary);
+  animation: pulse-subtle 2s infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    background-color: var(--bs-primary-bg-subtle);
+  }
+  50% {
+    background-color: var(--bs-primary);
+    background-color: color-mix(in srgb, var(--bs-primary-bg-subtle) 80%, var(--bs-primary) 20%);
+  }
+}
+[data-bs-theme=dark] .account-row.editing {
+  background-color: rgba(13, 110, 253, 0.15);
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.3);
+}

@@ -44,6 +44,7 @@
     }
 }
 
+// Normal display mode styles (non-edit mode)
 .account-row .account-row-inner {
     padding: .5rem;
     cursor: pointer;
@@ -122,11 +123,12 @@
     }
 }
 
-.balance {
+// Balance styling for normal display mode
+.account-row .account-row-inner .balance {
     font-size: 1.25em;
 }
 
-
+// Keyboard navigation styles
 div:focus-within .account-row.keyboard-selected {
     outline: 2px solid var(--bs-primary);
     outline-offset: -2px;
@@ -137,6 +139,7 @@ div[tabindex]:focus {
     outline: none;
 }
 
+// Responsive styles for desktop
 @media (min-width: 641px) {
 
     .account-row:not(:first-child) {
@@ -175,20 +178,9 @@ div[tabindex]:focus {
     }
 }
 
+// Label positioning for desktop
 @media (min-width: 991px) and (max-width: 1050px), (min-width: 1401px) and (max-width: 1450px) {
     .total-sub-label {
         display: block;
     }
 }
-
-// Mobile responsive improvements for edit mode
-@media (max-width: 576px) {
-    .account-row {
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-        }
-        
-    }
-}
-

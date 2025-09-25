@@ -1,0 +1,42 @@
+﻿// NewAccountForm specific styles
+.new-account-form {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.05), rgba(13, 110, 253, 0.02));
+    border: 2px dashed var(--bs-primary);
+    border-radius: 0.5rem;
+    position: relative;
+    
+    // Subtle animation to draw attention
+    animation: new-form-glow 3s infinite ease-in-out;
+    
+    h6 {
+        color: var(--bs-primary);
+        font-weight: 600;
+        text-align: center;
+    }
+    
+    // Enhanced focus states for new account creation
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.35);
+    }
+    
+    // Dark mode enhancements
+    [data-bs-theme="dark"] & {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.15), rgba(13, 110, 253, 0.08));
+        border-color: var(--bs-primary);
+        
+        h6 {
+            color: var(--bs-link-color);
+        }
+    }
+}
+
+@keyframes new-form-glow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(13, 110, 253, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(13, 110, 253, 0.4);
+    }
+}

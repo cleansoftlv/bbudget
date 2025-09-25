@@ -1,0 +1,23 @@
+﻿.total-sub-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.balance {
+  font-size: 1.25em;
+  font-weight: 600;
+}
+
+@media (max-width: 576px) {
+  .balance {
+    font-size: 1.1em;
+  }
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+.badge.bg-secondary {
+  font-size: 0.7em;
+  opacity: 0.8;
+}

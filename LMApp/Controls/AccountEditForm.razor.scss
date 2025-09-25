@@ -1,0 +1,40 @@
+﻿// AccountEditForm specific styles
+.account-edit-form {
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .validation-message {
+        color: var(--bs-danger);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    // Form input focus improvements
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    // Button spacing
+    .btn + .btn {
+        margin-left: 0.5rem;
+    }
+    
+    // Improved dark mode support for form controls
+    [data-bs-theme="dark"] & {
+        .form-control,
+        .form-select {
+            background-color: var(--bs-gray-900);
+            border-color: var(--bs-gray-600);
+            color: var(--bs-gray-100);
+            
+            &:focus {
+                background-color: var(--bs-gray-800);
+                border-color: var(--bs-primary);
+                color: var(--bs-gray-100);
+            }
+        }
+    }
+}
