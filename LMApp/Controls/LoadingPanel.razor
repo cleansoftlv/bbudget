@@ -6,6 +6,10 @@
         {
             <Button Color="Color.Warning" OnClick="OnRetry">Retry</Button>
         }
+        else
+        {
+            <Button Color="Color.Warning" OnClick="OnProceedAfterError">Proceed</Button>
+        }
     </Alert>
 }
 else if (IsLoading)
@@ -31,6 +35,9 @@ else if (ChildContent != null)
 
     [Parameter]
     public EventCallback OnRetry { get; set; }
+
+    [Parameter]
+    public EventCallback OnProceedAfterError { get; set; }
 
     [Parameter]
     public RenderFragment ChildContent { get; set; }

@@ -36,7 +36,9 @@
                             <CategoriesList @ref="categoriesListRef" Categories="categories"
                                             ActiveCategoryId="@CurrentCategory?.CategoryId"
                                             OnNavidateRight="CatListNavigateRight"
-                                            CategorySelected="e => NavigateToCategory(e)" />
+                                            CategorySelected="e => NavigateToCategory(e)"
+                                            SelectedMonth="@MonthStart"
+                                            BudgetsChanged="OnBudgetsChanged" />
                         </LoadingPanel>
                     </div>
                 </div>
@@ -846,5 +848,11 @@
         {
             await exportModal.ShowModal();
         }
+    }
+
+    private async Task OnBudgetsChanged()
+    {
+        // Refresh the budget data after budgets are edited
+        await LoadBudget(false);
     }
 }

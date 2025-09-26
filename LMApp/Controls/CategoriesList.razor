@@ -1,88 +1,166 @@
 ﻿@using LMApp.Models.Context
+@using LMApp.Models.Categories
 @using LMApp.Models.UI
+@using LMApp.Models.Extensions
 @using System.Text
 @inject FormatService formatService
 @inject Utils utils
 @inject SettingsService settingsService
+@inject BudgetService budgetService
+@inject ILogger<CategoriesList> log
+
 <div @ref="containerRef" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="preventKeyDownDefault" tabindex="0">
-    @foreach (var item in Categories.Select((category, index) => (category: category, index: index)))
+    @if (!IsBudgetEditMode)
     {
-        var currentIndex = Array.IndexOf(Categories, item.category);
-        <div class="@GetRowClass(item.category, item.index)" data-index="@item.index">
-            <a href="javascript:" class="budget-category-row-inner" @onclick="e => OnClick(item.category)" role="button">
-                <div class="container p-0">
-                    <div class="row g-0">
-                        <div class="col-8 col-sm-8 mb-2">
-                            <h5>
-                                @item.category.Name
-                            </h5>
-                        </div>
-                        <div class="col-4 col-sm-4 text-end" title="@(ShowSpent ? "Spent" : "Left to spend")">
-                            @GetLeftOrSpent(item.category)
-                            @if (ShowSpent && item.category.CategoryType != Models.Categories.BudgetCategoryType.Income)
-                            {
-                                <i class="spent-icon fa-solid fa-circle-down text-muted"></i>
-                            }
-                        </div>
-                    </div>
-                    <div class="row g-0">
-                        <div class="col-8 col-sm-8">
-                            @if (item.category.BudgetedAmountPrimary != 0)
-                            {
-                                <div class="inline-progress-bar">
-                                    <BootstrapBlazor.Components.Progress Value="item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent"
-                                                                         Color="item.category.ProgressPercent < 0? Color.Danger: Color.Success"
-                                                                         Height="10"
-                                                                         class="@(item.category.ProgressPercent < 0 ? "flip-bar" : null)"
-                                                                         title="@($"Left: {(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%, {(item.category.CategoryType == Models.Categories.BudgetCategoryType.Income ? "Left to earn" : "Spent")}:  {GetTooltipAmount(item.category)}")"
-                                                                         IsShowValue="false" />
-                                </div>
-                            }
-                            else
-                            {
-                                // @:Budget not set
-                            }
-                        </div>
-                        <div class="col-4 col-sm-4 text-end text-secondary align-text-top" title="Budgeted amount">@GetBudgetedAmount(item.category)</div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    }
-    <div class="p-4 d-flex justify-content-center gap-2">
-        @if (BudgetHasMultipleCurrencies)
+        @* Normal display mode *@
+        @foreach (var item in Categories.Select((category, index) => (category: category, index: index)))
         {
-            <Toggle @bind-Value="ShowMultipleCurrencies"
-                    OnValueChanged="(_) => OnSettingsToggle()"
-                    OnText="Multiple"
-                    OffText="@formatService.CurrencyToSymbol(settingsService.PrimaryCurrency)"
-                    Color="Color.Secondary" />
+            <div class="@GetRowClass(item.category, item.index)" data-index="@item.index">
+                <a href="javascript:" class="budget-category-row-inner" @onclick="e => OnClick(item.category)" role="button">
+                    <div class="container p-0">
+                        <div class="row g-0">
+                            <div class="col-8 col-sm-8 mb-2">
+                                <h5>
+                                    @item.category.Name
+                                </h5>
+                            </div>
+                            <div class="col-4 col-sm-4 text-end" title="@(ShowSpent ? "Spent" : "Left to spend")">
+                                @GetLeftOrSpent(item.category)
+                                @if (ShowSpent && item.category.CategoryType != BudgetCategoryType.Income)
+                                {
+                                    <i class="spent-icon fa-solid fa-circle-down text-muted"></i>
+                                }
+                            </div>
+                        </div>
+                        <div class="row g-0">
+                            <div class="col-8 col-sm-8">
+                                @if (item.category.BudgetedAmountPrimary != 0)
+                                {
+                                    <div class="inline-progress-bar">
+                                        <BootstrapBlazor.Components.Progress Value="item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent"
+                                                                             Color="item.category.ProgressPercent < 0? Color.Danger: Color.Success"
+                                                                             Height="10"
+                                                                             class="@(item.category.ProgressPercent < 0 ? "flip-bar" : null)"
+                                                                             title="@($"Left: {(item.category.ProgressPercent < 0 ? item.category.OverspentPercent : item.category.ProgressPercent)}%, {(item.category.CategoryType == BudgetCategoryType.Income ? "Left to earn" : "Spent")}:  {GetTooltipAmount(item.category)}")"
+                                                                             IsShowValue="false" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    // @:Budget not set
+                                }
+                            </div>
+                            <div class="col-4 col-sm-4 text-end text-secondary align-text-top" title="Budgeted amount">@GetBudgetedAmount(item.category)</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
         }
-        <Toggle @bind-Value="ShowSpent"
-                OnValueChanged="(_) => OnSettingsToggle()"
-                OnText="Amount spent"
-                OffText="Amount left"
-                Color="Color.Secondary" />
+    }
+    else
+    {
+        @* Budget edit mode - show all available categories *@
+        @foreach (var item in EditableCategories.Select((category, index) => (category: category, index: index)))
+        {
+            <BudgetItemEditor Budget="@item.category"
+                              OnEdit="() => StartEditBudget(item.category)"
+                              OnCancel="CancelBudgetEdit"
+                              OnSave="SaveBudgetEdit"
+                              OnClearErrors="ClearSaveErrors"
+                              CurrencyItems="@CurrencyItems"
+                              OnValueChanged="OnBudgetChanged"
+                              IsEditDisabled="@HasUnsavedChanges"
+                              IsSaving="@IsSaving"
+                              SaveErrorMessage="@BudgetSaveErrorMessage" />
+        }
+    }
+
+    @* Bottom panel *@
+    <div class="p-4 d-flex justify-content-center gap-2">
+        @if (IsSaving)
+        {
+            <div class="d-flex align-items-center">
+                <Spinner />
+                <span class="ms-2">Saving...</span>
+            </div>
+        }
+        else if (!IsBudgetEditMode)
+        {
+            @if (BudgetHasMultipleCurrencies)
+            {
+                <Toggle @bind-Value="ShowMultipleCurrencies"
+                        OnValueChanged="(_) => OnSettingsToggle()"
+                        OnText="Multiple"
+                        OffText="@formatService.CurrencyToSymbol(settingsService.PrimaryCurrency)"
+                        Color="Color.Secondary" />
+            }
+            <Toggle @bind-Value="ShowSpent"
+                    OnValueChanged="(_) => OnSettingsToggle()"
+                    OnText="Amount spent"
+                    OffText="Amount left"
+                    Color="Color.Secondary" />
+
+            <Button Color="Color.Secondary" IsOutline="true" Text="Edit" OnClick="EnterBudgetEditMode" />
+        }
+        else
+        {
+            <Button Color="Color.Secondary" IsOutline="true" Text="Exit budget edit" OnClick="ExitBudgetEditMode" />
+        }
     </div>
 </div>
+
 @code {
+
     private ElementReference containerRef;
     private int selectedIndex = -1;
     private bool ShowSpent;
     private bool ShowMultipleCurrencies;
     private bool BudgetHasMultipleCurrencies;
+    private bool preventKeyDownDefault;
+
+    // Budget edit mode properties
+    private bool IsBudgetEditMode = false;
+    private bool IsSaving = false;
+    private bool TriggerReloadOnExitEditMode = false;
+    private string BudgetSaveErrorMessage = null;
+
+    // Individual budget editing
+    private BudgetCategoryDisplayForEdit EditingBudget = null;
+    private EditContext EditContext;
+
+    private List<BudgetCategoryDisplayForEdit> EditableCategories = new();
+    private IEnumerable<SelectedItem> CurrencyItems;
+
+    private bool HasBudgetChanges => EditingBudget?.HasChanges() ?? false;
+    private bool HasUnsavedChanges;
+
+    [Parameter]
+    public BudgetCategoryDisplay[] Categories { get; set; }
+
+    [Parameter]
+    public long? ActiveCategoryId { get; set; }
+
+    [Parameter]
+    public EventCallback<BudgetCategoryDisplay> CategorySelected { get; set; }
+
+    [Parameter]
+    public EventCallback OnNavidateRight { get; set; }
+
+    [Parameter]
+    public DateTime SelectedMonth { get; set; }
+
+    [Parameter]
+    public EventCallback BudgetsChanged { get; set; }
 
     private MarkupString GetBudgetedAmount(BudgetCategoryDisplay category)
     {
         if (ShowMultipleCurrencies)
         {
-            return formatService.FormatBalance(category.BudgetedAmount,
-                category.Currency);
+            return formatService.FormatBalance(category.BudgetedAmount, category.Currency);
         }
         else
         {
-            return formatService.FormatBalance(category.BudgetedAmountPrimary,
-                category.PrimaryCurrency);
+            return formatService.FormatBalance(category.BudgetedAmountPrimary, category.PrimaryCurrency);
         }
     }
 
@@ -105,12 +183,17 @@
         }
     }
 
+    private void ClearSaveErrors()
+    {
+        BudgetSaveErrorMessage = null;
+    }
+
     private string GetTooltipAmount(BudgetCategoryDisplay category)
     {
         if (ShowMultipleCurrencies)
         {
             return formatService.FormatBalanceNoHtml(
-                category.CategoryType == Models.Categories.BudgetCategoryType.Income
+                category.CategoryType == BudgetCategoryType.Income
                 ? category.BudgetedAmount - category.ProgressAmount
                 : category.ActualAmount,
                 category.BudgetedCurrency,
@@ -119,7 +202,7 @@
         else
         {
             return formatService.FormatBalanceNoHtml(
-                category.CategoryType == Models.Categories.BudgetCategoryType.Income
+                category.CategoryType == BudgetCategoryType.Income
                 ? category.BudgetedAmountPrimary - category.ProgressAmountPrimary
                 : category.ActualAmountPrimary,
                 category.PrimaryCurrency);
@@ -149,26 +232,159 @@
         await settingsService.SaveLocalSettings(settings);
     }
 
-    [Parameter]
-    public BudgetCategoryDisplay[] Categories { get; set; }
-
-    [Parameter]
-    public long? ActiveCategoryId { get; set; }
-
-    [Parameter]
-    public EventCallback<BudgetCategoryDisplay> CategorySelected { get; set; }
-
-    [Parameter]
-    public EventCallback OnNavidateRight { get; set; }
-
     private async Task OnClick(BudgetCategoryDisplay category)
     {
-        await CategorySelected.InvokeAsync(category);
+        if (!IsBudgetEditMode)
+        {
+            await CategorySelected.InvokeAsync(category);
+        }
     }
 
-    private bool preventKeyDownDefault;
+    private void EnterBudgetEditMode()
+    {
+        IsBudgetEditMode = true;
+        EditableCategories = GetAllEditableCategories();
+        StateHasChanged();
+    }
+
+    private List<BudgetCategoryDisplayForEdit> GetAllEditableCategories()
+    {
+        var allCategories = settingsService.GetCachedCategories();
+        var result = new List<BudgetCategoryDisplayForEdit>();
+        var editableCategories = allCategories
+            .Where(c => !(c.archived ?? false) && !c.exclude_from_budget && !c.is_group)
+            .OrderBy(c => c.is_income ? 1 : 0) // Income categories last
+            .ThenBy(c => c.name)
+            .ToArray();
+
+        foreach (var category in editableCategories)
+        {
+            // Check if this category already has budget data for this month
+            var existingBudgetCategory = Categories?.FirstOrDefault(bc => bc.CategoryId == category.id);
+
+            if (existingBudgetCategory != null)
+            {
+                // Use existing budget data
+                result.Add(BudgetCategoryDisplayForEdit.FromBudgetCategoryDisplay(existingBudgetCategory, settingsService.PrimaryCurrency));
+            }
+            else
+            {
+                // Create new budget category with zero budget
+                var newBudgetCategory = new BudgetCategoryDisplayForEdit
+                {
+                    Name = category.name,
+                    CategoryId = category.id,
+                    CategoryType = category.is_income ? BudgetCategoryType.Income : BudgetCategoryType.Expense,
+                    EditBudgetAmount = null,
+                    OriginalBudgetAmount = null,
+                    EditCurrency = settingsService.PrimaryCurrency,
+                    IsEditing = false,
+                    OriginalCurrency = settingsService.PrimaryCurrency
+                };
+
+                result.Add(newBudgetCategory);
+            }
+        }
+
+        return result;
+    }
+
+    private void ExitBudgetEditMode()
+    {
+        CancelBudgetEdit();
+        IsBudgetEditMode = false;
+        EditableCategories.Clear();
+        if (TriggerReloadOnExitEditMode)
+        {
+            TriggerReloadOnExitEditMode = false;
+            BudgetsChanged.InvokeAsync();
+        }
+    }
+
+    private void OnBudgetChanged()
+    {
+        HasUnsavedChanges = HasBudgetChanges;
+    }
+
+    private void StartEditBudget(BudgetCategoryDisplayForEdit budget)
+    {
+        if (HasUnsavedChanges || EditingBudget?.CategoryId == budget.CategoryId)
+            return;
+
+        EditingBudget?.CancelEdit();
+
+        EditingBudget = budget;
+        EditingBudget.IsEditing = true;
+        EditContext = new EditContext(EditingBudget);
+        StateHasChanged();
+    }
+
+    private void CancelBudgetEdit()
+    {
+        IsSaving = false;
+        BudgetSaveErrorMessage = null;
+
+        if (EditingBudget != null)
+        {
+            EditingBudget.IsEditing = false;
+            EditingBudget.EditBudgetAmount = EditingBudget.OriginalBudgetAmount;
+            EditingBudget.EditCurrency = EditingBudget.OriginalCurrency;
+        }
+
+        EditingBudget = null;
+        EditContext = null;
+        HasUnsavedChanges = false;
+        StateHasChanged();
+    }
+
+    private async Task SaveBudgetEdit()
+    {
+        if (EditingBudget == null || !EditContext.Validate())
+            return;
+
+        if (!EditingBudget.HasChanges())
+        {
+            CancelBudgetEdit();
+            return;
+        }
+
+        BudgetSaveErrorMessage = null;
+        IsSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            if (EditingBudget.EditBudgetAmount == null)
+            {
+                // Remove budget if amount is null
+                await budgetService.RemoveBudgetAsync(EditingBudget.CategoryId, SelectedMonth);
+            }
+            else
+            {
+                // Upsert budget
+                var request = EditingBudget.ToUpsertBudgetRequest(SelectedMonth);
+                await budgetService.UpsertBudgetAsync(request);
+            }
+
+            EditingBudget.CommitEdit();
+            TriggerReloadOnExitEditMode = true;
+           
+            IsSaving = false;
+            CancelBudgetEdit();
+        }
+        catch (HttpRequestException ex)
+        {
+            ex.LogIfRequired(log);
+            BudgetSaveErrorMessage = ex.GetDescriptionForUser();
+            IsSaving = false;
+            StateHasChanged();
+        }
+    }
+
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
+        if (IsBudgetEditMode) return; // Disable keyboard navigation in edit mode
+
         preventKeyDownDefault = false;
         if (Categories == null || Categories.Length == 0)
             return;
@@ -218,6 +434,15 @@
         var settings = await settingsService.GetLocalSettings();
         ShowSpent = settings.ShowAmountSpentInBudget;
         ShowMultipleCurrencies = settings.ShowMultipleCurrenciesInBudget;
+
+        // Initialize currency dropdown items
+        CurrencyItems = settingsService.SelectedAccountCurrencies
+            .Select(x => new SelectedItem
+            {
+                Text = formatService.CurrencyToSymbol(x),
+                Value = x
+            });
+
         await base.OnInitializedAsync();
     }
 
@@ -249,7 +474,6 @@
         await Task.Yield(); // Ensure UI updates before scrolling
         await utils.ScrollToSelectedItem(containerRef, "keyboard-selected");
     }
-
 
     public Task FocusAsync()
     {

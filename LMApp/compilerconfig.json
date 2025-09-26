@@ -96,6 +96,10 @@
     "inputFile": "Controls/AccountItemEditor.razor.scss"
   },
   {
+    "outputFile": "Controls/BudgetItemEditor.razor.css",
+    "inputFile": "Controls/BudgetItemEditor.razor.scss"
+  },
+  {
     "outputFile": "Controls/NewAccountForm.razor.css",
     "inputFile": "Controls/NewAccountForm.razor.scss"
   }

@@ -566,6 +566,101 @@ html[data-bs-theme="dark"] {
     }
 }
 
+/* Shared budget category row styles */
+.budget-category-row {
+    &:not(:first-child) {
+        border-top: lightgray 1px solid;
+
+        [data-bs-theme="dark"] & {
+            border-top: var(--bs-gray-600) 1px solid;
+        }
+    }
+
+    &.total h5:before {
+        content: "∑";
+        color: var(--bs-primary);
+        margin-right: .5rem;
+
+        [data-bs-theme="dark"] & {
+            color: var(--bs-link-color);
+        }
+    }
+
+    &.income h5:before {
+        content: "+";
+        color: var(--bs-primary);
+        margin-right: .5rem;
+
+        [data-bs-theme="dark"] & {
+            color: var(--bs-link-color);
+        }
+    }
+
+    &.active {
+        background-color: var(--bs-primary-bg-subtle);
+    }
+
+    &.active:hover {
+        background-color: var(--bs-primary-border-subtle);
+    }
+}
+
+.budget-category-row .budget-category-row-inner {
+    padding: .5rem;
+    cursor: pointer;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-text-decoration: none;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.budget-category-row:hover {
+    background-color: #efefef;
+    
+    [data-bs-theme="dark"] & {
+        background-color: var(--bs-gray-800);
+    }
+}
+
+div:focus-within .budget-category-row.keyboard-selected {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
+}
+
+/* Remove default focus outline from container */
+div[tabindex]:focus {
+    outline: none;
+}
+
+@media (min-width: 641px) {
+    .budget-category-row:not(:first-child) {
+        border-top: none;
+    }
+
+    .budget-category-row:not(:first-child) .budget-category-row-inner {
+        border-top: lightgray 1px solid;
+        
+        [data-bs-theme="dark"] & {
+            border-top: var(--bs-gray-600) 1px solid;
+        }
+    }
+
+    .budget-category-row .budget-category-row-inner {
+        padding: .5rem 1rem;
+    }
+}
+
+@media (min-width: 991px) {
+    .budget-category-row .budget-category-row-inner {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
 .info-modal {
     .modal-footer button:not(:first-child) {
         margin-inline-start: .5rem;

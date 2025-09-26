@@ -188,7 +188,7 @@ namespace LMApp.Models.Context
         {
             currency = currency?.ToUpperInvariant();
             int index;
-            if (currency == PrimaryCurrency)
+            if (currency == PrimaryCurrency || currency == null)
             {
                 index = 1;
             }

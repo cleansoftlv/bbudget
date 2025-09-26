@@ -1,0 +1,149 @@
+@using LMApp.Models.Categories
+@using LMApp.Models.UI
+@using LMApp.Models.Context
+@using BootstrapBlazor.Components
+@inject FormatService formatService
+@inject SettingsService settingsService
+
+@if (!Budget.IsEditing)
+{
+    @* Display mode *@
+    <div class="budget-category-row expense @(Budget.CategoryType.ToString().ToLower())">
+        <div class="budget-category-row-inner" role="button" @onclick="StartEdit">
+            <div class="container p-0">
+                <div class="row g-0">
+                    <div class="col-9 col-sm-10">
+                        <h5>
+                            @Budget.Name
+                        </h5>
+                    </div>
+
+                    <div class="col-3 col-sm-2 text-end">
+                        @if (Budget.CategoryType != BudgetCategoryType.Total)
+                        {
+                            <Button Icon="fa-solid fa-edit"
+                                    Color="Color.Primary"
+                                    Size="Size.Small"
+                                    IsOutline="true"
+                                    OnClick="StartEdit"
+                                    IsDisabled="IsEditDisabled"
+                                    TooltipText="Edit" />
+                        }
+                    </div>
+                    <div class="col-12 mt-2">
+                        <h4>
+                            @if (Budget.EditBudgetAmount.HasValue)
+                            {
+                                @formatService.FormatBalance(Budget.EditBudgetAmount.Value, Budget.EditCurrency)
+                            }
+                            else
+                            {
+                                <em class="text-muted">No budget set</em>
+                            }
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    @* Edit mode *@
+    <div class="budget-category-row expense @(Budget.CategoryType.ToString().ToLower()) editing">
+        <EditForm FormName="BudgetEditForm" Model="Budget" OnValidSubmit="OnSave">
+            <DataAnnotationsValidator />
+            <div class="p-3">
+                <h5>
+                    @Budget.Name
+                </h5>
+                <div class="mt-3">
+                    <BootstrapInputGroup>
+                        <BootstrapInputNumber @bind-Value="Budget.EditBudgetAmount"
+                                              TValue="decimal?"
+                                              IsAutoFocus="true"
+                                              DisplayText="Monthly budget"
+                                              OnValueChanged="x => OnValueChanged.InvokeAsync()"
+                                              ShowLabel="true"
+                                              Min="0" />
+                        <Dropdown @bind-Value="Budget.EditCurrency"
+                                  Color="@GetCurrencyColor()"
+                                  Items="CurrencyItems" />
+                    </BootstrapInputGroup>
+                    <ValidationMessage For="() => Budget.EditBudgetAmount" class="text-danger small" />
+                    <ValidationMessage For="() => Budget.EditCurrency" class="text-danger small" />
+                </div>
+                <div class="mt-3">
+                    <LoadingPanel IsLoading="IsSaving"
+                                  ErrorClass="p-4"
+                                  ErrorMessage="@SaveErrorMessage"
+                                  OnProceedAfterError="ClearErrors">
+                        <div class="d-flex gap-2 justify-content-between">
+                            <Button Color="Color.Secondary"
+                                    Size="Size.Large"
+                                    Text="Cancel"
+                                    IsOutline="true"
+                                    OnClick="OnCancel" />
+
+                            <Button Color="Color.Primary"
+                                    Size="Size.Large"
+                                    ButtonType="ButtonType.Submit"
+                                    Text="Save" />
+                        </div>
+                    </LoadingPanel>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public BudgetCategoryDisplayForEdit Budget { get; set; }
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback OnValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback OnClearErrors { get; set; }
+
+    [Parameter]
+    public bool IsEditDisabled { get; set; }
+
+    [Parameter]
+    public bool IsSaving { get; set; }
+
+    [Parameter]
+    public string SaveErrorMessage { get; set; }
+
+    [Parameter, EditorRequired]
+    public IEnumerable<SelectedItem> CurrencyItems { get; set; }
+
+    private Color GetCurrencyColor()
+    {
+        return settingsService.GetCurrencyColor(Budget.EditCurrency);
+    }
+
+    private Task ClearErrors()
+    {
+        return OnClearErrors.InvokeAsync();
+    }
+
+    private async Task StartEdit()
+    {
+        if (IsEditDisabled){
+            return;
+        }
+
+        await OnEdit.InvokeAsync();
+    }
+}
