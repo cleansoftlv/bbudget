@@ -724,7 +724,7 @@
         }
     }
 
-    private async Task AccountsChanged()
+    private void AccountsChanged()
     {
         accounts = budgetService.GetCachedAccounts();
         TryRefreshRunningBalances();

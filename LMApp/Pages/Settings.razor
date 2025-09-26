@@ -141,7 +141,6 @@
     private bool IsAccountsTab => ActiveTab?.Equals("accounts", StringComparison.OrdinalIgnoreCase) ?? false;
     private bool IsBudgetsTab => ActiveTab?.Equals("budgets", StringComparison.OrdinalIgnoreCase) ?? false;
 
-    private bool IsSaving;
     public string SaveError;
     public string BudgetName { get; set; }
     private IEnumerable<SelectedItem> AllCurrencies;
@@ -200,7 +199,6 @@
 
     private async Task Save()
     {
-        IsSaving = true;
         SaveError = null;
         var settings = settingsService.Settings;
         settings.AdditionalCurrencies = (SelectedCurrencies ?? Array.Empty<string>())
@@ -218,7 +216,6 @@
             ex.LogIfRequired(log);
             SaveError = ex.GetDescriptionForUser();
         }
-        IsSaving = false;
 
         if (string.IsNullOrEmpty(SaveError))
         {

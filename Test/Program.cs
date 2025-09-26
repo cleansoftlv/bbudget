@@ -20,6 +20,7 @@ namespace Test
 
             try
             {
+                await Task.Yield();
                 //execute test service code here
 
             }

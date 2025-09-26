@@ -9,26 +9,18 @@ using Shared;
 
 namespace PublicApi
 {
-    public class HealthApp
-    {
-
-        public HealthApp(
-            HealthService healthService,
-            ILoggerFactory loggerFactory
+    public class HealthApp(
+        HealthService healthService,
+        ILoggerFactory loggerFactory
             )
-        {
-            _healthService = healthService;
-            _loggerFactory = loggerFactory;
-        }
-
-        private readonly HealthService _healthService;
-        private readonly ILoggerFactory _loggerFactory;
-        private readonly Throttler _throttler;
+    {
+        private readonly HealthService _healthService = healthService;
+        private readonly ILoggerFactory _loggerFactory = loggerFactory;
 
         [Function(nameof(HowAreYou))]
         public async Task<IActionResult> HowAreYou(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health/howareyou")]
-            HttpRequest req)
+            HttpRequest _)
         {
             try
             {
