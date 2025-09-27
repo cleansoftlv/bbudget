@@ -7,6 +7,7 @@ using LMApp.Models.Categories;
 using LMApp.Models.Transactions;
 using LMApp.Models.UI;
 using LMApp.Models.UI.Csv;
+using LMApp.Models.CsvImport;
 using BlazorApplicationInsights;
 using LMApp.Models.Configuration;
 using BlazorApplicationInsights.Models;
@@ -56,6 +57,7 @@ builder.Services.AddSingleton<LicenseCheckService>();
 builder.Services.AddScoped<Utils>();
 builder.Services.AddScoped<GoogleDriveExporter>();
 builder.Services.AddScoped<CsvExporter>();
+builder.Services.AddScoped<CsvImportService>();
 builder.Services.AddPWAUpdater();
 builder.Services.AddViewTransition();
 

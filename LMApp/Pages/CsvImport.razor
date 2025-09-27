@@ -1,0 +1,539 @@
+@page "/import/csv"
+@using LMApp.Models.CsvImport
+@using LMApp.Models.Transactions
+@using Microsoft.AspNetCore.Components.Forms
+@layout MainLayout
+@inherits BasePage
+@inject CsvImportService csvImportService
+@inject TransactionsService transactionsService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>CSV Import</PageTitle>
+
+<h1 class="d-none d-big-block">Import Transactions from CSV</h1>
+
+<LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
+    <div class="container-fluid g-0">
+        <div class="row">
+            <div class="col-12">
+                @if (_currentStep == ImportStep.Upload)
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fa-solid fa-upload me-2"></i>
+                                Upload CSV File
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">
+                                Upload a CSV file with transaction data. Required columns: Id, Amount, Date, Payee, Notes, Currency, Account
+                            </p>
+                            
+                            <div class="mb-3">
+                                <InputFile OnChange="OnFileSelected" 
+                                          accept=".csv" 
+                                          class="form-control" 
+                                          disabled="@_isProcessing" />
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(_uploadError))
+                            {
+                                <Alert Color="Color.Danger">
+                                    <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                                    @_uploadError
+                                </Alert>
+                            }
+                            
+                            @if (_isProcessing)
+                            {
+                                <div class="text-center">
+                                    <Spinner />
+                                    <div class="mt-2">Processing CSV file...</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (_currentStep == ImportStep.Review)
+                {
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fa-solid fa-list-check me-2"></i>
+                                Review Transactions
+                            </h5>
+                            <Button Color="Color.Secondary" Size="Size.Small" OnClick="ResetImport">
+                                <i class="fa-solid fa-arrow-left me-1"></i>
+                                Back to Upload
+                            </Button>
+                        </div>
+                        <div class="card-body">
+                            @if (_importResult != null)
+                            {
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-check-circle text-success me-2"></i>
+                                            <div>
+                                                <div class="fw-bold">@_validTransactions.Count</div>
+                                                <small class="text-muted">Valid</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-copy text-warning me-2"></i>
+                                            <div>
+                                                <div class="fw-bold">@_importResult.DuplicatesCount</div>
+                                                <small class="text-muted">Duplicates</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-exclamation-triangle text-danger me-2"></i>
+                                            <div>
+                                                <div class="fw-bold">@_importResult.InvalidCount</div>
+                                                <small class="text-muted">Invalid</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-calendar me-2"></i>
+                                            <div>
+                                                <div class="fw-bold">@GetDateRangeText()</div>
+                                                <small class="text-muted">Date Range</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                @if (_needsAccountMapping)
+                                {
+                                    <Alert Color="Color.Warning" class="mb-3">
+                                        <i class="fa-solid fa-info-circle me-2"></i>
+                                        Some account names in the CSV don't match your existing accounts. Please map them below.
+                                    </Alert>
+                                    
+                                    <div class="mb-3">
+                                        <h6>Account Mapping</h6>
+                                        @foreach (var accountName in _unmappedAccounts)
+                                        {
+                                            <div class="row mb-2 align-items-center">
+                                                <div class="col-md-4">
+                                                    <strong>@accountName</strong>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <Select @bind-Value="_accountMapping[accountName]" 
+                                                           TValue="long?"
+                                                           Items="_accountSelectItems" 
+                                                           PlaceHolder="Select account..." />
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                
+                                <div class="mb-3">
+                                    <Table TItem="CsvImportService.CsvTransaction" 
+                                           @bind-SelectedRows="_selectedTransactions"
+                                           IsKeepSelectedRows="true"
+                                           IsPagination="true" 
+                                           PageItemsSource="@_pageItemsSource"
+                                           IsStriped="true" 
+                                           IsBordered="true" 
+                                           IsMultipleSelect="true"
+                                           ShowToolbar="true" 
+                                           ShowDefaultButtons="false" 
+                                           OnQueryAsync="@OnQueryAsync">
+                                        <TableToolbarBeforeTemplate>
+                                            <div class="table-selection-info d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <i class="fa-solid fa-info-circle me-1"></i>
+                                                    Selected: @_selectedTransactions.Count of @_validTransactions.Count
+                                                </div>
+                                                <div class="me-3">
+                                                    <Button Size="Size.Small" OnClick="SelectAllValid">
+                                                        <i class="fa-solid fa-check-square me-1"></i>
+                                                        Select All Valid
+                                                    </Button>
+                                                </div>
+                                                <div>
+                                                    <Button Size="Size.Small" OnClick="DeselectAll">
+                                                        <i class="fa-regular fa-square me-1"></i>
+                                                        Deselect All
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </TableToolbarBeforeTemplate>
+                                        <TableColumns>
+                                            <TableColumn @bind-Field="@context.Date" FormatString="dd.MM.yyyy" Width="120"/>
+                                            <TableColumn @bind-Field="@context.Payee" />
+                                            <TableColumn @bind-Field="@context.Account" Width="120" />
+                                            <TableColumn @bind-Field="@context.Amount" Width="100" />
+                                            <TableColumn @bind-Field="@context.Currency" Width="80" />
+                                            <TableColumn @bind-Field="@context.Notes" />
+                                           @*  <TableColumn Field="@context" Width="100">
+                                                <Template Context="row">
+                                                    @if (row.IsDuplicate)
+                                                    {
+                                                        <Badge Color="Color.Warning">
+                                                            <i class="fa-solid fa-copy me-1"></i>
+                                                            Duplicate
+                                                        </Badge>
+                                                    }
+                                                    else if (!row.IsValid)
+                                                    {
+                                                        <Badge Color="Color.Danger" title="@row.ValidationError">
+                                                            <i class="fa-solid fa-exclamation-triangle me-1"></i>
+                                                            Invalid
+                                                        </Badge>
+                                                    }
+                                                    else
+                                                    {
+                                                        <Badge Color="Color.Success">
+                                                            <i class="fa-solid fa-check me-1"></i>
+                                                            Valid
+                                                        </Badge>
+                                                    }
+                                                </Template> 
+                                            </TableColumn>*@
+                                        </TableColumns>
+                                    </Table>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <Button Color="Color.Primary" 
+                                           OnClick="ImportTransactions" 
+                                           IsDisabled="@(!CanImport())"
+                                           class="btn-lg">
+                                        <i class="fa-solid fa-download me-2"></i>
+                                        Import @_selectedTransactions.Count Transaction@((_selectedTransactions.Count != 1) ? "s" : "")
+                                    </Button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (_currentStep == ImportStep.Complete)
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fa-solid fa-check-circle text-success me-2"></i>
+                                Import Complete
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            @if (_importTransactionResult?.Success == true)
+                            {
+                                <div class="mb-4">
+                                    <i class="fa-solid fa-check-circle text-success" style="font-size: 4rem;"></i>
+                                </div>
+                                <h4 class="text-success mb-3">Successfully imported @_importTransactionResult.ImportedCount transactions!</h4>
+                                @if (_importTransactionResult.FailedCount > 0)
+                                {
+                                    <p class="text-warning mb-3">
+                                        @_importTransactionResult.FailedCount transactions failed to import.
+                                    </p>
+                                }
+                                <div class="d-flex justify-content-center gap-2">
+                                    <Button Color="Color.Primary" OnClick="ViewAllTransactions">
+                                        <i class="fa-solid fa-list me-1"></i>
+                                        View All Transactions
+                                    </Button>
+                                    <Button Color="Color.Secondary" OnClick="ResetImport">
+                                        <i class="fa-solid fa-plus me-1"></i>
+                                        Import More
+                                    </Button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="mb-4">
+                                    <i class="fa-solid fa-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                                </div>
+                                <h4 class="text-danger mb-3">Import failed</h4>
+                                <p class="text-muted mb-3">@_importTransactionResult?.ErrorMessage</p>
+                                <Button Color="Color.Primary" OnClick="@(() => _currentStep = ImportStep.Review)">
+                                    <i class="fa-solid fa-arrow-left me-1"></i>
+                                    Back to Review
+                                </Button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</LoadingPanel>
+
+@code {
+    private enum ImportStep
+    {
+        Upload,
+        Review,
+        Complete
+    }
+
+    private ImportStep _currentStep = ImportStep.Upload;
+    private bool _isProcessing = false;
+    private string _uploadError = "";
+    
+    private CsvImportService.CsvImportResult _importResult;
+    private List<CsvImportService.CsvTransaction> _validTransactions = new();
+    private List<CsvImportService.CsvTransaction> _selectedTransactions = new();
+    
+    private bool _needsAccountMapping = false;
+    private HashSet<string> _unmappedAccounts = new();
+    private Dictionary<string, long?> _accountMapping = new();
+    private List<AccountOption> _availableAccounts = new();
+    private List<SelectedItem> _accountSelectItems = new();
+    
+    private CsvImportService.ImportTransactionsResult _importTransactionResult;
+    
+    private static readonly int[] _pageItemsSource = new[] { 10, 20, 50 };
+
+    public class AccountOption
+    {
+        public long Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (LoadCancelled) return;
+
+        userService.SetActivePageState("CSV Import", false);
+        
+        // Load available accounts for mapping
+        LoadAvailableAccounts();
+    }
+
+    private void LoadAvailableAccounts()
+    {
+        try
+        {
+            var accounts = userService.Accounts;
+            _accountSelectItems = accounts.Select(a => new SelectedItem
+            {
+                Value = a.id.ToString(),
+                Text = a.name
+            }).ToList();
+
+            _availableAccounts = accounts.Select(a => new AccountOption
+            {
+                Id = a.id,
+                Name = a.name
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            LoadError = $"Failed to load accounts: {ex.Message}";
+        }
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _isProcessing = true;
+        _uploadError = "";
+        StateHasChanged();
+
+        try
+        {
+            var file = e.File;
+            if (file == null)
+            {
+                _uploadError = "No file selected";
+                return;
+            }
+
+            if (file.Size > 10 * 1024 * 1024) // 10MB limit
+            {
+                _uploadError = "File size exceeds 10MB limit";
+                return;
+            }
+
+            if (!file.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                _uploadError = "Please select a CSV file";
+                return;
+            }
+
+            _importResult = await csvImportService.ProcessCsvFile(file);
+            
+            if (!_importResult.Success)
+            {
+                _uploadError = _importResult.ErrorMessage;
+                return;
+            }
+
+            // Filter valid transactions and prepare for review
+            _validTransactions = _importResult.Transactions
+                .Where(t => t.IsValid && !t.IsDuplicate)
+                .ToList();
+
+            // Select all valid transactions by default
+            _selectedTransactions = _validTransactions.ToList();
+
+            // Check for account mapping needs
+            CheckAccountMapping();
+
+            _currentStep = ImportStep.Review;
+        }
+        catch (Exception ex)
+        {
+            _uploadError = $"Error processing file: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CheckAccountMapping()
+    {
+        var csvAccountNames = _importResult.Transactions
+            .Select(t => t.Account)
+            .Distinct()
+            .ToHashSet();
+
+        var existingAccountNames = _availableAccounts
+            .Select(a => a.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        _unmappedAccounts = csvAccountNames
+            .Where(name => !existingAccountNames.Contains(name))
+            .ToHashSet();
+
+        _needsAccountMapping = _unmappedAccounts.Any();
+
+        // Initialize account mapping
+        _accountMapping.Clear();
+        foreach (var accountName in csvAccountNames)
+        {
+            var matchingAccount = _availableAccounts
+                .FirstOrDefault(a => string.Equals(a.Name, accountName, StringComparison.OrdinalIgnoreCase));
+            
+            _accountMapping[accountName] = matchingAccount?.Id;
+        }
+    }
+
+    private Task<QueryData<CsvImportService.CsvTransaction>> OnQueryAsync(QueryPageOptions options)
+    {
+        var displayTransactions = _importResult.Transactions
+            .OrderBy(t => t.Date)
+            .ThenBy(t => t.Payee)
+            .ToList();
+
+        var total = displayTransactions.Count;
+        var items = displayTransactions
+            .Skip((options.PageIndex - 1) * options.PageItems)
+            .Take(options.PageItems)
+            .ToList();
+
+        return Task.FromResult(new QueryData<CsvImportService.CsvTransaction>
+        {
+            Items = items,
+            TotalCount = total,
+            IsSorted = true,
+            IsFiltered = false,
+            IsSearch = false
+        });
+    }
+
+    private void SelectAllValid()
+    {
+        _selectedTransactions = _validTransactions.ToList();
+        StateHasChanged();
+    }
+
+    private void DeselectAll()
+    {
+        _selectedTransactions.Clear();
+        StateHasChanged();
+    }
+
+    private bool CanImport()
+    {
+        if (!_selectedTransactions.Any()) return false;
+        if (!_needsAccountMapping) return true;
+        
+        // Check that all unmapped accounts have been mapped
+        return _unmappedAccounts.All(name => _accountMapping[name].HasValue);
+    }
+
+    private async Task ImportTransactions()
+    {
+        if (!CanImport()) return;
+
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            // Prepare account mapping for import
+            var accountMapping = new Dictionary<string, long>();
+            foreach (var kvp in _accountMapping)
+            {
+                if (kvp.Value.HasValue)
+                {
+                    accountMapping[kvp.Key] = kvp.Value.Value;
+                }
+            }
+
+            _importTransactionResult = await csvImportService.ImportSelectedTransactions(
+                _selectedTransactions, accountMapping);
+
+            _currentStep = ImportStep.Complete;
+        }
+        catch (Exception ex)
+        {
+            _importTransactionResult = new CsvImportService.ImportTransactionsResult
+            {
+                Success = false,
+                ErrorMessage = $"Import error: {ex.Message}"
+            };
+            _currentStep = ImportStep.Complete;
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ResetImport()
+    {
+        _currentStep = ImportStep.Upload;
+        _importResult = null;
+        _validTransactions.Clear();
+        _selectedTransactions.Clear();
+        _uploadError = "";
+        _needsAccountMapping = false;
+        _unmappedAccounts.Clear();
+        _accountMapping.Clear();
+        _importTransactionResult = null;
+        StateHasChanged();
+    }
+
+    private void ViewAllTransactions()
+    {
+        navigationManager.NavigateTo("/transactions");
+    }
+
+    private string GetDateRangeText()
+    {
+        if (_importResult?.MinDate == null || _importResult?.MaxDate == null)
+            return "N/A";
+            
+        if (_importResult.MinDate.Value.Date == _importResult.MaxDate.Value.Date)
+            return _importResult.MinDate.Value.ToString("MMM dd, yyyy");
+            
+        return $"{_importResult.MinDate.Value:MMM dd} - {_importResult.MaxDate.Value:MMM dd, yyyy}";
+    }
+}

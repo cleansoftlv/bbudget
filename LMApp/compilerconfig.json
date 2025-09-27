@@ -102,5 +102,9 @@
   {
     "outputFile": "Controls/NewAccountForm.razor.css",
     "inputFile": "Controls/NewAccountForm.razor.scss"
+  },
+  {
+    "outputFile": "Pages/CsvImport.razor.css",
+    "inputFile": "Pages/CsvImport.razor.scss"
   }
 ]
