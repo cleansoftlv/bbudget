@@ -130,7 +130,7 @@ namespace LMApp.Models.Categories
         }
 
         public AccountDisplay[] GetCachedAccounts()
-            => ConvertFilterAddTotal(_settingsService.GetUnlilteredAccounts(), _userContextService.PlaidAccounts, _userContextService.CryptoAccounts).ToArray();
+            => ConvertFilterAddTotal(_settingsService.GetUnfilteredAccounts(), _userContextService.PlaidAccounts, _userContextService.CryptoAccounts).ToArray();
 
         private IEnumerable<AccountDisplay> ConvertFilterAddTotal(
             IEnumerable<AccountDto> dtos,

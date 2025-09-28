@@ -1,0 +1,67 @@
+@using LMApp.Models.CsvImport
+@using LMApp.Models.Transactions
+@using LMApp.Models.UI
+
+<div class="@($"step {@class}")" @attributes="@CapturedAttributes">
+    <div class="step-header">
+        @foreach (var item in Steps.Select((s,i)=>new { Step = s, Index = i }))
+        {
+            <div class="@($"step-item {StepCss(item.Index)}")">
+                <div class="step-item-header">
+                    <div class="step-title">@(item.Index + 1)</div>
+                    @if (item.Index + 1 < Steps.Length)
+                    {
+                        <div class="step-line"></div>
+                    }
+                </div>
+                <div class="step-item-content">@item.Step</div>
+            </div>
+        }
+    </div>
+</div>
+@code {
+    [Parameter]
+    public int StepIndex { get; set; }
+
+    [Parameter, EditorRequired]
+    public string[] Steps { get; set; }
+
+    [Parameter]
+    public string @class { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object> CapturedAttributes { get; set; }
+
+    private int _currentStepIndex = 0;
+
+    override protected void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (StepIndex < 0 || StepIndex >= Steps.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(StepIndex), "StepIndex is out of range of the Steps array.");
+        }
+        if (StepIndex != _currentStepIndex)
+        {
+            _currentStepIndex = StepIndex;
+            StateHasChanged();
+        }
+    }
+
+    private string StepCss(int index)
+    {
+        if (index < _currentStepIndex)
+        {
+            return "is-done";
+        }
+        else if (index == _currentStepIndex)
+        {
+            return "active";
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+}

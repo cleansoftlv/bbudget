@@ -49,7 +49,7 @@ namespace LMApp.Models.Context
             return assets.Concat(plaid).OrderBy(x => x.Name);
         }
 
-        public IEnumerable<AccountDto> GetUnlilteredAccounts()
+        public IEnumerable<AccountDto> GetUnfilteredAccounts()
         {
             return _userService.Accounts;
         }

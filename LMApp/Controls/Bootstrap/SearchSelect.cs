@@ -16,7 +16,8 @@ namespace LMApp.Controls.Bootstrap
     {
 
         private static readonly SelectedItem EmptyItem
-              = new SelectedItem { Text = "", Value = "" };
+              = new()
+              { Text = "", Value = "" };
 
         public SearchSelect() : base()
         {
@@ -32,7 +33,7 @@ namespace LMApp.Controls.Bootstrap
         public override async Task SetParametersAsync(ParameterView parameters)
         {
             await base.SetParametersAsync(parameters);
-            if (parameters.TryGetValue<IEnumerable<SelectedItem>>(nameof(Items), out var value))
+            if (parameters.TryGetValue<IEnumerable<SelectedItem>>(nameof(Items), out var _))
             {
                 Items = Items.Prepend(EmptyItem);
             }
