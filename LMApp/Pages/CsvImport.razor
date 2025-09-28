@@ -104,7 +104,7 @@
                                     <TableColumn @bind-Field="@context.Account" />
                                     <TableColumn @bind-Field="@context.Amount" Align="Alignment.Right">
                                         <Template Context="item">
-                                            @formatService.FormatTranAmount(item.Value, item.Row.Currency)
+                                            @formatService.FormatTranAmount(item.Value * -1, item.Row.Currency)
                                         </Template>
                                     </TableColumn>
                                     <TableColumn @bind-Field="@context.Payee" TextWrap="true" />

@@ -390,7 +390,7 @@ namespace LMApp.Models.CsvImport
                         date = csvTrans.Date.ToString("yyyy-MM-dd"),
                         payee = csvTrans.Payee,
                         amount = csvTrans.Amount * -1,
-                        currency = csvTrans.Currency,
+                        currency = csvTrans.Currency.ToLowerInvariant(),
                         notes = csvTrans.Notes,
                         asset_id = accountId,
                         status = "uncleared", // All imported transactions are uncleared
