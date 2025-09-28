@@ -16,8 +16,8 @@
 
     <LoadingPanel IsLoading="IsLoading" ErrorMessage="@LoadError" OnRetry="ReloadOnError">
         <LMApp.Controls.Bootstrap.StepsHeader class="mb-4"
-                                              Steps="@(["Upload", "Review", "Map", "Finish"])"
-                                              StepIndex="(int)_currentStep" />
+                                              Steps="CurrentSteps"
+                                              StepIndex="CurrentStepIndex" />
 
         <div class="mt-2">
             @if (_currentStep == ImportStep.Upload)
@@ -93,7 +93,6 @@
                                    IsStriped="true"
                                    ClickToSelect="true"
                                    RenderModeResponsiveWidth="BreakPoint.Small"
-                                   IsBordered="true"
                                    ShowRefresh="false"
                                    IsMultipleSelect="true"
                                    ShowToolbar="true"
@@ -114,13 +113,26 @@
                         </div>
 
                         <div>
-                            <Button Color="Color.Primary"
-                                    OnClick="ProceedToAccountMapping"
-                                    IsDisabled="@(!_selectedTransactions.Any())"
-                                    class="btn-lg">
-                                <i class="fa-solid fa-arrow-right me-2"></i>
-                                Next: Map Accounts (@_selectedTransactions.Count Transaction@((_selectedTransactions.Count != 1) ? "s" : ""))
-                            </Button>
+                            @if (_needsAccountMapping)
+                            {
+                                <Button Color="Color.Primary"
+                                        OnClick="ProceedToAccountMapping"
+                                        IsDisabled="@(!_selectedTransactions.Any())"
+                                        class="btn-lg">
+                                    <i class="fa-solid fa-arrow-right me-2"></i>
+                                    Next: Map Accounts (@_selectedTransactions.Count Transaction@((_selectedTransactions.Count != 1) ? "s" : ""))
+                                </Button>
+                            }
+                            else
+                            {
+                                <Button Color="Color.Success"
+                                        OnClick="ImportTransactions"
+                                        IsDisabled="@(!CanImport())"
+                                        class="btn-lg">
+                                    <i class="fa-solid fa-download me-2"></i>
+                                    Import @_selectedTransactions.Count Transaction@((_selectedTransactions.Count != 1) ? "s" : "")
+                                </Button>
+                            }
                         </div>
                     }
                 </div>
@@ -149,16 +161,13 @@
                             @foreach (var accountName in _unmappedAccounts)
                             {
                                 <div class="row mb-3 align-items-center p-3 border rounded account-mapping-row @((_accountMapping.ContainsKey(accountName) && _accountMapping[accountName].HasValue) ? "mapped" : "unmapped")">
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <BootstrapInput Value="accountName"
                                                         ShowLabel="true"
                                                         DisplayText="CSV Account"
                                                         Readonly=true />
                                     </div>
-                                    <div class="col-md-1 text-center">
-                                        <i class="fa-solid fa-arrow-right"></i>
-                                    </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <Select @bind-Value="_accountMapping[accountName]"
                                                 TValue="long?"
                                                 Items="_accountSelectItems"
@@ -180,7 +189,7 @@
                     }
                 </div>
                 <div>
-                    <Button Color="Color.Primary"
+                    <Button Color="Color.Success"
                             OnClick="ImportTransactions"
                             IsDisabled="@(!CanImport())"
                             class="btn-lg">
@@ -209,7 +218,6 @@
                         <div class="mb-4">
                             <Table Items="_importTransactionResult.UpdatedAccounts"
                                    IsStriped="true"
-                                   IsBordered="true"
                                    IsPagination="false"
                                    RenderModeResponsiveWidth="BreakPoint.Small">
                                 <TableColumns>
@@ -257,6 +265,11 @@
     private ImportStep _currentStep = ImportStep.Upload;
     private bool _isProcessing = false;
     private string _uploadError = "";
+
+    private readonly string[] _DefaultSteps = new[] { "Upload", "Review", "Finish" };
+    private readonly string[] _WithMappingSteps = new[] { "Upload", "Review", "Map", "Finish" };
+    private string[] CurrentSteps => _needsAccountMapping ? _WithMappingSteps : _DefaultSteps;
+    private int CurrentStepIndex => _needsAccountMapping ? (int)_currentStep : Math.Min((int)_currentStep, 2);
 
     private CsvImportService.CsvImportResult _importResult;
     private List<CsvImportService.CsvTransactionBase> _allTransactions = new();
