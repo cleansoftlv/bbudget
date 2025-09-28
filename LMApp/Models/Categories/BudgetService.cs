@@ -165,8 +165,8 @@ namespace LMApp.Models.Categories
 
             return new[] { total }.Concat(accounts.OrderBy(x => x.Name));
         }
-        private AccountDisplay Convert(AccountDto dto)
-        {
+        public static AccountDisplay Convert(AccountDto dto)
+        {   
             var res = new AccountDisplay
             {
                 IdForType = dto.id,
@@ -243,7 +243,7 @@ namespace LMApp.Models.Categories
             return res;
         }
 
-        private LMAccountType ConvertLMAccountType(string type)
+        private static LMAccountType ConvertLMAccountType(string type)
         {
             return type switch
             {

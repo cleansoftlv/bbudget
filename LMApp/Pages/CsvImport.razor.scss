@@ -19,14 +19,6 @@ main {
 }
 
 
-/* Table selection styling improvements */
-.table-selection-info {
-    background: rgba(var(--bs-primary-rgb), 0.1);
-    padding: 8px 12px;
-    border-radius: 4px;
-    border-left: 4px solid var(--bs-primary);
-}
-
 /* Account mapping styling */
 .csv-import-account-mapping {
     .account-mapping-row {
@@ -42,56 +34,6 @@ main {
 
         &.unmapped {
             border-left: 4px solid var(--bs-warning);
-        }
-    }
-}
-
-/* Import success animation */
-@keyframes checkmark {
-    0% {
-        transform: scale(0);
-        opacity: 0;
-    }
-
-    50% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.import-success .fa-check-circle {
-    animation: checkmark 0.6s ease-in-out;
-}
-
-/* Loading states */
-.processing-overlay {
-    position: relative;
-
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.8);
-        z-index: 10;
-    }
-}
-
-/* Badge styling improvements */
-.badge {
-    &.badge-status {
-        font-size: 11px;
-        padding: 4px 8px;
-
-        .fa-solid, .fa-regular {
-            font-size: 10px;
         }
     }
 }

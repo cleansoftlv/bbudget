@@ -7,17 +7,21 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using LMApp.Models.Account;
+using LMApp.Models.Categories;
 using LMApp.Models.Context;
 using LMApp.Models.Transactions;
 using Microsoft.AspNetCore.Components.Forms;
 
 namespace LMApp.Models.CsvImport
 {
-    public class CsvImportService(TransactionsService transactionsService,
-        SettingsService settingsService)
+    public class CsvImportService(
+        TransactionsService transactionsService,
+        SettingsService settingsService,
+        UserContextService userService)
     {
         private readonly TransactionsService _transactionsService = transactionsService;
         private readonly SettingsService _settingsService = settingsService;
+        private readonly UserContextService _userService = userService;
 
         // Required CSV columns
         private readonly string[] RequiredColumns = ["Id", "Amount", "Date", "Payee", "Notes", "Currency", "Account"];
@@ -434,6 +438,14 @@ namespace LMApp.Models.CsvImport
                 {
                     result.ErrorMessage = "Failed to import any transactions";
                 }
+
+                await _userService.RefreshAccounts();
+
+                result.UpdatedAccounts =
+                    _settingsService.GetUnfilteredAccounts()
+                        .Where(a => accountMapping.Values.Contains(a.id))
+                        .Select(a => BudgetService.Convert(a))
+                        .ToArray();
             }
             catch (Exception ex)
             {
@@ -450,6 +462,7 @@ namespace LMApp.Models.CsvImport
             public string ErrorMessage { get; set; }
             public int ImportedCount { get; set; }
             public int FailedCount { get; set; }
+            public AccountDisplay[] UpdatedAccounts { get; set; }
         }
     }
 }
