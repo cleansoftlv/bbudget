@@ -169,17 +169,19 @@
         if (ShowMultipleCurrencies)
         {
             return formatService.FormatBalance(ShowSpent
-                ? category.ActualAmount :
+                ? Math.Abs(category.ActualAmount) :
                 category.ProgressAmount,
                 category.BudgetedCurrency,
+                isLiability: ShowSpent && category.ActualAmount < 0,
                 isAprox: !category.BudgetedInPrimary);
         }
         else
         {
             return formatService.FormatBalance(ShowSpent
-                ? category.ActualAmountPrimary :
+                ? Math.Abs(category.ActualAmountPrimary) :
                 category.ProgressAmountPrimary,
-                category.PrimaryCurrency);
+                category.PrimaryCurrency,
+                 isLiability: ShowSpent && category.ActualAmountPrimary < 0);
         }
     }
 
