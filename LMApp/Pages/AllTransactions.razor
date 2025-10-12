@@ -32,7 +32,8 @@
                     </div>
                     <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
                         <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
-                            <TransactionList @ref="transactionListRef" Transactions="@Transactions"
+                            <TransactionList @ref="transactionListRef" 
+                                             Transactions="@Transactions"
                                              HasMore="HasMoreTrans"
                                              LoadMoreLoadError="@LoadMoreTransactionsError"
                                              ListContext="TransactionListContext.None"
@@ -59,12 +60,14 @@
                             <TransactionForm Transaction="@TransactionInEdit"
                                              SaveTransaction="t => SaveTransaction(t)"
                                              SaveTransactionAndNext="SaveTransactionAndNext"
+                                             NavigateLeft="FocusTranList"
                                              CreateTransfer="CreateTransfer"
                                              SaveError="@SaveTransactionError"
                                              Ungroup="UngroupWithConfirm"
                                              Copy="CopyTransaction"
                                              Delete="DeleteTransaction"
                                              ShowAndNextOnSave="@(ShowUnreviewed && TransactionInEdit.Id != 0)"
+                                             NextTransaction="NavigateToNext"
                                              IsSaving="IsSaving"
                                              Cancel="CloseTranForm" />
                         </LoadingPanel>
@@ -92,7 +95,6 @@
 @code {
 
     private bool ShowUnreviewed;
-    private TransactionList transactionListRef;
 
     private string TransactionListClass()
     {
@@ -117,6 +119,8 @@
             return "d-none";
         }
     }
+
+   
 
     protected override void RefreshActivePage()
     {

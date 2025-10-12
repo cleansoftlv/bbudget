@@ -15,7 +15,7 @@
             <BootstrapInput DisplayText="Payee"
                             ShowLabel="true"
                             UseInputEvent="true"
-                            @ref="firstInputRef"
+                            class="first-input"
                             Id="Payee"
                             @bind-Value="Transaction.Payee" />
         </div>
@@ -275,7 +275,6 @@
 
     private EditContext EditContext = new EditContext(new object());
     private ValidationMessageStore messageStore;
-    private BootstrapInput<string> firstInputRef;
     private HashSet<int> showNotesInputs = new HashSet<int>();
 
     [Parameter]
@@ -293,6 +292,9 @@
 
     [Parameter]
     public EventCallback<BaseTransactionForEdit> SaveAndNextTransaction { get; set; }
+
+    [Parameter]
+    public EventCallback<BaseTransactionForEdit> NextTransaction { get; set; }
 
     [Parameter]
     public IEnumerable<SelectedItem> Accounts { get; set; }
@@ -314,6 +316,11 @@
         {
             await SaveAndNextTransaction.InvokeAsync(Transaction);
         }
+    }
+
+    private async Task GoToNextTransaction()
+    {
+        await NextTransaction.InvokeAsync(Transaction);
     }
 
     private Task AccountChanged()
@@ -482,6 +489,7 @@
         messageStore = new(EditContext);
           // Set up the base class callbacks
         SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+        NextTransactionCallback = EventCallback.Factory.Create(this, async () => await GoToNextTransaction());
       
     }
 
@@ -523,17 +531,5 @@
         }
     }
 
-    public Task FocusAsync()
-    {
-        return TryFocus();
-    }
-
-    private async Task TryFocus()
-    {
-        if (firstInputRef != null)
-        {
-            await firstInputRef.FocusAsync();
-        }
-    }
 
 }

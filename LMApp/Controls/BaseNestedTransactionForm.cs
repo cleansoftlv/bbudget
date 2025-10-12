@@ -25,13 +25,19 @@ namespace LMApp.Controls
         public EventCallback Delete { get; set; }
 
         [Parameter]
+        public EventCallback NavigateLeft { get; set; }
+
+        [Parameter]
         public EventCallback<BaseTransactionForEdit> CopyTransaction { get; set; }
 
         [Parameter]
         public EventCallback<BaseTransactionForEdit> ShareTransaction { get; set; }
 
-        [Parameter] 
+        [Parameter]
         public EventCallback SaveAndNextCallback { get; set; }
+
+        [Parameter]
+        public EventCallback NextTransactionCallback { get; set; }
 
         [Parameter]
         public EventCallback CreateTransferCallback { get; set; }
@@ -96,6 +102,12 @@ namespace LMApp.Controls
             return Delete.InvokeAsync();
         }
 
+        protected Task OnNavigateLeft()
+        {
+            return NavigateLeft.InvokeAsync();
+        }
+
+
         [JSInvokable]
         public async Task HandleHotkey(string action)
         {
@@ -113,11 +125,20 @@ namespace LMApp.Controls
                         await SaveAndNextCallback.InvokeAsync();
                     }
                     break;
+                case "nextwithoutsaving":
+                    if (NextTransactionCallback.HasDelegate)
+                    {
+                        await NextTransactionCallback.InvokeAsync();
+                    }
+                    break;
                 case "delete":
                     if (BaseTran.Id > 0)
                     {
                         await OnDelete();
                     }
+                    break;
+                case "navleft":
+                    await OnNavigateLeft();
                     break;
                 case "copy":
                     if (BaseTran.Id > 0)

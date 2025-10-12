@@ -8,7 +8,7 @@
     private ElementReference containerRef;
     private int selectedIndex = -1;
 }
-<div @ref="containerRef" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="preventKeyDownDefault" tabindex="0">
+<div @ref="containerRef" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="preventKeyDownDefault" tabindex="1">
     <div class="container-fluid p-0">
         @if (!Transactions.Any())
         {
@@ -225,7 +225,7 @@
     {
         <LoadingPanel IsLoading="LoadingMore" ErrorMessage="@LoadMoreLoadError" OnRetry="LoadMore">
             <div class="text-center m-4">
-                <a href="javascript:" @onclick="LoadMore">Load more</a>
+                <a href="javascript:" @onclick="LoadMore" tabindex="-1">Load more</a>
             </div>
         </LoadingPanel>
 
@@ -261,10 +261,10 @@
     public EventCallback OnLoadMore { get; set; }
 
     [Parameter]
-    public EventCallback OnNavidateLeft { get; set; }
+    public EventCallback OnNavigateLeft { get; set; }
 
     [Parameter]
-    public EventCallback OnNavidateRight { get; set; }
+    public EventCallback OnNavigateRight { get; set; }
 
     //event to request loging more transactions
     [Parameter]
@@ -319,13 +319,13 @@
                 break;
             case "ArrowLeft":
                 preventKeyDownDefault = true;
-                await OnNavidateLeft.InvokeAsync();
+                await OnNavigateLeft.InvokeAsync();
                 break;
             case "ArrowRight":
-                if (OnNavidateRight.HasDelegate)
+                if (OnNavigateRight.HasDelegate)
                 {
                     preventKeyDownDefault = true;
-                    await OnNavidateRight.InvokeAsync();
+                    await OnNavigateRight.InvokeAsync();
                 }
                 break;
             case "ArrowUp":

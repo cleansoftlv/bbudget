@@ -8,7 +8,7 @@
 @inject NavigationManager navManager
 @inject UserContextService userService
 @inject Utils utils
-<div @ref="containerRef" tabindex="0">
+<div @ref="containerRef" tabindex="2">
     @if (InternalTransaction != null)
     {
         @if (InternalTransaction.TypeCanBeChanged)
@@ -31,6 +31,7 @@
                                    @ref="simpleTransactionFormRef"
                                    SaveTransaction="OnSaveTransaction"
                                    SaveAndNextTransaction="OnSaveTransactionAndNext"
+                                   NextTransaction="OnNextTransaction"
                                    CopyTransaction="OnCopy"
                                    ShareTransaction="OnShare"
                                    Cancel="OnCancel"
@@ -38,6 +39,7 @@
                                    Delete="ConfirmDelete"
                                    AccountLookup="AccountLookup"
                                    Categories="Categories"
+                                   NavigateLeft="OnNavigateLeft"
                                    CreateTransfer="OnCreateTransfer"
                                    ShowAndNextOnSave="ShowAndNextOnSave"
                                    Currencies="Currencies" />
@@ -49,10 +51,12 @@
                                  @ref="accountTransferFormRef"
                                  SaveTransaction="OnSaveTransaction"
                                  SaveAndNextTransaction="OnSaveTransactionAndNext"
+                                 NextTransaction="OnNextTransaction"
                                  CopyTransaction="OnCopy"
                                  ShareTransaction="OnShare"
                                  Cancel="OnCancel"
                                  Ungroup="OnUngroup"
+                                 NavigateLeft="OnNavigateLeft"
                                  Accounts="Accounts"
                                  Delete="ConfirmDelete"
                                  AccountLookup="AccountLookup"
@@ -65,7 +69,9 @@
                                   IsSaving="IsSaving"
                                   @ref="splitTransactionFormRef"
                                   SaveTransaction="OnSaveTransaction"
+                                  NavigateLeft="OnNavigateLeft"
                                   SaveAndNextTransaction="OnSaveTransactionAndNext"
+                                  NextTransaction="OnNextTransaction"
                                   CopyTransaction="OnCopy"
                                   ShareTransaction="OnShare"
                                   Cancel="OnCancel"
@@ -111,6 +117,9 @@
     [Parameter]
     public bool ShowAndNextOnSave { get; set; }
 
+    [Parameter]
+    public EventCallback NavigateLeft { get; set; }
+
     [CascadingParameter] public IModalContainer ModalContainer { get; set; }
 
     [Parameter]
@@ -118,6 +127,9 @@
 
     [Parameter]
     public EventCallback<ForEditPair> SaveTransactionAndNext { get; set; }
+
+    [Parameter]
+    public EventCallback<BaseTransactionForEdit> NextTransaction { get; set; }
 
     [Parameter]
     public EventCallback<AccountTransferTransactionForEdit> Ungroup { get; set; }
@@ -359,6 +371,11 @@
         });
     }
 
+    private async Task OnNextTransaction(BaseTransactionForEdit _)
+    {
+        await NextTransaction.InvokeAsync(Transaction);
+    }
+
     private async Task OnCancel()
     {
         await Cancel.InvokeAsync();
@@ -452,37 +469,8 @@
         await Task.Yield();
     }
 
-    public Task FocusAsync()
+    private async Task OnNavigateLeft()
     {
-        return TryFocus();
+        await NavigateLeft.InvokeAsync();
     }
-
-    private async Task TryFocus()
-    {
-        if (containerRef.Context != null && containerRef.Id != null)
-        {
-            try
-            {
-                await containerRef.FocusAsync();
-            }
-            catch
-            {
-                //ignore error
-            }
-        }
-
-        if (simpleTransactionFormRef != null)
-        {
-            await simpleTransactionFormRef.FocusAsync();
-        }
-        else if (accountTransferFormRef != null)
-        {
-            await accountTransferFormRef.FocusAsync();
-        }
-        else if (splitTransactionFormRef != null)
-        {
-            await splitTransactionFormRef.FocusAsync();
-        }
-    }
-
 }

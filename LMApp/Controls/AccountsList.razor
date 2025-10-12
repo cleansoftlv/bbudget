@@ -154,7 +154,7 @@
     public AccountDisplay[] Accounts { get; set; }
 
     [Parameter]
-    public EventCallback OnNavidateRight { get; set; }
+    public EventCallback OnNavigateRight { get; set; }
 
     [Parameter]
     public EventCallback AccountsChanged { get; set; }
@@ -358,7 +358,7 @@
                 }
                 break;
             case "ArrowRight":
-                await OnNavidateRight.InvokeAsync();
+                await OnNavigateRight.InvokeAsync();
                 break;
             case "Enter":
                 if (selectedIndex >= 0 && selectedIndex < Accounts.Length)

@@ -29,7 +29,7 @@
                         <LoadingPanel IsLoading="@(accounts == null)">
                             <AccountsList @ref="accountsListRef" Accounts="accounts"
                                           StartAccountsEdit="StartAccountsEdit"
-                                          OnNavidateRight="AccountListNavigateRight"
+                                          OnNavigateRight="AccountListNavigateRight"
                                           AccountsChanged="AccountsChanged"
                                           ActiveAccountUid="@CurrentAccount?.Uid"
                                           AccountSelected="e => NavigateToAccount(e)" />
@@ -52,13 +52,14 @@
                     </div>
                     <LoadingPanel IsLoading="@(Transactions == null)" ErrorMessage="@LoadTransactionsError" OnRetry="RetryLoadTransactions">
                         <InfiniteScroll class="p-body px-0" OnScrollEnd="OnTranListScrollEnd">
-                            <TransactionList @ref="transactionListRef" Transactions="@Transactions"
+                            <TransactionList @ref="transactionListRef"
+                                            Transactions="@Transactions"
                                              HasMore="HasMoreTrans"
                                              ShowTransactionsNotSupported="CurrentAccount?.AccountType == AccountType.Crypto"
                                              LoadMoreLoadError="@LoadMoreTransactionsError"
                                              ListContext="transactionListContext"
                                              LoadingMore="LoadingMoreTrans"
-                                             OnNavidateLeft="FocusAccountList"
+                                             OnNavigateLeft="FocusAccountList"
                                              ActiveTransactionId="SelectedTransaction?.Id"
                                              TransactionSelected="NavigateToTransaction"
                                              OnLoadMore="LoadMoreTransactions" />
@@ -81,8 +82,10 @@
                             <TransactionForm Transaction="@TransactionInEdit"
                                              SaveTransaction="t => SaveTransaction(t)"
                                              SaveError="@SaveTransactionError"
+                                             NavigateLeft="FocusTranList"
                                              SaveTransactionAndNext="SaveTransactionAndNext"
                                              CreateTransfer="CreateTransfer"
+                                             NextTransaction="NavigateToNext"
                                              Ungroup="UngroupWithConfirm"
                                              Copy="CopyTransaction"
                                              Delete="DeleteTransaction"
@@ -117,7 +120,6 @@
     private AccountDisplay[] accounts;
     private AccountDisplay CurrentAccount;
     private AccountsList accountsListRef;
-    private TransactionList transactionListRef;
 
     private async Task NavigateToAccount(AccountDisplay account)
     {

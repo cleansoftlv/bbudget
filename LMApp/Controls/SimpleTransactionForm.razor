@@ -17,7 +17,7 @@
         <div class="mb-4">
             <BootstrapInput ShowLabel="true"
                             UseInputEvent="true"
-                            @ref="firstInputRef"
+                            class="first-input"
                             DisplayText="Payee"
                             Id="Payee"
                             @bind-Value="Transaction.Payee" />
@@ -165,7 +165,6 @@
 
 @code {
 
-    private BootstrapInput<string> firstInputRef;
 
     [Parameter]
     public SimpleTransactionForEdit Transaction { get; set; }
@@ -181,6 +180,9 @@
 
     [Parameter]
     public EventCallback<SimpleTransactionForEdit> SaveAndNextTransaction { get; set; }
+
+    [Parameter]
+    public EventCallback<SimpleTransactionForEdit> NextTransaction { get; set; }
 
     [Parameter]
     public EventCallback<SimpleTransactionForEdit> CreateTransfer { get; set; }
@@ -252,6 +254,11 @@
         }
     }
 
+    private async Task GoToNextTransaction()
+    {
+        await NextTransaction.InvokeAsync(Transaction);
+    }
+
     private async Task OnCreateTransfer()
     {
         await CreateTransfer.InvokeAsync(Transaction);
@@ -285,6 +292,7 @@
 
         // Set up the base class callbacks
         SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+        NextTransactionCallback = EventCallback.Factory.Create(this, async () => await GoToNextTransaction());
         CreateTransferCallback = EventCallback.Factory.Create(this, async () => await OnCreateTransfer());
     }
 
@@ -300,17 +308,6 @@
         }
     }
 
-    public Task FocusAsync()
-    {
-        return TryFocus();
-    }
 
-    private async Task TryFocus()
-    {
-        if (firstInputRef != null)
-        {
-            await firstInputRef.FocusAsync();
-        }
-    }
 
 }

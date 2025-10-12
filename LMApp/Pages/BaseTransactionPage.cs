@@ -1,4 +1,5 @@
 ﻿using BootstrapBlazor.Components;
+using LMApp.Controls;
 using LMApp.Models.Context;
 using LMApp.Models.Extensions;
 using LMApp.Models.Transactions;
@@ -25,7 +26,7 @@ namespace LMApp.Pages
 
 
 
-
+        protected TransactionList transactionListRef;
         protected int UnfilteredTransactionCount;
         protected List<TransactionDisplay> Transactions;
         protected string LoadTransactionsError;
@@ -322,6 +323,15 @@ namespace LMApp.Pages
             await Task.WhenAll(task1, task2.AsTask());
         }
 
+
+        protected async Task FocusTranList()
+        {
+            if (transactionListRef != null)
+            {
+                await transactionListRef.FocusAsync();
+            }
+        }
+
         protected async ValueTask ShowTransaction(TransactionDisplay tran, bool force = false)
         {
             if (SelectedTransaction?.Id == tran.Id && !force)
@@ -411,6 +421,22 @@ namespace LMApp.Pages
                 tran.Updated.ClearAmount();
                 await CopyTransaction(tran.Updated);
             }
+        }
+
+        protected async Task NavigateToNext(BaseTransactionForEdit tran)
+        {
+            var index = Transactions?.FindIndex(x => x.Id == tran.Id) ?? -1;
+            var next = index == -1 || (index + 1 == Transactions.Count)
+                ? null :
+                Transactions[index + 1];
+            
+            if (next == null)
+            {
+                await CloseTranForm();
+                return;
+            }
+            
+            await ShowTransaction(next);
         }
 
         protected async Task<bool> CreateTransfer(ForEditPair pair)

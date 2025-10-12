@@ -35,7 +35,7 @@
                                       OnRetry="RetryLoadBudget">
                             <CategoriesList @ref="categoriesListRef" Categories="categories"
                                             ActiveCategoryId="@CurrentCategory?.CategoryId"
-                                            OnNavidateRight="CatListNavigateRight"
+                                            OnNavigateRight="CatListNavigateRight"
                                             CategorySelected="e => NavigateToCategory(e)"
                                             SelectedMonth="@MonthStart"
                                             BudgetsChanged="OnBudgetsChanged" />
@@ -76,7 +76,7 @@
                                              HasMore="HasMoreTrans"
                                              LoadMoreLoadError="@LoadMoreTransactionsError"
                                              ListContext="transactionListContext"
-                                             OnNavidateLeft="FocusCatList"
+                                             OnNavigateLeft="FocusCatList"
                                              LoadingMore="LoadingMoreTrans"
                                              ActiveTransactionId="SelectedTransaction?.Id"
                                              TransactionSelected="NavigateToTransaction"
@@ -100,9 +100,11 @@
                                       OnRetry="RetryShowTransaction">
                             <TransactionForm Transaction="@TransactionInEdit"
                                              SaveTransaction="t => SaveTransaction(t)"
+                                             NavigateLeft="FocusTranList"
                                              SaveTransactionAndNext="SaveTransactionAndNext"
                                              SaveError="@SaveTransactionError"
                                              Ungroup="UngroupWithConfirm"
+                                             NextTransaction="NavigateToNext"
                                              CreateTransfer="CreateTransfer"
                                              Copy="CopyTransaction"
                                              Delete="DeleteTransaction"
@@ -145,7 +147,6 @@
     private string BudgetName;
     private string BudgetLoadError;
     private CategoriesList categoriesListRef;
-    private TransactionList transactionListRef;
 
     private DateTime MonthStart;
     private bool NextMonthVisible = false;

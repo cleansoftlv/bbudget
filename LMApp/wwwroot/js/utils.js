@@ -155,6 +155,31 @@ export function registerTransactionFormHotkeys(component) {
                 return;
             }
 
+            if (e.altKey
+                && e.shiftKey
+                && e.key === 'ArrowLeft'
+                && !e.ctrlKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                activeTransactionFormComponent.invokeMethodAsync('HandleHotkey', 'navLeft');
+                return;
+            }
+
+            if (e.altKey
+                && e.shiftKey
+                && e.key === 'ArrowRight'
+                && !e.ctrlKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                var elm = document.querySelector('input.first-input')
+                    || document.querySelector('.first-input input');
+
+                if (elm) {
+                    elm.focus();
+                }
+                return;
+            }
+
             // Ctrl+Shift+C (Copy) - Using KeyC for layout independence
             if (e.ctrlKey && e.shiftKey && e.code === 'KeyC' && !e.altKey) {
                 e.preventDefault();
@@ -168,6 +193,14 @@ export function registerTransactionFormHotkeys(component) {
                 e.preventDefault();
                 e.stopPropagation();
                 activeTransactionFormComponent.invokeMethodAsync('HandleHotkey', 'createTransfer');
+                return;
+            }
+
+            // Ctrl+Shift+L (Next without saving) - Using KeyL for layout independence
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyL' && !e.altKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                activeTransactionFormComponent.invokeMethodAsync('HandleHotkey', 'nextWithoutSaving');
                 return;
             }
         };

@@ -21,6 +21,7 @@
                 <div class="flex-grow-1">
                     <SearchEntitySelectString Id="AccountFrom"
                                               DisplayText="From"
+                                              class="first-input"
                                               Items="Accounts"
                                               @ref="AccountFromSelect"
                                               OnValueChanged="AccountChanged"
@@ -213,6 +214,9 @@
     public EventCallback<BaseTransactionForEdit> SaveAndNextTransaction { get; set; }
 
     [Parameter]
+    public EventCallback<BaseTransactionForEdit> NextTransaction { get; set; }
+
+    [Parameter]
     public EventCallback<AccountTransferTransactionForEdit> Ungroup { get; set; }
 
     private HotkeysHelpModal hotkeysHelpModal;
@@ -233,6 +237,11 @@
         {
             await SaveAndNextTransaction.InvokeAsync(Transaction);
         }
+    }
+
+    private async Task GoToNextTransaction()
+    {
+        await NextTransaction.InvokeAsync(Transaction);
     }
 
     private async Task OnUngroup()
@@ -395,6 +404,7 @@
         SetAccoutDtos();
         // Set up the base class callbacks
         SaveAndNextCallback = EventCallback.Factory.Create(this, async () => await SaveAndNext());
+        NextTransactionCallback = EventCallback.Factory.Create(this, async () => await GoToNextTransaction());
 
     }
 
@@ -436,17 +446,5 @@
         }
     }
 
-    public Task FocusAsync()
-    {
-        return TryFocus();
-    }
-
-    private async Task TryFocus()
-    {
-        if (AccountFromSelect != null)
-        {
-            await AccountFromSelect.FocusAsync();
-        }
-    }
 
 }
