@@ -92,6 +92,16 @@
             <Toggle ShowLabel="true" DisplayText="Sort transaction list after loading the next transaction page" OnText="Sort after load" OffText="Don't sort" Id="SortOnLoadMore" @bind-Value="SortTransactionsOnLoadMore" OnValueChanged="x => Save()" />
             <Alert class="mt-1" Color="Color.Secondary" Icon="fa-solid fa-info-circle">The LM API doesn't return transactions sorted by date. When you scroll to the end of the transaction list, more transactions will be loaded. By default, loaded transactions will be added to the end of the list. If you turn on this setting, transactions will be added and the entire list will be sorted.</Alert>
         </div>
+        <Alert class="mb-4" Color="Color.Info">
+            <p class="mb-2">
+                Some settings (like primary currency) can be configured in the Lunch Money settings.
+            </p>
+            <p>
+                <a href="https://my.lunchmoney.app/budget" @onclick="ShowReloadWarning" target="_blank" class="btn btn-primary">
+                    Open Lunch Money Settings
+                </a>
+            </p>
+        </Alert>
     }
     else if (IsCategoriesTab)
     {
@@ -101,19 +111,9 @@
     {
         <Alert class="mb-4" Color="Color.Info">
             <p class="mb-2">
-                Budgets can be configured in the Lunch Money settings.
+                You can edit monthly budget on the Budget page. Scroll down in the categories list and click "Edit".
             </p>
-            <p>
-                <a href="https://my.lunchmoney.app/budget" target="_blank" class="btn btn-primary">
-                    Open Lunch Money Settings
-                </a>
-            </p>
-            <p class="mb-2">
-                After updating settings in Lunch Money (categories, accounts, or budgets), you need to reload BBudget for the changes to take effect.
-            </p>
-            <button class="btn btn-warning" @onclick="ReloadBBudget">
-                <i class="fa-solid fa-refresh"></i> Reload BBudget
-            </button>
+            <a class="btn btn-primary" href="/">Open</a>
         </Alert>
     }
     else if (IsAccountsTab)
@@ -182,6 +182,22 @@
         CrossCurrencyTransferCategoryId = settingsService.Settings.CrossCurrencyTransferCategoryId;
         SortTransactionsOnLoadMore = settingsService.Settings.SortTransactionOnLoadMore;
         BudgetName = userService.CurrentAccount.BudgetName;
+    }
+
+    private async Task ShowReloadWarning()
+    {
+        await ModalContainer.Modal.Show(new InfoModalVM
+        {
+            Title = "Lunch Money settings update",
+            Message = new MarkupString("After changing settings in Lunch Money, you need to reload BBudget to apply the changes. Do you want to reload BBudget now?"),
+            AdditionalButtonColor = Color.Warning,
+            AdditionalButtonText = "Reload BBudget",
+            AdditionalButtonCallback = async () =>
+                {
+                    await ModalContainer.Modal.Hide();
+                    ReloadBBudget();
+                }
+        });
     }
 
     protected override Task OnParametersSetAsync()
