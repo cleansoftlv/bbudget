@@ -409,11 +409,13 @@
     {
         if (Transaction == null)
         {
+            SaveError = null;
             InternalTransaction = null;
             OtherNewTransactions.Clear();
         }
         else if (InternalTransaction == null || InternalTransaction.Id != Transaction.Id)
         {
+            SaveError = null;
             InternalTransaction = Transaction switch
             {
                 SimpleTransactionForEdit => new SimpleTransactionForEdit(),
