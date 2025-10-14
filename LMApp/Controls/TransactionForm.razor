@@ -160,7 +160,7 @@
 
     private async Task OnCopy(BaseTransactionForEdit _)
     {
-        if (InternalTransaction.HasChanges)
+        if (InternalTransaction.HasEditChanges)
         {
             await ModalContainer.Modal.Show(new Models.UI.InfoModalVM
             {
