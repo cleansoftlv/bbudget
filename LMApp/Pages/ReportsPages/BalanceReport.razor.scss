@@ -33,29 +33,7 @@
     height: 3rem;
 }
 
-.form-group {
-    margin-bottom: 1.5rem;
-}
 
-.form-group label {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #495057;
-    
-    [data-bs-theme="dark"] & {
-        color: var(--bs-gray-300);
-    }
-}
-
-.form-group .form-text {
-    font-size: 0.875rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
-    
-    [data-bs-theme="dark"] & {
-        color: var(--bs-gray-400);
-    }
-}
 
 #monthsInput {
     max-width: 200px;

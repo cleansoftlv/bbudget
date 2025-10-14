@@ -1,4 +1,5 @@
 @page "/reports/expenses"
+@using LMApp.Models.Context
 @using LMApp.Models.Reports
 @using LMApp.Models.UI
 @using LMApp.Models.UI.GoogleDrive
@@ -7,6 +8,7 @@
 @inject ReportsService reportsService
 @inject FormatService formatService
 @inject GoogleDriveExporter googleDriveExporter
+@inject SettingsService settingsService
 
 <PageTitle>Category Report</PageTitle>
 
@@ -26,25 +28,33 @@
 
                 @if (!IsGenerating && ReportData == null)
                 {
-                    <div class="mb-4">
-                        <div class="row">
-                            <div class="col-md-6 col-lg-4">
-                                <div class="form-group">
-                                    <BootstrapInputNumber @bind-Value="NumberOfMonths"
-                                                          DisplayText="Number of Months"
-                                                          ShowLabel="true"
-                                                          Id="monthsInput"
-                                                          Min="1"
-                                                          Max="24"
-                                                          PlaceHolder="Enter number of months" />
-                                    @if (!string.IsNullOrEmpty(ValidationError))
-                                    {
-                                        <div class="text-danger small mt-1">@ValidationError</div>
-                                    }
-                                    <div class="form-text">Enter a number between 1 and 24 months</div>
-                                </div>
-                            </div>
+                    <div class="row g-4 pb-2">
+                        <div class="col-md-6">
+                            <BootstrapInputNumber @bind-Value="NumberOfMonths"
+                                                  DisplayText="Number of Months"
+                                                  ShowLabel="true"
+                                                  Id="monthsInput"
+                                                  Min="1"
+                                                  Max="24"
+                                                  PlaceHolder="Enter number of months" />
+                            @if (!string.IsNullOrEmpty(ValidationError))
+                            {
+                                <div class="text-danger small mt-1">@ValidationError</div>
+                            }
+                            <div class="form-text">Enter a number between 1 and 24 months</div>
                         </div>
+                        @if (ShowCurrencySelector)
+                        {
+                            <div class="col-md-6">
+                                <Toggle @bind-Value="UsePrimaryCurrency"
+                                        ShowLabel="true"
+                                        DisplayText="Report currency"
+                                        OnText="@PrimaryCurrency"
+                                        OffText="Multiple"
+                                        Color="CurrencyColor"
+                                        Id="useBaseCurrencyToggle" />
+                            </div>
+                        }
                     </div>
                 }
 
@@ -68,14 +78,14 @@
                         The CSV will be formatted as a pivot table with categories as rows and month/currency combinations as columns.
                     </div>
 
-                    <div class="text-center">
+                    <div>
 
                         <Button Color="Color.Success"
                                 Size="Size.Large"
                                 Icon="fab fa-google-drive"
                                 OnClick="ExportToGoogleDrive"
                                 IsDisabled="IsExportingToGoogleDrive"
-                                class="btn-lg ms-2 mb-4">
+                                class="btn-lg mb-4 me-2">
                             @if (IsExportingToGoogleDrive)
                             {
                                 <Spinner Size="Size.Small" class="mx-2" />
@@ -90,21 +100,21 @@
                                 Size="Size.Large"
                                 Icon="fa-solid fa-download"
                                 OnClick="DownloadReport"
-                                class="btn-lg mb-4">
+                                class="btn-lg mb-4 me-2">
                             Download CSV
                         </Button>
                         <Button Color="Color.Secondary"
                                 Size="Size.Large"
                                 Icon="fa-solid fa-arrow-left"
                                 OnClick="ResetReport"
-                                class="btn-lg ms-2 mb-4">
+                                class="btn-lg mb-4">
                             Generate New Report
                         </Button>
                     </div>
                 }
                 else
                 {
-                    <div class="text-center text-sm-start">
+                    <div class="mt-4">
                         <Button Color="Color.Primary"
                                 Size="Size.Large"
                                 Icon="fa-solid fa-chart-pie"
@@ -144,6 +154,13 @@
 
 
 @code {
+
+
+
+
+
+
+
     private ExpenseReportData ReportData;
     private bool IsGenerating = false;
     private bool IsExportingToGoogleDrive = false;
@@ -152,6 +169,12 @@
     private string ExportError = "";
     private string ValidationError = "";
     private int NumberOfMonths = 3;
+    private bool UsePrimaryCurrency = false;
+    private Color CurrencyColor => UsePrimaryCurrency ? settingsService.GetCurrencyColor(settingsService.PrimaryCurrency) : Color.Secondary;
+
+    private bool ShowCurrencySelector;
+
+    private string PrimaryCurrency;
 
     public async Task BackToReports()
     {
@@ -163,6 +186,13 @@
         await base.OnInitializedAsync();
         if (LoadCancelled)
             return;
+
+        PrimaryCurrency = formatService.CurrencyToSymbol(settingsService.PrimaryCurrency);
+
+        ShowCurrencySelector = settingsService.AdditionalCurrencies != null
+                    && settingsService.AdditionalCurrencies.Any();
+
+        UsePrimaryCurrency = !ShowCurrencySelector;
 
         userService.SetActivePageState("Category Report", true);
         userService.SetActivePageBackHandler(EventCallback.Factory.Create(this, BackToReports));
@@ -204,7 +234,7 @@
 
         try
         {
-            ReportData = await reportsService.GenerateExpenseReportAsync(NumberOfMonths, UpdateProgress);
+            ReportData = await reportsService.GenerateExpenseReportAsync(UsePrimaryCurrency, NumberOfMonths, UpdateProgress);
             ProgressMessage = "Report completed!";
         }
         catch (Exception ex)

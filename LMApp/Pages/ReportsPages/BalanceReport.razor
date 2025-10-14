@@ -26,24 +26,20 @@
 
                 @if (!IsGenerating && ReportData == null)
                 {
-                    <div class="mb-4">
-                        <div class="row">
-                            <div class="col-md-6 col-lg-4">
-                                <div class="form-group">
-                                    <BootstrapInputNumber @bind-Value="NumberOfMonths"
-                                                          DisplayText="Number of Months"
-                                                          ShowLabel="true"
-                                                          Id="monthsInput"
-                                                          Min="1"
-                                                          Max="24"
-                                                          PlaceHolder="Enter number of months" />
-                                    @if (!string.IsNullOrEmpty(ValidationError))
-                                    {
-                                        <div class="text-danger small mt-1">@ValidationError</div>
-                                    }
-                                    <div class="form-text">Enter a number between 1 and 24 months</div>
-                                </div>
-                            </div>
+                    <div class="row pb-2">
+                        <div class="col-md-6">
+                            <BootstrapInputNumber @bind-Value="NumberOfMonths"
+                                                  DisplayText="Number of Months"
+                                                  ShowLabel="true"
+                                                  Id="monthsInput"
+                                                  Min="1"
+                                                  Max="24"
+                                                  PlaceHolder="Enter number of months" />
+                            @if (!string.IsNullOrEmpty(ValidationError))
+                            {
+                                <div class="text-danger small mt-1">@ValidationError</div>
+                            }
+                            <div class="form-text">Enter a number between 1 and 24 months</div>
                         </div>
                     </div>
                 }
@@ -68,14 +64,14 @@
                         The CSV will be formatted as a pivot table with accounts as rows and months as columns.
                     </div>
 
-                    <div class="text-center">
+                    <div>
 
                         <Button Color="Color.Success"
                                 Size="Size.Large"
                                 Icon="fab fa-google-drive"
                                 OnClick="ExportToGoogleDrive"
                                 IsDisabled="IsExportingToGoogleDrive"
-                                class="btn-lg ms-2 mb-4">
+                                class="btn-lg me-2 mb-4">
                             @if (IsExportingToGoogleDrive)
                             {
                                 <Spinner Size="Size.Small" class="mx-2" />
@@ -90,21 +86,21 @@
                                 Size="Size.Large"
                                 Icon="fa-solid fa-download"
                                 OnClick="DownloadReport"
-                                class="btn-lg mb-4">
+                                class="btn-lg mb-4 me-2">
                             Download CSV
                         </Button>
                         <Button Color="Color.Secondary"
                                 Size="Size.Large"
                                 Icon="fa-solid fa-arrow-left"
                                 OnClick="ResetReport"
-                                class="btn-lg ms-2 mb-4">
+                                class="btn-lg mb-4">
                             Generate New Report
                         </Button>
                     </div>
                 }
                 else
                 {
-                    <div class="text-center text-sm-start">
+                    <div class="mt-4">
                         <Button Color="Color.Primary"
                                 Size="Size.Large"
                                 Icon="fa-solid fa-chart-line"

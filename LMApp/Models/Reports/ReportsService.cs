@@ -30,6 +30,7 @@ namespace LMApp.Models.Reports
         }
 
         public async Task<ExpenseReportData> GenerateExpenseReportAsync(
+            bool allInBaseCurrency = false,
             int monthCount = 6,
             Action<string> progressCallback = null)
         {
@@ -62,19 +63,30 @@ namespace LMApp.Models.Reports
 
                 progressCallback?.Invoke($"Processing transactions for {monthStart:yyyy-MM}");
 
-                var monthExpenses = await GetExpensesForMonth(monthStart, monthEnd, includeCrossCurrencyInBudget);
+                var monthExpenses = await GetExpensesForMonth(
+                    monthStart,
+                    monthEnd, 
+                    includeCrossCurrencyInBudget,
+                    allInBaseCurrency);
                 reportData.Expenses.AddRange(monthExpenses);
             }
 
             return reportData;
         }
 
-        private async Task<List<MonthlyExpense>> GetExpensesForMonth(DateTime monthStart, DateTime monthEnd, bool includeCrossCurrencyInBudget)
+        private async Task<List<MonthlyExpense>> GetExpensesForMonth(
+            DateTime monthStart,
+            DateTime monthEnd,
+            bool includeCrossCurrencyInBudget,
+            bool allInBaseCurrency)
         {
             // First, load ALL transactions for the month
             var allTransactions = new List<TransactionDisplay>();
             var offset = 0;
             bool hasMore = true;
+
+            var overrideCurrency = allInBaseCurrency
+                ? _settingsService.PrimaryCurrency : null;
 
             while (hasMore)
             {
@@ -101,13 +113,15 @@ namespace LMApp.Models.Reports
                          && !t.IsInsideGroup)
                 .ToList();
 
+            var test = filteredTransactions.Where(x => x.IsCrossCurrencyTransfer).ToList();
+
             // Group by category and currency AFTER loading all data
             var groupedExpenses = filteredTransactions
                 .GroupBy(t => new
                 {
                     t.CategoryId,
                     t.CategoryName,
-                    t.Currency
+                    Currency = (t.TransferBalanceCurrency ?? overrideCurrency ?? t.Currency)?.ToLower()
                 })
                 .Select(g => new MonthlyExpense
                 {
@@ -115,7 +129,8 @@ namespace LMApp.Models.Reports
                     CategoryName = g.Key.CategoryName ?? "Uncategorized",
                     Currency = g.Key.Currency,
                     Month = monthEnd, // Last day of the month
-                    Balance = g.Sum(t => t.Transaction.amount)
+                    Balance = g.Sum(t => t.TransferBalanceAmount 
+                        ?? (allInBaseCurrency ? t.Transaction.to_base : t.Transaction.amount))
                 })
                 .ToList();
 

@@ -28,24 +28,20 @@
 
                 @if (!IsGenerating && ReportData == null)
                 {
-                    <div class="mb-4">
-                        <div class="row">
-                            <div class="col-md-6 col-lg-4">
-                                <div class="form-group">
-                                    <BootstrapInputNumber @bind-Value="NumberOfMonths"
-                                                DisplayText="Number of Months"
-                                                ShowLabel="true"
-                                                Id="monthsInput"
-                                                Min="1" 
-                                                Max="24"
-                                                PlaceHolder="Enter number of months" />
-                                    @if (!string.IsNullOrEmpty(ValidationError))
-                                    {
-                                        <div class="text-danger small mt-1">@ValidationError</div>
-                                    }
-                                    <div class="form-text">Enter a number between 1 and 24 months</div>
-                                </div>
-                            </div>
+                    <div class="row pb-2">
+                        <div class="col-md-6">
+                            <BootstrapInputNumber @bind-Value="NumberOfMonths"
+                                                  DisplayText="Number of Months"
+                                                  ShowLabel="true"
+                                                  Id="monthsInput"
+                                                  Min="1"
+                                                  Max="24"
+                                                  PlaceHolder="Enter number of months" />
+                            @if (!string.IsNullOrEmpty(ValidationError))
+                            {
+                                <div class="text-danger small mt-1">@ValidationError</div>
+                            }
+                            <div class="form-text">Enter a number between 1 and 24 months</div>
                         </div>
                     </div>
                 }
@@ -64,8 +60,8 @@
                 {
                     <div class="alert alert-success mb-4">
                         <i class="fa-solid fa-check-circle me-2"></i>
-                        Report generated successfully! The report includes transaction data from 
-                        @formatService.FormatMonth(ReportData.FromMonth) to @formatService.FormatMonth(ReportData.ToMonth) 
+                        Report generated successfully! The report includes transaction data from
+                        @formatService.FormatMonth(ReportData.FromMonth) to @formatService.FormatMonth(ReportData.ToMonth)
                         (@NumberOfMonths month@(NumberOfMonths == 1 ? "" : "s")).
                     </div>
 
@@ -87,7 +83,7 @@
                                         <td class="text-end">@formatService.FormatBalance(monthData.Income, ReportData.Currency, isLiability: false)</td>
                                         <td class="text-end">@formatService.FormatBalance(monthData.Expenses, ReportData.Currency)</td>
                                         <td class="text-end">
-                                            @formatService.FormatBalance(monthData.Balance, ReportData.Currency,isLiability: monthData.Balance >= 0)
+                                            @formatService.FormatBalance(monthData.Balance, ReportData.Currency, isLiability: monthData.Balance >= 0)
                                         </td>
                                     </tr>
                                 }
@@ -104,14 +100,14 @@
                             </tfoot>
                         </table>
                     </div>
-                            
-                    <div class="text-center">
-                        <Button Color="Color.Success" 
+
+                    <div>
+                        <Button Color="Color.Success"
                                 Size="Size.Large"
                                 Icon="fab fa-google-drive"
                                 OnClick="ExportToGoogleDrive"
                                 IsDisabled="IsExportingToGoogleDrive"
-                                class="btn-lg ms-2 mb-4">
+                                class="btn-lg me-2 mb-4">
                             @if (IsExportingToGoogleDrive)
                             {
                                 <Spinner Size="Size.Small" class="mx-2" />
@@ -126,24 +122,25 @@
                                 Size="Size.Large"
                                 Icon="fa-solid fa-download"
                                 OnClick="DownloadReport"
-                                class="btn-lg mb-4">
+                                class="btn-lg me-2 mb-4">
                             Download CSV
                         </Button>
-                        <Button Color="Color.Secondary" 
+                        <Button Color="Color.Secondary"
                                 Size="Size.Large"
                                 Icon="fa-solid fa-arrow-left"
                                 OnClick="ResetReport"
-                                class="btn-lg ms-2 mb-4">
+                                class="btn-lg mb-4">
                             Generate New Report
                         </Button>
                     </div>
                 }
                 else
                 {
-                    <div class="text-center text-sm-start">
-                        <Button Color="Color.Primary" 
+                    <div class="mt-4">
+                        <Button Color="Color.Primary"
                                 Size="Size.Large"
-                                Icon="fa-solid fa-chart-line"                                OnClick="GenerateReport"
+                                Icon="fa-solid fa-chart-line"
+                                OnClick="GenerateReport"
                                 IsDisabled="IsGenerating"
                                 class="btn-lg">
                             Generate Report
@@ -169,7 +166,7 @@
 
                 <div class="mt-4">
                     <a href="javascript:" @onclick="BackToReports">
-                       <i class="fa-solid fa-arrow-left"></i> Back to reports 
+                        <i class="fa-solid fa-arrow-left"></i> Back to reports
                     </a>
                 </div>
             </div>
@@ -214,7 +211,8 @@
         }
 
         if (NumberOfMonths > 24)
-        {            ValidationError = "Number of months cannot exceed 24";
+        {
+            ValidationError = "Number of months cannot exceed 24";
             return false;
         }
 
@@ -245,7 +243,8 @@
         {
             GenerateError = $"Failed to generate report: {ex.Message}";
         }
-        finally        {
+        finally
+        {
             IsGenerating = false;
             StateHasChanged();
         }
@@ -278,7 +277,8 @@
             var fileName = $"income-spending-report-{NumberOfMonths}months-{DateTime.Now:yyyy-MM-dd}.csv";
 
             await utils.DownloadFile(fileName, csvContent, "text/csv");
-        }        catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             GenerateError = $"Failed to download report: {ex.Message}";
             StateHasChanged();
