@@ -73,6 +73,10 @@
     <Build Include="Tables\ProductPrice.sql" />
     <Build Include="Security\RoleMemberships.sql" />
     <Build Include="Security\user.sample.sql" />
+    <Build Include="Tables\Budget.sql" />
+    <Build Include="Tables\Asset.sql" />
+    <Build Include="Tables\Category.sql" />
+    <Build Include="Tables\Transaction.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="LMDatabse.refactorlog" />
