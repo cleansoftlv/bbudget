@@ -77,6 +77,7 @@
     <Build Include="Tables\Asset.sql" />
     <Build Include="Tables\Category.sql" />
     <Build Include="Tables\Transaction.sql" />
+    <Build Include="Tables\CurrencyRate.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="LMDatabse.refactorlog" />
