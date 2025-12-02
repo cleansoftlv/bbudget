@@ -222,8 +222,46 @@ namespace LMApp.Models.Transactions
         }
 
 
+        public async Task UpdateTransactionWriteExtId(
+            TransactionForEditWithExtIdDto tran,
+            bool skipBalanceUpdate = false)
+        {
+            if (tran.plaid_account_id.HasValue)
+            {
+                await UpdateTransaction(
+                    tran,
+                    skipBalanceUpdate);
+                return;
+            }
 
-        public async Task UpdateTransaction(TransactionForEditDto tran, bool skipBalanceUpdate = false)
+            if (tran.id <= 0)
+                throw new Exception("Invalid transaction id");
+
+            var lmClient = CreateHttpClient();
+
+            var url = $"transactions/{tran.id}";
+
+            using var response =
+                await lmClient.PutAsJsonAsync(url, new UpdateTransactionWithExtIdRequest
+                {
+                    transaction = tran,
+                    skip_balance_update = skipBalanceUpdate
+                });
+
+            response.EnsureSuccessStatusCode();
+
+            var updateResponse = await response.Content.ReadFromJsonAsync<UpdateResponse>();
+            if (updateResponse.error != null && updateResponse.error.Any())
+            {
+                throw new HttpRequestException($"Error updating transaction - {String.Join(", ", updateResponse.error)}",
+                    null,
+                    System.Net.HttpStatusCode.ExpectationFailed);
+            }
+        }
+
+        public async Task UpdateTransaction(
+            TransactionForEditDto tran,
+            bool skipBalanceUpdate = false)
         {
             if (tran.id <= 0)
                 throw new Exception("Invalid transaction id");

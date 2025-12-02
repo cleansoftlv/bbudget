@@ -78,7 +78,7 @@ namespace LMApp.Models.Transactions
         {
             var parsedUid = TransactionsService.ParseTranAccountUid(AccountUid);
 
-            return new TransactionForEditDto
+            return new TransactionForEditWithExtIdDto
             {
                 id = Id,
                 amount = AmountWithSign ?? 0,
@@ -88,8 +88,8 @@ namespace LMApp.Models.Transactions
                 notes = Notes,
                 payee = Payee,
                 tags = Tags,
-                external_id = null,
-                recurring_id = null,
+                external_id = Transaction.external_id,
+                recurring_id = Transaction.recurring_id,
                 status = ClientConstants.TransactionStatusCleared,
                 asset_id = parsedUid.assetId,
                 plaid_account_id = parsedUid.plaidAccountId

@@ -10,7 +10,6 @@ namespace LMApp.Models.Transactions
     {
         public decimal amount { get; set; }
         public long? asset_id { get; set; }
-        public string external_id { get; set; }
         public string currency { get; set; }
 
 

@@ -28,7 +28,7 @@ namespace LMApp.Models.Transactions
 
         public TransactionForEditDto GetUpdate(long id)
         {
-            return new TransactionForEditDto
+            return new TransactionForEditWithExtIdDto
             {
                 id = id,
                 amount = amount,

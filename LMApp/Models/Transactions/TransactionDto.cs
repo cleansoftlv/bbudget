@@ -118,7 +118,7 @@ public class TransactionDto
 
     public TransactionForEditDto GetEditDto()
     {
-        return new TransactionForEditDto
+        return new TransactionForEditWithExtIdDto
         {
             id = id,
             date = date,

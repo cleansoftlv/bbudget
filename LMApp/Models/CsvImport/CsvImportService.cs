@@ -307,6 +307,12 @@ namespace LMApp.Models.CsvImport
             // Load all transactions in the date range
             var minDate = result.MinDate.Value;
             var maxDate = result.MaxDate.Value;
+            if (maxDate == minDate)
+            {
+                // Extend range by one day if only one date
+                // LM api can't load transactions for a single day only
+                maxDate = maxDate.AddDays(1);
+            }
 
             var allTransactions = new List<TransactionDisplay>();
             var hasMore = true;

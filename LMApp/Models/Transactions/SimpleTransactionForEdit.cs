@@ -85,7 +85,7 @@ namespace LMApp.Models.Transactions
         {
             var parsed = TransactionsService.ParseTranAccountUid(AccountUid);
 
-            return new TransactionForEditDto
+            return new TransactionForEditWithExtIdDto
             {
                 id = Id,
                 amount = AmountWithSign ?? 0,
