@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LMApp.Models.Categories
+namespace LMApp.Models.Budget
 {
     public enum BudgetCategoryType
     {

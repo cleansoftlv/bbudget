@@ -1,6 +1,4 @@
-using LMApp.Models.Categories;
-
-namespace LMApp.Models.Categories
+namespace LMApp.Models.Budget
 {
     public class BudgetCategoryDisplay
     {
@@ -40,14 +38,14 @@ namespace LMApp.Models.Categories
         public BudgetCategoryType CategoryType { get; set; }
 
         public double UsedPercent => BudgetedAmountPrimary != 0
-            ? Math.Round(Decimal.ToDouble(ActualAmountPrimary / BudgetedAmountPrimary * 100), 0)
+            ? Math.Round(decimal.ToDouble(ActualAmountPrimary / BudgetedAmountPrimary * 100), 0)
             : 0.0;
         public double ProgressPercent => BudgetedAmountPrimary != 0
-            ? Math.Round(Decimal.ToDouble(ProgressAmountPrimary / BudgetedAmountPrimary * 100), 0)
+            ? Math.Round(decimal.ToDouble(ProgressAmountPrimary / BudgetedAmountPrimary * 100), 0)
             : 0.0;
 
         public double OverspentPercent => BudgetedAmountPrimary != 0 && ActualAmountPrimary > BudgetedAmountPrimary
-            ? Math.Round(Decimal.ToDouble((ActualAmountPrimary - BudgetedAmountPrimary) / BudgetedAmountPrimary * 100), 0)
+            ? Math.Round(decimal.ToDouble((ActualAmountPrimary - BudgetedAmountPrimary) / BudgetedAmountPrimary * 100), 0)
             : 0.0;
 
         public void UpdateWith(BudgetCategoryDisplay other)

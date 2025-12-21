@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace LMApp.Models.Categories
+namespace LMApp.Models.Budget.Dto
 {
     public class UpsertBudgetResponse
     {

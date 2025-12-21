@@ -1,6 +1,7 @@
+using LMApp.Models.Budget.Dto;
 using System.ComponentModel.DataAnnotations;
 
-namespace LMApp.Models.Categories
+namespace LMApp.Models.Budget
 {
     public class BudgetCategoryDisplayForEdit
     {

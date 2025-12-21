@@ -70,6 +70,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Models\Budget\Dto\V2\" />
 		<Folder Include="wwwroot\assets\" />
 	</ItemGroup>
 

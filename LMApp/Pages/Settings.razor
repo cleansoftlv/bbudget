@@ -24,7 +24,7 @@
                     <li>Please select all additional currencies you use in your account.</li>
                 }
                 @if (userService.CurrentAccountSettings?.CrossCurrencyTransferCategoryId == null
-                            && userService.CurrentAccountSettings?.AdditionalCurrencies.Any() == true)
+                            && userService.CurrentAccountSettings?.AdditionalCurrencies?.Any() == true)
                 {
                     <li>Optionally, specify a different category for transfers between accounts in different currencies.</li>
                 }

@@ -1,4 +1,7 @@
 ﻿using LMApp.Models.Account;
+using LMApp.Models.Budget.Dto;
+using LMApp.Models.Budget.Dto.V2;
+using LMApp.Models.Categories;
 using LMApp.Models.Context;
 using LMApp.Models.Transactions;
 using LMApp.Pages;
@@ -11,7 +14,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace LMApp.Models.Categories
+namespace LMApp.Models.Budget
 {
     public class BudgetService(
         IHttpClientFactory httpClientFactory,
@@ -29,7 +32,9 @@ namespace LMApp.Models.Categories
 
         private long _cachedAccountId = -1;
         private readonly Dictionary<DateTime, BudgetCategoryDisplay[]> _budgetCache = new Dictionary<DateTime, BudgetCategoryDisplay[]>();
-        public async Task<(BudgetCategoryDisplay[] categories, bool cacheHit)> LoadBudget(DateTime monthStart, bool allowCache = false)
+        public async Task<(BudgetCategoryDisplay[] categories, bool cacheHit)> LoadBudget(
+            DateTime monthStart, 
+            bool allowCache = false)
         {
             if (_cachedAccountId != _userContextService.CurrentAccount.AccountId)
             {
@@ -42,13 +47,13 @@ namespace LMApp.Models.Categories
                 return (cached, true);
             }
 
-            var lmClient = _httpClientFactory.CreateClient("LM");
+            var lmv2Client = _httpClientFactory.CreateClient("LMv2");
             var monthEnd = monthStart.AddMonths(1).AddDays(-1);
 
-            BudgetCategory[] response = null;
+            SummaryResponse response = null;
             try
             {
-                response = await lmClient.GetFromJsonAsync<BudgetCategory[]>($"budgets?start_date={monthStart:yyyy-MM-dd}&end_date={monthEnd:yyyy-MM-dd}");
+                response = await lmv2Client.GetFromJsonAsync<SummaryResponse>($"summary?start_date={monthStart:yyyy-MM-dd}&end_date={monthEnd:yyyy-MM-dd}&include_occurrences=true");
             }
             catch (JsonException x)
             {
@@ -63,9 +68,12 @@ namespace LMApp.Models.Categories
                     System.Net.HttpStatusCode.ExpectationFailed);
             }
 
-            var categories = response
-                .Where(x => x.ShowInBudget)
-                .Select(x => x.GetDisplayItem(_settingsService.PrimaryCurrency));
+            var categoryLookup =  _settingsService.GetCachedCategories().ToDictionary(x=>x.id);
+
+
+            var categories = response.categories
+                .Where(x => x.ShowInBudget(categoryLookup.GetValueOrDefault(x.category_id)))
+                .Select(x => x.GetDisplayItem(_settingsService.PrimaryCurrency, categoryLookup.GetValueOrDefault(x.category_id)));
 
             var withoutIncome = categories.Where(x => 
                 x.CategoryType == BudgetCategoryType.Expense
@@ -170,7 +178,7 @@ namespace LMApp.Models.Categories
             var res = new AccountDisplay
             {
                 IdForType = dto.id,
-                Name = String.IsNullOrEmpty(dto.name)
+                Name = string.IsNullOrEmpty(dto.name)
                     ? dto.display_name
                     : dto.name,
                 Currency = dto.currency,
@@ -195,7 +203,7 @@ namespace LMApp.Models.Categories
             var res = new AccountDisplay
             {
                 IdForType = dto.id,
-                Name = String.IsNullOrEmpty(dto.name)
+                Name = string.IsNullOrEmpty(dto.name)
                     ? dto.display_name
                     : dto.name,
                 Currency = dto.currency,
@@ -221,7 +229,7 @@ namespace LMApp.Models.Categories
             var res = new AccountDisplay
             {
                 IdForType = dto.zabo_account_id ?? dto.id ?? -9,
-                Name = String.IsNullOrEmpty(dto.name)
+                Name = string.IsNullOrEmpty(dto.name)
                     ? dto.display_name
                     : dto.name,
                 Currency = dto.currency,
@@ -594,7 +602,7 @@ namespace LMApp.Models.Categories
                 exclude_transactions = false
             };
 
-            if (BudgetService.IsLiability(account.LMAccountType))
+            if (IsLiability(account.LMAccountType))
             {
                 createRequest.balance *= -1;
             }
@@ -631,7 +639,7 @@ namespace LMApp.Models.Categories
                 updateRequest.currency = account.Currency.ToLowerInvariant();
                 updateRequest.balance = account.Balance;
                 updateRequest.balance_as_of = DateTime.UtcNow;
-                if (BudgetService.IsLiability(account.LMAccountType))
+                if (IsLiability(account.LMAccountType))
                 {
                     updateRequest.balance *= -1;
                 }

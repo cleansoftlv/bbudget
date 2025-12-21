@@ -1,4 +1,6 @@
-namespace LMApp.Models.Categories
+using LMApp.Models.Categories;
+
+namespace LMApp.Models.Budget.Dto
 {
     public class BudgetCategory
     {

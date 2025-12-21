@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using LMApp;
 using LMApp.Models.Account;
 using Microsoft.AspNetCore.Components;
-using LMApp.Models.Categories;
 using LMApp.Models.Transactions;
 using LMApp.Models.UI;
 using LMApp.Models.UI.Csv;
@@ -21,6 +20,7 @@ using LMApp.Models.Licenses;
 using LMApp.Models.Reports;
 using Shared.License;
 using LMApp.Models.UI.GoogleDrive;
+using LMApp.Models.Budget;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -71,6 +71,16 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddHttpClient("LM", client =>
 {
     client.BaseAddress = new Uri("https://dev.lunchmoney.app/v1/");
+    client.DefaultRequestHeaders.Add(ClientConstants.XClientAppHeaderKey, String.Concat(ClientConstants.XClientAppHeaderValue, '/', appVersion));
+}).ConfigurePrimaryHttpMessageHandler(
+    serviceProvider => new AuthorizationMessageHandler(serviceProvider.GetRequiredService<UserContextService>())
+    {
+        InnerHandler = new HttpClientHandler()
+    });
+
+builder.Services.AddHttpClient("LMv2", client =>
+{
+    client.BaseAddress = new Uri("https://api.lunchmoney.dev/v2/");
     client.DefaultRequestHeaders.Add(ClientConstants.XClientAppHeaderKey, String.Concat(ClientConstants.XClientAppHeaderValue, '/', appVersion));
 }).ConfigurePrimaryHttpMessageHandler(
     serviceProvider => new AuthorizationMessageHandler(serviceProvider.GetRequiredService<UserContextService>())

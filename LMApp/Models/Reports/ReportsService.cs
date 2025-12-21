@@ -1,5 +1,5 @@
 ﻿using LMApp.Models.Account;
-using LMApp.Models.Categories;
+using LMApp.Models.Budget;
 using LMApp.Models.Context;
 using LMApp.Models.Transactions;
 using LMApp.Models.UI;

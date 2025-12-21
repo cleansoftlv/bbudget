@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using LMApp.Models.Account;
-using LMApp.Models.Categories;
+using LMApp.Models.Budget;
 using LMApp.Models.Context;
 using LMApp.Models.Transactions;
 using Microsoft.AspNetCore.Components.Forms;
