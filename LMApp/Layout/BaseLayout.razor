@@ -38,6 +38,7 @@
                     </Alert>
                 </div>
             </article>
+            <InfoModal @ref="Modal" />
             @if (UpdatePending)
             {
                 <div class="update-btn-container">
@@ -93,7 +94,7 @@
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
-        if (firstRender)
+        if (firstRender && PWAUpdaterService.HostEnvironment != "Development")
         {
             PWAUpdaterService.NextVersionIsWaiting += PWAUpdaterService_NextVersionIsWaiting;
         }
@@ -110,6 +111,7 @@
 
     void IDisposable.Dispose()
     {
-        PWAUpdaterService.NextVersionIsWaiting -= PWAUpdaterService_NextVersionIsWaiting;
+        if (PWAUpdaterService.HostEnvironment != "Development")
+            PWAUpdaterService.NextVersionIsWaiting -= PWAUpdaterService_NextVersionIsWaiting;
     }
 }
