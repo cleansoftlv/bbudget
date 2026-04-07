@@ -682,13 +682,13 @@ namespace LMApp.Models.Budget
         /// <param name="request">The budget upsert request</param>
         /// <returns>The upsert response containing category group information if it's a sub-category</returns>
         /// <exception cref="HttpRequestException">Thrown when the API request fails</exception>
-        public async Task<UpsertBudgetResponse> UpsertBudgetAsync(UpsertBudgetRequest request)
+        public async Task<CategoryGroupBudget> UpsertBudgetAsync(UpsertBudgetRequest request)
         {
-            var lmClient = _httpClientFactory.CreateClient("LM");
+            var lmv2Client = _httpClientFactory.CreateClient("LMv2");
 
             try
             {
-                var response = await lmClient.PutAsJsonAsync("budgets", request);
+                var response = await lmv2Client.PutAsJsonAsync("budgets", request);
 
                 var responseStr = await response.Content.ReadAsStringAsync();
                 if (!response.IsSuccessStatusCode)
@@ -699,10 +699,10 @@ namespace LMApp.Models.Budget
                         response.StatusCode);
                 }
 
-                if (responseStr.Contains("\"error\""))
+                if (responseStr.Contains("\"errors\""))
                 {
-                    var errorObj = JsonSerializer.Deserialize<ResponseWithSingleError>(responseStr);
-                    throw new HttpRequestException($"Lunch money API error - {errorObj.error}",
+                    var errorObj = JsonSerializer.Deserialize<ResponseV2WithErrors>(responseStr);
+                    throw new HttpRequestException($"Lunch money API error - {errorObj.message}",
                             null,
                             System.Net.HttpStatusCode.ExpectationFailed);
                 }
@@ -710,7 +710,7 @@ namespace LMApp.Models.Budget
                 // Clear budget cache since we updated a budget
                 _budgetCache.Clear();
 
-                var result = JsonSerializer.Deserialize<UpsertBudgetResponse>(responseStr);
+                var result = JsonSerializer.Deserialize<CategoryGroupBudget>(responseStr);
                 return result;
             }
             catch (JsonException ex)
@@ -730,14 +730,14 @@ namespace LMApp.Models.Budget
         /// <exception cref="HttpRequestException">Thrown when the API request fails</exception>
         public async Task<bool> RemoveBudgetAsync(long categoryId, DateTime startDate)
         {
-            var lmClient = _httpClientFactory.CreateClient("LM");
+            var lmv2Client = _httpClientFactory.CreateClient("LMv2");
 
             try
             {
                 var startDateStr = startDate.ToString("yyyy-MM-dd");
-                var response = await lmClient.DeleteAsync($"budgets?start_date={startDateStr}&category_id={categoryId}");
+                var response = await lmv2Client.DeleteAsync($"budgets?start_date={startDateStr}&category_id={categoryId}");
 
-                var responseStr = await response.Content.ReadAsStringAsync();
+                var responseStr = await response.Content.ReadAsStringAsync() ?? String.Empty;
                 if (!response.IsSuccessStatusCode)
                 {
                     throw new HttpRequestException(
@@ -757,7 +757,7 @@ namespace LMApp.Models.Budget
                 // Clear budget cache since we removed a budget
                 _budgetCache.Clear();
 
-                return responseStr == "true";
+                return true;
             }
             catch (JsonException ex)
             {
@@ -774,7 +774,7 @@ namespace LMApp.Models.Budget
         /// <param name="startDate">Start date for the budget period (must be start of month)</param>
         /// <param name="amount">Budget amount in primary currency</param>
         /// <returns>The upsert response containing category group information if it's a sub-category</returns>
-        public async Task<UpsertBudgetResponse> UpsertBudgetAsync(long categoryId, DateTime startDate, decimal amount)
+        public async Task<CategoryGroupBudget> UpsertBudgetAsync(long categoryId, DateTime startDate, decimal amount)
         {
             var request = new UpsertBudgetRequest
             {
@@ -795,7 +795,7 @@ namespace LMApp.Models.Budget
         /// <param name="amount">Budget amount</param>
         /// <param name="currency">Currency for the budget amount</param>
         /// <returns>The upsert response containing category group information if it's a sub-category</returns>
-        public async Task<UpsertBudgetResponse> UpsertBudgetAsync(long categoryId, DateTime startDate, decimal amount, string currency)
+        public async Task<CategoryGroupBudget> UpsertBudgetAsync(long categoryId, DateTime startDate, decimal amount, string currency)
         {
             var request = new UpsertBudgetRequest
             {

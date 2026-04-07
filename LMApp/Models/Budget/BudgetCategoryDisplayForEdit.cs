@@ -37,10 +37,10 @@ namespace LMApp.Models.Budget
                 CategoryId = category.CategoryId,
                 CategoryType = category.CategoryType,
                 // Edit-specific properties
-                EditBudgetAmount = category.Currency == null && category.BudgetedAmount == default ? null : category.BudgetedAmount,
+                EditBudgetAmount = category.Currency == null && category.BudgetedAmount == default ? null : Decimal.Round(category.BudgetedAmount, 2),
                 EditCurrency = category.Currency ?? primaryCurrency,
                 IsEditing = false,
-                OriginalBudgetAmount = category.Currency == null && category.BudgetedAmount == default ? null : category.BudgetedAmount,
+                OriginalBudgetAmount = category.Currency == null && category.BudgetedAmount == default ? null : Decimal.Round(category.BudgetedAmount, 2),
                 OriginalCurrency = category.Currency ?? primaryCurrency
             };
         }

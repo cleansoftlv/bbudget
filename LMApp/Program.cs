@@ -21,6 +21,9 @@ using LMApp.Models.Reports;
 using Shared.License;
 using LMApp.Models.UI.GoogleDrive;
 using LMApp.Models.Budget;
+using System.Globalization;
+
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("en-US");
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

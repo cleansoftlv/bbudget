@@ -14,6 +14,7 @@ namespace LMApp.Models.Budget.Dto
         public long category_id { get; set; }
 
         [JsonPropertyName("amount")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public decimal amount { get; set; }
 
         [JsonPropertyName("currency")]
